@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Sepia light mode (warm, low contrast) */
+  --color-slate-50: #fbf9f6;
+  --color-slate-100: #f3ede2;
+  --color-slate-150: #ebe3d5;
+  --color-slate-200: #dfd5c4;
+  --color-slate-250: #d0c4b0;
+  
+  /* Muted text colors */
+  --color-slate-300: #b5a995;
+  --color-slate-400: #968e7f;
+  --color-slate-500: #7b7569;
+  --color-slate-600: #605a50;
+  
+  /* Dark text colors for light mode && Borders for dark mode */
+  --color-slate-700: #46423b;
+  --color-slate-800: #333336; /* AI Studio hover/border */
+  
+  /* AI Studio dark mode backgrounds (cool neutral, low contrast) */
+  --color-slate-850: #232426;
+  --color-slate-900: #1e1e20;
+  --color-slate-950: #131314;
+
+  /* Adjust white and black for less contrast */
+  --color-white: #fcfbf8;
+  --color-black: #0f1011;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Hőtechnikai Méretező",
+  "description": "Hőtechnikai méretező és R290 hőszivattyú kalkulátor hidraulikai és tágulási tartály méretezéssel, gázfogyasztás alapú és szabványos hőigénybecsléssel, valamint Google Drive jegyzőkönyv exporttal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
