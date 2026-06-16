@@ -355,7 +355,6 @@ export default function App() {
                     bivalentTempManual={bivalentTempManual}
                     onChangeBivalentTemp={setBivalentTempManual}
                     theme={theme}
-                    onChangeBuildingData={setBuildingData}
                   />
                 </div>
                 
@@ -407,6 +406,7 @@ export default function App() {
                   hydraulicResults={hydraulicResults}
                   emitterType={selectedEmitter}
                   hydraulicState={hydraulicState}
+                  heatLossKw={calcResults.heatLossKw.total}
                   theme={theme}
                 />
                 

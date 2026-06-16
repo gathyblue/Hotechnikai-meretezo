@@ -412,7 +412,7 @@ export function calculateHydraulicsAndVessel(
   const primaryActualAreaM2 = (Math.PI * Math.pow(primaryInnerDiaM, 2)) / 4;
   const primaryEstimatedVelocityMs = (flowRateM3h / 3600) / primaryActualAreaM2;
 
-  const secondaryInnerDiaM = secondaryInnerDiaMm / 1050 ? secondaryInnerDiaMm / 1000 : secondaryInnerDiaMm / 1000;
+  const secondaryInnerDiaM = secondaryInnerDiaMm / 1000;
   const secondaryActualAreaM2 = (Math.PI * Math.pow(secondaryInnerDiaM, 2)) / 4;
   const secondaryEstimatedVelocityMs = (secondaryFlowM3h / 3600) / secondaryActualAreaM2;
 
