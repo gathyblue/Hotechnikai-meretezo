@@ -109,6 +109,7 @@ export interface HydraulicInput {
   primaryPipeSize?: string;       // separate primary diameter
   secondaryPipeSize?: string;     // separate secondary diameter
   secondaryPumpOverride?: string; // custom manual secondary pump selection
+  targetVelocityMs?: number;      // design target flow velocity m/s (default 0.6)
 }
 
 export interface EngineeringParams {

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { HydraulicInput, HydraulicResults, EngineeringParams } from '../types';
 import { calculateHydraulicsAndVessel } from '../utils/calculations';
-import { Gauge, Droplets, Info, RefreshCw, Layers, CheckCircle, ListPlus } from 'lucide-react';
+import { Gauge, Droplets, Info, Layers, CheckCircle } from 'lucide-react';
 
 interface HydraulicExpansionCalcProps {
   peakLoadKw: number;
@@ -12,6 +12,60 @@ interface HydraulicExpansionCalcProps {
   heatedArea: number;
   engineeringParams?: EngineeringParams;
   theme?: string;
+}
+
+// Reusable segmented control (same visual language as the main header)
+function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  isDark,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  isDark: boolean;
+}) {
+  return (
+    <div className={`p-[2px] rounded border flex gap-0.5 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`flex-1 text-[10px] font-bold px-3 py-1 rounded-[3px] transition-all cursor-pointer whitespace-nowrap ${
+            value === opt.value
+              ? isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm'
+              : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Reusable section label
+function SectionLabel({ label, isDark }: { label: string; isDark: boolean }) {
+  return (
+    <p className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+      {label}
+    </p>
+  );
+}
+
+// Reusable result row
+function ResultRow({ label, value, sub, isDark }: { label: string; value: React.ReactNode; sub?: string; isDark: boolean }) {
+  return (
+    <div className={`flex items-center justify-between py-1.5 border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+      <div>
+        <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</span>
+        {sub && <span className={`block text-[9px] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{sub}</span>}
+      </div>
+      <span className={`font-mono font-bold text-[11px] ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{value}</span>
+    </div>
+  );
 }
 
 export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
@@ -25,136 +79,121 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
   theme,
 }) => {
   const isDark = theme === 'dark';
+  const [activeTab, setActiveTab] = useState<'rendszer' | 'meretezs' | 'eredmenyek'>('rendszer');
 
-  // Localized circuit states
+  // Local state
   const [floorCircuits, setFloorCircuits] = useState<number>(8);
   const [longestCircuit, setLongestCircuit] = useState<number>(100);
   const [radiatorCount, setRadiatorCount] = useState<number>(8);
 
   const updateInput = (field: keyof HydraulicInput, value: any) => {
-    const newState = { ...hydraulicState, [field]: value };
-    setHydraulicState(newState);
+    setHydraulicState({ ...hydraulicState, [field]: value });
   };
 
-  const results = useMemo(() => {
-    return calculateHydraulicsAndVessel(peakLoadKw, flowTemp, hydraulicState, heatedArea, engineeringParams);
-  }, [peakLoadKw, flowTemp, hydraulicState, heatedArea, engineeringParams]);
+  const results = useMemo(
+    () => calculateHydraulicsAndVessel(peakLoadKw, flowTemp, hydraulicState, heatedArea, engineeringParams),
+    [peakLoadKw, flowTemp, hydraulicState, heatedArea, engineeringParams]
+  );
 
-  useEffect(() => {
-    onCalculated(results);
-  }, [results, onCalculated]);
+  useEffect(() => { onCalculated(results); }, [results, onCalculated]);
 
-  // System water volume estimate
   const estSystemVol = useMemo(() => {
     let mult = engineeringParams?.systemWaterVolumeRadiatorFactor ?? 12;
-    if (hydraulicState.secondaryLoops === 'floor') {
-      mult = engineeringParams?.systemWaterVolumeFloorFactor ?? 15;
-    } else if (hydraulicState.secondaryLoops === 'radiators') {
-      mult = engineeringParams?.systemWaterVolumeRadiatorFactor ?? 12;
-    } else if (hydraulicState.secondaryLoops === 'fan_coil') {
-      mult = 8;
-    } else if (hydraulicState.secondaryLoops === 'mixed') {
-      mult = 13;
-    }
+    if (hydraulicState.secondaryLoops === 'floor') mult = engineeringParams?.systemWaterVolumeFloorFactor ?? 15;
+    else if (hydraulicState.secondaryLoops === 'fan_coil') mult = 8;
+    else if (hydraulicState.secondaryLoops === 'mixed') mult = 13;
     return Math.round(peakLoadKw * mult + Number(hydraulicState.additionalWaterVolumeL || 0));
   }, [peakLoadKw, hydraulicState, engineeringParams]);
 
-  // Premium Proposed Circulation Pump Logic
   const recommendedPump = useMemo(() => {
-    // Volume flow rate
     const flowLh = results.flowRateLh;
-    
-    // Friction calculation estimate
-    let headMultiplier = 1.0;
-    if (hydraulicState.secondaryLoops === 'floor' && longestCircuit > 100) {
-      headMultiplier = 1.25; // high pressure drop
-    }
-
-    if (peakLoadKw <= 7.0 && floorCircuits <= 6) {
-      return {
-        model: 'Grundfos UPM3 Auto 25-50 130',
-        brand: 'Grundfos',
-        flow: `${(flowLh / 1000).toFixed(2)} m³/ó`,
-        head: `${(4.0 * headMultiplier).toFixed(1)} m v.o.`,
-        note: 'Szezonális hatásfokú, kisméretű osztógyűjtőhöz ideális.'
-      };
-    } else if (peakLoadKw <= 13.5 && floorCircuits <= 12) {
-      return {
-        model: 'Grundfos UPM3 Auto 25-70 180',
-        brand: 'Grundfos',
-        flow: `${(flowLh / 1000).toFixed(2)} m³/ó`,
-        head: `${(5.5 * headMultiplier).toFixed(1)} m v.o.`,
-        note: 'Ajánlott prémium keringtető közepes lakossági körökhöz.'
-      };
-    } else if (peakLoadKw <= 16.0) {
-      return {
-        model: 'Wilo Yonos Para 25/7.5 RLS',
-        brand: 'Wilo',
-        flow: `${(flowLh / 1000).toFixed(2)} m³/ó`,
-        head: `${(6.5 * headMultiplier).toFixed(1)} m v.o.`,
-        note: 'Megbízható nagy-teljesítményű monoblokk segédszivattyú.'
-      };
-    } else {
-      return {
-        model: 'Grundfos MAGNA3 25-80 180',
-        brand: 'Grundfos',
-        flow: `${(flowLh / 1000).toFixed(2)} m³/ó`,
-        head: `${(7.8 * headMultiplier).toFixed(1)} m v.o.`,
-        note: 'Távfelügyelt ipari keringtető nagy fűtőművekbe.'
-      };
-    }
+    let headMult = 1.0;
+    if (hydraulicState.secondaryLoops === 'floor' && longestCircuit > 100) headMult = 1.25;
+    if (peakLoadKw <= 7.0 && floorCircuits <= 6)
+      return { model: 'Grundfos UPM3 Auto 25-50 130', flow: `${(flowLh / 1000).toFixed(2)} m³/h`, head: `${(4.0 * headMult).toFixed(1)} m v.o.`, note: 'Kis rendszer, kisméretű osztógyűjtőhöz.' };
+    if (peakLoadKw <= 13.5 && floorCircuits <= 12)
+      return { model: 'Grundfos UPM3 Auto 25-70 180', flow: `${(flowLh / 1000).toFixed(2)} m³/h`, head: `${(5.5 * headMult).toFixed(1)} m v.o.`, note: 'Prémium, közepes lakórendszerekhez.' };
+    if (peakLoadKw <= 16.0)
+      return { model: 'Wilo Yonos Para 25/7.5 RLS', flow: `${(flowLh / 1000).toFixed(2)} m³/h`, head: `${(6.5 * headMult).toFixed(1)} m v.o.`, note: 'Nagy teljesítményű monoblokk segédszivattyú.' };
+    return { model: 'Grundfos MAGNA3 25-80 180', flow: `${(flowLh / 1000).toFixed(2)} m³/h`, head: `${(7.8 * headMult).toFixed(1)} m v.o.`, note: 'Ipari keringtető nagy fűtőművekbe.' };
   }, [peakLoadKw, floorCircuits, longestCircuit, results, hydraulicState]);
 
+  // Pipe size options based on material
+  const pipeSizes = useMemo(() => {
+    if (hydraulicState.pipeMaterial === 'copper')
+      return [{ v: 'Auto', l: 'Auto' }, { v: 'Copper 18mm', l: '18 mm' }, { v: 'Copper 22mm', l: '22 mm' }, { v: 'Copper 28mm', l: '28 mm' }, { v: 'Copper 35mm', l: '35 mm' }];
+    if (hydraulicState.pipeMaterial === 'pex')
+      return [{ v: 'Auto', l: 'Auto' }, { v: 'PEX 20mm', l: '20 mm' }, { v: 'PEX 26mm', l: '26 mm' }, { v: 'PEX 32mm', l: '32 mm' }, { v: 'PEX 40mm', l: '40 mm' }];
+    return [{ v: 'Auto', l: 'Auto' }, { v: 'Steel DN20', l: 'DN20' }, { v: 'Steel DN25', l: 'DN25' }, { v: 'Steel DN32', l: 'DN32' }, { v: 'Steel DN40', l: 'DN40' }];
+  }, [hydraulicState.pipeMaterial]);
+
+  // Coupling type options
+  const couplingOptions = [
+    { id: 'heat_exchanger', title: 'Hőcserélős leválasztás', desc: 'Fagyálló fűtéskör primer oldalon', ex: true, buf: 0 },
+    { id: 'buffer',         title: 'Puffertartály',          desc: '100 L hidraulikus váltó funkcióval',  ex: false, buf: 100 },
+    { id: 'direct',         title: 'Direkt Bypass',          desc: 'Sorba kötött rendszer',                ex: false, buf: 0 },
+    { id: 'hydro_switch',   title: 'Hidrováltó',             desc: 'Klasszikus nyomáskülönbség mentesítő', ex: false, buf: 20 },
+  ];
+
+  const activeCoupling = (opt: typeof couplingOptions[0]) =>
+    hydraulicState.includeHeatExchanger === opt.ex &&
+    ((opt.id === 'heat_exchanger') ||
+     (opt.id === 'buffer'       && hydraulicState.additionalWaterVolumeL === 100 && !hydraulicState.includeHeatExchanger) ||
+     (opt.id === 'direct'       && hydraulicState.additionalWaterVolumeL === 0   && !hydraulicState.includeHeatExchanger) ||
+     (opt.id === 'hydro_switch' && hydraulicState.additionalWaterVolumeL === 20  && !hydraulicState.includeHeatExchanger));
+
+  const cardBase = `p-2 rounded border cursor-pointer select-none transition-all text-xs`;
+
   return (
-    <div className={`rounded border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-850' : 'bg-slate-50 border-slate-200'}`} id="hydraulics-calculator">
-      {/* Header */}
-      <div className={`px-4 py-3 border-b flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}>
+    <div
+      className={`rounded border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}
+      id="hydraulics-calculator"
+    >
+      {/* Header with internal tab navigator */}
+      <div className={`px-3 py-2 border-b flex items-center justify-between ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
         <div className="flex items-center gap-2">
-          <span className="font-medium text-xs">
-            Hidraulika, tágulási és hőleadó méretezés
+          <Gauge className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-blue-400' : 'text-slate-500'}`} />
+          <span className={`font-bold text-[11px] uppercase tracking-wider ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+            Hidraulikai Méretezés
           </span>
         </div>
+        <SegmentedControl
+          options={[
+            { value: 'rendszer', label: 'Rendszer' },
+            { value: 'meretezs', label: 'Méretezés' },
+            { value: 'eredmenyek', label: 'Eredmények' },
+          ]}
+          value={activeTab}
+          onChange={setActiveTab}
+          isDark={isDark}
+        />
       </div>
 
-      <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-6 bg-transparent">
-        {/* Left Inputs Panel */}
-        <div className="space-y-4">
-          <h3 className={`text-xs font-semibold block border-b pb-2 ${isDark ? 'text-slate-200 border-slate-800' : 'text-slate-800 border-slate-200'}`}>Bemeneti paraméterek</h3>
+      <div className="p-4">
 
-          <div className="space-y-4">
-            {/* Primary Hydraulic Configuration */}
-            <div>
-              <label className={`text-[11px] font-semibold mb-2 block uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                1. Rendszerkapcsolás Típusa (Primer-Szekunder illesztés)
-              </label>
+        {/* ═══════════ TAB 1: RENDSZER ═══════════ */}
+        {activeTab === 'rendszer' && (
+          <div className="space-y-5">
+
+            {/* Coupling type */}
+            <div className="space-y-2">
+              <SectionLabel label="1. Rendszerkapcsolás típusa (Primer–Szekunder illesztés)" isDark={isDark} />
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'heat_exchanger', title: 'Hőcserélős leválasztás', desc: 'Fagyálló fűtéskör primer oldalon', ex: true, buf: 0 },
-                  { id: 'buffer', title: 'Puffertartály', desc: 'Párhuzamos 100L hidraulikus váltó funkcióval', ex: false, buf: 100 },
-                  { id: 'direct', title: 'Direkt Bypass', desc: 'Sorba kötött rendszer (Nincs leválasztás)', ex: false, buf: 0 },
-                  { id: 'hydro_switch', title: 'Hidrováltó', desc: 'Klasszikus nyomáskülönbség mentesítő', ex: false, buf: 20 },
-                ].map((opt) => {
-                  const isSelected = hydraulicState.includeHeatExchanger === opt.ex && 
-                    ((opt.id === 'heat_exchanger') || (opt.id === 'buffer' && hydraulicState.additionalWaterVolumeL === 100 && !hydraulicState.includeHeatExchanger) || 
-                    (opt.id === 'direct' && hydraulicState.additionalWaterVolumeL === 0 && !hydraulicState.includeHeatExchanger) ||
-                    (opt.id === 'hydro_switch' && hydraulicState.additionalWaterVolumeL === 20 && !hydraulicState.includeHeatExchanger));
+                {couplingOptions.map((opt) => {
+                  const sel = activeCoupling(opt);
                   return (
-                    <div 
+                    <div
                       key={opt.id}
-                      onClick={() => {
-                        const newState = { ...hydraulicState, includeHeatExchanger: opt.ex, additionalWaterVolumeL: opt.buf };
-                        setHydraulicState(newState);
-                      }}
-                      className={`p-3 rounded-md border cursor-pointer select-none transition-all ${
-                        isSelected 
-                          ? (isDark ? 'bg-slate-800 border-slate-500 shadow-sm' : 'bg-white border-slate-400 shadow-sm')
-                          : (isDark ? 'bg-slate-900 border-slate-700 hover:border-slate-600' : 'bg-slate-50 border-slate-200 hover:border-slate-300')
+                      onClick={() => setHydraulicState({ ...hydraulicState, includeHeatExchanger: opt.ex, additionalWaterVolumeL: opt.buf })}
+                      className={`${cardBase} ${sel
+                        ? isDark ? 'bg-slate-800 border-slate-500' : 'bg-blue-50 border-blue-400'
+                        : isDark ? 'bg-slate-900 border-slate-700 hover:border-slate-600' : 'bg-slate-50 border-slate-200 hover:border-slate-300'
                       }`}
                     >
-                      <div className={`font-semibold text-xs ${isSelected ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>
-                         {opt.title}
+                      <div className={`font-bold text-[11px] mb-0.5 ${sel ? (isDark ? 'text-white' : 'text-blue-800') : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>
+                        {opt.title}
                       </div>
-                      <div className={`text-[10px] mt-1 ${isSelected ? (isDark ? 'text-slate-300' : 'text-slate-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                      <div className={`text-[9.5px] ${sel ? (isDark ? 'text-slate-300' : 'text-blue-700') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
                         {opt.desc}
                       </div>
                     </div>
@@ -163,369 +202,347 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
               </div>
             </div>
 
-            {/* DHW Configuration */}
-            <div>
-              <label className={`text-[11px] font-semibold mb-2 block uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                2. Háztartási Melegvíz (HMV)
-              </label>
-              <div className="flex bg-slate-200/50 dark:bg-slate-900/50 p-1 rounded-md">
-                 {[
-                  { id: true, title: 'Igen, HMV tárolóval' },
-                  { id: false, title: 'Nincs HMV' },
-                ].map((opt) => {
-                  const isSelected = hydraulicState.includeDhwTank === opt.id;
-                  return (
-                    <button
-                      key={opt.id === true ? 'yes' : 'no'}
-                      onClick={() => updateInput('includeDhwTank', opt.id)}
-                      className={`flex-1 text-[11px] py-1.5 rounded transition-all font-medium ${isSelected ? (isDark ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                    >
-                       {opt.title}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* HMV */}
+            <div className="space-y-2">
+              <SectionLabel label="2. Háztartási melegvíz (HMV)" isDark={isDark} />
+              <SegmentedControl
+                options={[
+                  { value: 'yes' as any, label: 'Igen, HMV tárolóval' },
+                  { value: 'no'  as any, label: 'Nincs HMV' },
+                ]}
+                value={(hydraulicState.includeDhwTank ? 'yes' : 'no') as any}
+                onChange={(v) => updateInput('includeDhwTank', v === 'yes')}
+                isDark={isDark}
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              {/* PRIMARY SIDE */}
-              <div className={`p-4 rounded-md border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                <h4 className={`text-xs font-bold mb-4 uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                   Primer Oldal (Hőszivattyú ág)
-                </h4>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className={`text-[10px] font-medium mb-1.5 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Gerinc anyaga</label>
-                    <div className="flex bg-slate-200/50 dark:bg-slate-900/50 p-1 rounded-md">
-                      {[
-                        {v: 'copper', l: 'Réz'},
-                        {v: 'pex', l: '5-rétegű'},
-                        {v: 'steel', l: 'Szénacél'}
-                      ].map(m => (
-                        <button
-                          key={m.v}
-                          onClick={() => {
-                            const newState = { 
-                              ...hydraulicState, 
-                              pipeMaterial: m.v as any, 
-                              primaryPipeSize: 'Auto',
-                              secondaryPipeSize: 'Auto' 
-                            };
-                            setHydraulicState(newState);
-                          }}
-                          className={`flex-1 text-[10px] py-1.5 rounded transition-all font-medium ${hydraulicState.pipeMaterial === m.v ? (isDark ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                        >
-                           {m.l}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className={`text-[10px] font-medium mb-1 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Primer csőméret</label>
-                    <div className="flex bg-slate-200/50 dark:bg-slate-900/50 p-1 rounded-md">
-                      {([
-                        {v: 'Auto', l: 'Auto'}, 
-                        ...(hydraulicState.pipeMaterial === 'copper' ? [
-                          {v: 'Copper 18mm', l: '18'},
-                          {v: 'Copper 22mm', l: '22'},
-                          {v: 'Copper 28mm', l: '28'},
-                          {v: 'Copper 35mm', l: '35'}
-                        ] : hydraulicState.pipeMaterial === 'pex' ? [
-                          {v: 'PEX 20mm', l: '20'},
-                          {v: 'PEX 26mm', l: '26'},
-                          {v: 'PEX 32mm', l: '32'},
-                          {v: 'PEX 40mm', l: '40'}
-                        ] : [
-                          {v: 'Steel DN20', l: 'DN20'},
-                          {v: 'Steel DN25', l: 'DN25'},
-                          {v: 'Steel DN32', l: 'DN32'},
-                          {v: 'Steel DN40', l: 'DN40'}
-                        ])
-                      ]).map(m => (
-                        <button
-                          key={m.v}
-                          onClick={() => updateInput('primaryPipeSize', m.v)}
-                          className={`flex-1 text-[10px] py-1.5 rounded transition-all font-medium ${hydraulicState.primaryPipeSize === m.v || (!hydraulicState.primaryPipeSize && m.v === 'Auto') ? (isDark ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                        >
-                           {m.l}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                     <label className={`text-[10px] font-medium mb-1 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tervezési Hőlépcső (ΔT)</label>
-                     <div className="flex bg-slate-200/50 dark:bg-slate-900/50 p-1 rounded-md">
-                      {[5, 7, 10, 15].map(dt => (
-                        <button
-                          key={dt}
-                          onClick={() => updateInput('deltaT', dt)}
-                          className={`flex-1 text-[11px] py-1.5 rounded transition-all font-mono font-medium ${hydraulicState.deltaT === dt ? (isDark ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                        >
-                           {dt}°C
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+            {/* Extra buffer volume (if not heat exchanger) */}
+            {!hydraulicState.includeHeatExchanger && (
+              <div className="space-y-2">
+                <SectionLabel label="3. Extra puffertartály / Hidraulikus váltó (L)" isDark={isDark} />
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={0} max={300} step={10}
+                    value={hydraulicState.additionalWaterVolumeL}
+                    onChange={(e) => updateInput('additionalWaterVolumeL', Number(e.target.value))}
+                    className="flex-1 accent-blue-500 cursor-pointer h-1 rounded-lg"
+                  />
+                  <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border shrink-0 ${isDark ? 'bg-slate-950 border-slate-800 text-blue-400' : 'bg-slate-100 border-slate-300 text-blue-700'}`}>
+                    {hydraulicState.additionalWaterVolumeL} L
+                  </span>
                 </div>
-              </div>
-
-              {/* SECONDARY SIDE */}
-              <div className={`p-4 rounded-md border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                <h4 className={`text-xs font-bold mb-4 uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                   Szekunder Oldal (Hőleadók)
-                </h4>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className={`text-[10px] font-medium mb-1.5 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőleadók jellege</label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {[
-                        {v: 'floor', l: 'Padlófűtés'},
-                        {v: 'radiators', l: 'Lapradiátorok'},
-                        {v: 'fan_coil', l: 'Fan-coil'},
-                        {v: 'mixed', l: 'Kevert (Padló+Rad)'}
-                      ].map(m => (
-                         <div 
-                            key={m.v}
-                            onClick={() => updateInput('secondaryLoops', m.v as any)}
-                            className={`px-2 py-1.5 rounded border cursor-pointer text-center text-[10px] select-none transition-all ${hydraulicState.secondaryLoops === m.v ? (isDark ? 'bg-blue-600 border-blue-500 text-white font-medium' : 'bg-blue-50 border-blue-500 text-blue-800 font-medium') : (isDark ? 'bg-slate-900 border-slate-700 hover:border-slate-600 text-slate-400' : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600')}`}
-                         >
-                           {m.l}
-                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className={`text-[10px] font-medium mb-1 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Szekunder csőméret (Gerinc)</label>
-                    <div className="flex bg-slate-200/50 dark:bg-slate-900/50 p-1 rounded-md">
-                      {([
-                        {v: 'Auto', l: 'Auto'}, 
-                        ...(hydraulicState.pipeMaterial === 'copper' ? [
-                          {v: 'Copper 18mm', l: '18'},
-                          {v: 'Copper 22mm', l: '22'},
-                          {v: 'Copper 28mm', l: '28'},
-                          {v: 'Copper 35mm', l: '35'}
-                        ] : hydraulicState.pipeMaterial === 'pex' ? [
-                          {v: 'PEX 20mm', l: '20'},
-                          {v: 'PEX 26mm', l: '26'},
-                          {v: 'PEX 32mm', l: '32'},
-                          {v: 'PEX 40mm', l: '40'}
-                        ] : [
-                          {v: 'Steel DN20', l: 'DN20'},
-                          {v: 'Steel DN25', l: 'DN25'},
-                          {v: 'Steel DN32', l: 'DN32'},
-                          {v: 'Steel DN40', l: 'DN40'}
-                        ])
-                      ]).map(m => (
-                        <button
-                          key={m.v}
-                          onClick={() => updateInput('secondaryPipeSize', m.v)}
-                          className={`flex-1 text-[10px] py-1.5 rounded transition-all font-medium ${hydraulicState.secondaryPipeSize === m.v || (!hydraulicState.secondaryPipeSize && m.v === 'Auto') ? (isDark ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-800 shadow-sm') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
-                        >
-                           {m.l}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {(hydraulicState.secondaryLoops === 'floor' || hydraulicState.secondaryLoops === 'mixed') && (
-                    <div className="grid grid-cols-2 gap-2">
-                       <div className="space-y-1">
-                          <label className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Osztó Körök (db)</label>
-                          <input
-                            type="number"
-                            min="2"
-                            max="30"
-                            value={floorCircuits}
-                            onChange={(e) => setFloorCircuits(Number(e.target.value))}
-                            className={`w-full px-2 py-1 border rounded text-[11px] font-mono focus:outline-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
-                          />
-                       </div>
-                       <div className="space-y-1">
-                          <label className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Max Hossz (m)</label>
-                          <input
-                            type="number"
-                            min="20"
-                            max="200"
-                            value={longestCircuit}
-                            onChange={(e) => setLongestCircuit(Number(e.target.value))}
-                            className={`w-full px-2 py-1 border rounded text-[11px] font-mono focus:outline-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
-                          />
-                       </div>
-                    </div>
-                  )}
-
-                  {(hydraulicState.secondaryLoops === 'radiators' || hydraulicState.secondaryLoops === 'mixed') && (
-                     <div className="space-y-1">
-                        <label className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Lapradiátorok Száma (db)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={radiatorCount}
-                          onChange={(e) => setRadiatorCount(Number(e.target.value))}
-                          className={`w-full px-2 py-1 border rounded text-[11px] font-mono focus:outline-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
-                        />
-                     </div>
-                  )}
-
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RESULTS PANEL */}
-        <div className={`space-y-5 p-4 rounded-md border ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
-          <div className="border-b pb-3 flex justify-between items-center border-slate-200 dark:border-slate-800">
-            <h3 className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Számított hálózati paraméterek</h3>
-            <span className={`text-[10px] px-2 py-1 rounded-md font-mono ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>Eredmények</span>
-          </div>
-
-          <div className="space-y-4">
-            {hydraulicState.includeHeatExchanger ? (
-              // DECOUPLED PRIMARY & SECONDARY SIDE SIZING
-              <div className="space-y-4">
-                
-                {/* I. PRIMARY SIDE */}
-                <div className={`p-4 rounded-md border space-y-3 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                  <div className="flex items-center justify-between border-b pb-2 dark:border-slate-800 border-slate-200">
-                    <span className="text-xs font-semibold">I. Primer oldal (Hőszivattyú)</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <span className="text-slate-500 block mb-1">Zárt tágulási tartály</span>
-                      <span className="font-mono text-base block">{results.primaryVesselSizeL} L</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Ajánlott csőméret</span>
-                      <span className="font-mono text-sm block leading-tight">{results.recommendedPipeSize}</span>
-                      <span className="text-slate-500 block text-[10px]">Tervezett sebesség: {results.estimatedVelocityMs} m/s</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Térfogatáram</span>
-                      <span className="font-mono block">{results.flowRateLh} L/óra</span>
-                      <span className="text-[10px] text-slate-500 block">({results.flowRateLmin} L/perc)</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Primer szivattyú</span>
-                      <span className="font-mono font-black block">Hőszivattyú beépített szivattyúja</span>
-                      <span className="text-slate-500 block">Hidraulikus nyomás: {results.remainingPumpHeadKpa} kPa maradék</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* II. SECONDARY SIDE */}
-                <div className={`p-4 rounded-md border space-y-3 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                  <div className="flex items-center justify-between border-b pb-2 dark:border-slate-800 border-slate-200">
-                    <span className="text-xs font-semibold">II. Szekunder oldal (Lakás fűtés)</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <span className="text-slate-500 block mb-1">Zárt tágulási tartály</span>
-                      <span className="font-mono text-base block">{results.secondaryVesselSizeL} L</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Ajánlott csőméret</span>
-                      <span className="font-mono text-sm block leading-tight">{results.recommendedSecondaryPipeSize}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Térfogatáram</span>
-                      <span className="font-mono block">{results.secondaryFlowRateLh} L/óra</span>
-                      {(hydraulicState.secondaryLoops === 'floor' || hydraulicState.secondaryLoops === 'mixed') && (
-                        <span className="text-[10px] text-slate-500 block">Körönként: {(results.secondaryFlowRateLh / (floorCircuits || 8) / 60).toFixed(2)} L/perc</span>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Javasolt segédszivattyú (DAB)</span>
-                      <span className="font-mono block text-xs leading-tight">{results.dabPumpModel}</span>
-                      <span className="text-slate-500 text-[10px] block mt-0.5">{results.dabPumpSetting} • Fokozat: {results.dabPumpStage}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SHARED HEAT EXCHANGER CARD */}
-                <div className={`p-3 mt-1 border rounded-md text-xs flex items-center justify-between ${isDark ? 'border-slate-800 bg-slate-800/20' : 'border-slate-200 bg-slate-100'}`}>
-                  <div>
-                    <span className="text-slate-500 block font-medium">Lemezes hőcserélő leválasztás</span>
-                    <span className="font-medium block mt-0.5">{results.recommendedExchangerModel}</span>
-                    <span className="text-slate-500 block text-[10px]">Hőcserélő nettó felülete: {results.heatExchangerAreaM2} m² (Cordivari)</span>
-                  </div>
-                </div>
-
-              </div>
-            ) : (
-              // UNIFIED SIMPLE DYN COUPLING (NO HEAT EXCHANGER)
-              <div className="space-y-4">
-                <div className={`p-4 rounded-md border space-y-3 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                  <div className="flex items-center justify-between border-b pb-2 dark:border-slate-800 border-slate-200">
-                    <span className="text-xs font-semibold">Egyesített hidraulikai kör</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <span className="text-slate-500 block mb-1">Közös tágulási tartály</span>
-                      <span className="font-mono text-base block">{results.vesselSizeL} L</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Ajánlott csőméret</span>
-                      <span className="font-mono text-sm block leading-tight">{results.recommendedPipeSize}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Térfogatáram</span>
-                      <span className="font-mono block">{results.flowRateLh} L/óra</span>
-                      <span className="text-slate-500 block text-[10px]">Rendszer térfogat: {estSystemVol} L</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-1">Keringtetés</span>
-                      <span className="font-mono block">Hőszivattyú saját szivattyúja</span>
-                    </div>
-                  </div>
+                <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+                  <span>0 L (Bypass)</span>
+                  <span>100 L (Puffer)</span>
+                  <span>300 L (Nagy tároló)</span>
                 </div>
               </div>
             )}
+          </div>
+        )}
 
-            {/* PUFFER TANK CHECK VIA THEME-CONSISTENT LAYOUT */}
-            <div className={`p-4 rounded-md border space-y-2 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span>III. Puffer tároló ellenőrzés</span>
-                <span className={`px-2 py-0.5 rounded-md font-medium text-[10px] ${
-                  results.isBufferAdequate 
-                    ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' 
-                    : 'text-amber-600 bg-amber-500/10 border-amber-500/20'
-                }`}>
-                  {results.isBufferAdequate ? 'Térfogat elegendő' : 'Kiegészítés javasolt'}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-xs mt-2">
-                <div>
-                  <span className="text-slate-500 block mb-1">Szükséges puffertérfogat</span>
-                  <span className="font-mono block">{results.recommendedBufferL} L</span>
+        {/* ═══════════ TAB 2: MÉRETEZÉS ═══════════ */}
+        {activeTab === 'meretezs' && (
+          <div className="space-y-5">
+
+            {/* Pipe material */}
+            <div className="space-y-2">
+              <SectionLabel label="Gerinc anyaga" isDark={isDark} />
+              <SegmentedControl
+                options={[
+                  { value: 'copper', label: 'Rézcső' },
+                  { value: 'pex',    label: '5-rétegű' },
+                  { value: 'steel',  label: 'Szénacél' },
+                ]}
+                value={hydraulicState.pipeMaterial}
+                onChange={(v) => setHydraulicState({ ...hydraulicState, pipeMaterial: v, primaryPipeSize: 'Auto', secondaryPipeSize: 'Auto' })}
+                isDark={isDark}
+              />
+            </div>
+
+            {/* Primer + Szekunder pipe size side-by-side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <SectionLabel label="Primer csőméret" isDark={isDark} />
+                <div className={`p-[2px] rounded border flex flex-wrap gap-0.5 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
+                  {pipeSizes.map((m) => (
+                    <button
+                      key={m.v}
+                      type="button"
+                      onClick={() => updateInput('primaryPipeSize', m.v)}
+                      className={`flex-1 min-w-[36px] text-[10px] font-bold px-1.5 py-1 rounded-[3px] transition-all cursor-pointer ${
+                        (hydraulicState.primaryPipeSize === m.v || (!hydraulicState.primaryPipeSize && m.v === 'Auto'))
+                          ? isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm'
+                          : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {m.l}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <span className="text-slate-500 block mb-1">Rendszertérfogat összesen</span>
-                  <span className="font-mono block">{estSystemVol} L</span>
+              </div>
+              <div className="space-y-2">
+                <SectionLabel label="Szekunder csőméret (Gerinc)" isDark={isDark} />
+                <div className={`p-[2px] rounded border flex flex-wrap gap-0.5 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
+                  {pipeSizes.map((m) => (
+                    <button
+                      key={m.v}
+                      type="button"
+                      onClick={() => updateInput('secondaryPipeSize', m.v)}
+                      className={`flex-1 min-w-[36px] text-[10px] font-bold px-1.5 py-1 rounded-[3px] transition-all cursor-pointer ${
+                        (hydraulicState.secondaryPipeSize === m.v || (!hydraulicState.secondaryPipeSize && m.v === 'Auto'))
+                          ? isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm'
+                          : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {m.l}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Frost protection notice */}
-            <div className={`flex gap-1.5 text-[8px] border p-2 rounded leading-snug ${
-              isDark ? 'bg-slate-950/20 border-slate-800/80 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
-            }`}>
+            {/* Tervezési hőlépcső */}
+            <div className="space-y-2">
+              <SectionLabel label="Tervezési Hőlépcső — ΔT" isDark={isDark} />
+              <SegmentedControl
+                options={[
+                  { value: '5' as any,  label: '5 °C' },
+                  { value: '7' as any,  label: '7 °C' },
+                  { value: '10' as any, label: '10 °C' },
+                  { value: '15' as any, label: '15 °C' },
+                ]}
+                value={String(hydraulicState.deltaT) as any}
+                onChange={(v) => updateInput('deltaT', Number(v))}
+                isDark={isDark}
+              />
+            </div>
+
+            {/* Hőleadók jellege */}
+            <div className="space-y-2">
+              <SectionLabel label="Hőleadók jellege (Szekunder)" isDark={isDark} />
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { v: 'floor',     l: 'Padlófűtés' },
+                  { v: 'radiators', l: 'Lapradiátorok' },
+                  { v: 'fan_coil',  l: 'Fan-coil' },
+                  { v: 'mixed',     l: 'Kevert (Pad.+Rad.)' },
+                ].map((m) => (
+                  <div
+                    key={m.v}
+                    onClick={() => updateInput('secondaryLoops', m.v as any)}
+                    className={`${cardBase} text-center ${
+                      hydraulicState.secondaryLoops === m.v
+                        ? isDark ? 'bg-blue-700 border-blue-500 text-white' : 'bg-blue-50 border-blue-500 text-blue-800 font-semibold'
+                        : isDark ? 'bg-slate-900 border-slate-700 hover:border-slate-600 text-slate-400' : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
+                    }`}
+                  >
+                    {m.l}
+                  </div>
+                ))}
+              </div>
+
+              {/* Floor circuit details */}
+              {(hydraulicState.secondaryLoops === 'floor' || hydraulicState.secondaryLoops === 'mixed') && (
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="space-y-1">
+                    <label className={`text-[9px] font-bold uppercase block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Osztó Körök (db)</label>
+                    <input
+                      type="number" min={2} max={30} value={floorCircuits}
+                      onChange={(e) => setFloorCircuits(Number(e.target.value))}
+                      className={`w-full px-2 py-1 border rounded text-xs font-mono focus:outline-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={`text-[9px] font-bold uppercase block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Leghosszabb Kör (m)</label>
+                    <input
+                      type="number" min={20} max={200} value={longestCircuit}
+                      onChange={(e) => setLongestCircuit(Number(e.target.value))}
+                      className={`w-full px-2 py-1 border rounded text-xs font-mono focus:outline-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
+                    />
+                  </div>
+                </div>
+              )}
+              {(hydraulicState.secondaryLoops === 'radiators' || hydraulicState.secondaryLoops === 'mixed') && (
+                <div className="space-y-1 mt-1">
+                  <label className={`text-[9px] font-bold uppercase block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Lapradiátorok Száma (db)</label>
+                  <input
+                    type="number" min={1} max={30} value={radiatorCount}
+                    onChange={(e) => setRadiatorCount(Number(e.target.value))}
+                    className={`w-full px-2 py-1 border rounded text-xs font-mono focus:outline-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ─── ENGINEERING PARAMETERS ─── */}
+            <div className={`p-3 rounded border space-y-4 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+              <SectionLabel label="Mérnöki Paraméterek (Haladó)" isDark={isDark} />
+
+              {/* Target velocity slider */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Tervezett csősebesség</span>
+                  <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
+                    {hydraulicState.targetVelocityMs?.toFixed(2) ?? '0.60'} m/s
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.3} max={1.2} step={0.05}
+                  value={hydraulicState.targetVelocityMs ?? 0.6}
+                  onChange={(e) => updateInput('targetVelocityMs' as any, parseFloat(e.target.value))}
+                  className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
+                />
+                <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+                  <span>0.3 m/s (Padló min.)</span>
+                  <span className="text-blue-500 font-bold">0.6 m/s (Ajánlott primer)</span>
+                  <span>1.2 m/s (Max. réz)</span>
+                </div>
+              </div>
+
+              {/* Static height slider */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Statikus magasság (Rendszer)</span>
+                  <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
+                    {hydraulicState.staticHeight} m
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1} max={20} step={0.5}
+                  value={hydraulicState.staticHeight}
+                  onChange={(e) => updateInput('staticHeight', parseFloat(e.target.value))}
+                  className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
+                />
+                <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+                  <span>1 m (Fsz.)</span>
+                  <span>4 m (2 szint)</span>
+                  <span>20 m (Torony)</span>
+                </div>
+              </div>
+
+              {/* Safety valve pressure */}
+              <div className="space-y-2">
+                <span className={`text-[10px] font-bold block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Biztonsági szelep nyomása</span>
+                <SegmentedControl
+                  options={[
+                    { value: '2.5' as any, label: '2.5 bar' },
+                    { value: '3.0' as any, label: '3.0 bar' },
+                    { value: '4.0' as any, label: '4.0 bar' },
+                    { value: '6.0' as any, label: '6.0 bar' },
+                  ]}
+                  value={String(hydraulicState.safetyValvePressure) as any}
+                  onChange={(v) => updateInput('safetyValvePressure', parseFloat(v as any))}
+                  isDark={isDark}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════ TAB 3: EREDMÉNYEK ═══════════ */}
+        {activeTab === 'eredmenyek' && (
+          <div className="space-y-4">
+
+            {hydraulicState.includeHeatExchanger ? (
+              <>
+                {/* I. Primary */}
+                <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>I. Primer oldal (Hőszivattyú)</p>
+                  <ResultRow label="Tágulási tartály" value={`${results.primaryVesselSizeL} L`} isDark={isDark} />
+                  <ResultRow label="Ajánlott csőméret" value={results.recommendedPipeSize} isDark={isDark} />
+                  <ResultRow label="Áramlási sebesség" value={`${results.estimatedVelocityMs} m/s`} sub={results.estimatedVelocityMs > 1.0 ? '⚠ Magas sebesség!' : results.estimatedVelocityMs < 0.3 ? '⚠ Alacsony sebesség' : '✓ Optimális tartomány'} isDark={isDark} />
+                  <ResultRow label="Térfogatáram" value={`${results.flowRateLh} L/h`} sub={`${results.flowRateLmin} L/perc`} isDark={isDark} />
+                  <ResultRow label="Nyomásveszteség" value={`${results.primaryPressureDropKpa} kPa`} isDark={isDark} />
+                  <ResultRow label="Maradék szivattyónyomás" value={`${results.remainingPumpHeadKpa} kPa`} isDark={isDark} />
+                </div>
+
+                {/* II. Secondary */}
+                <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>II. Szekunder oldal (Hőleadók)</p>
+                  <ResultRow label="Tágulási tartály" value={`${results.secondaryVesselSizeL} L`} isDark={isDark} />
+                  <ResultRow label="Csőméret (Gerinc)" value={results.recommendedSecondaryPipeSize ?? '—'} isDark={isDark} />
+                  {results.secondaryEstimatedVelocityMs !== undefined && (
+                    <ResultRow label="Sebesség (gerinc)" value={`${results.secondaryEstimatedVelocityMs} m/s`} isDark={isDark} />
+                  )}
+                  <ResultRow label="Térfogatáram" value={`${results.secondaryFlowRateLh} L/h`}
+                    sub={(hydraulicState.secondaryLoops === 'floor' || hydraulicState.secondaryLoops === 'mixed')
+                      ? `Körönként: ${(results.secondaryFlowRateLh / (floorCircuits || 8) / 60).toFixed(2)} L/perc`
+                      : undefined}
+                    isDark={isDark}
+                  />
+                  <ResultRow label="Nyomásveszteség" value={`${results.secondaryPressureDropKpa} kPa`} isDark={isDark} />
+                  <ResultRow label="Javasolt segédszivattyú" value={results.dabPumpModel} isDark={isDark} />
+                  {results.dabPumpSetting && (
+                    <ResultRow label="Beállítás / Fokozat" value={`${results.dabPumpSetting} • ${results.dabPumpStage}`} isDark={isDark} />
+                  )}
+                </div>
+
+                {/* Heat exchanger */}
+                <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Lemezes Hőcserélő</p>
+                  <ResultRow label="Ajánlott modell" value={results.recommendedExchangerModel} isDark={isDark} />
+                  <ResultRow label="Hőátadó felület" value={`${results.heatExchangerAreaM2} m²`} isDark={isDark} />
+                  <ResultRow label="Vízáram a HX-en" value={`${results.heatExchangerWaterFlowLh} L/h`} isDark={isDark} />
+                </div>
+              </>
+            ) : (
+              /* Unified circuit */
+              <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Egyesített Hidraulikai Kör</p>
+                <ResultRow label="Tágulási tartály" value={`${results.vesselSizeL} L`} isDark={isDark} />
+                <ResultRow label="Előtöltési nyomás" value={`${results.vesselPrechargeBar} bar`} isDark={isDark} />
+                <ResultRow label="Üzemi nyomás (max)" value={`${results.vesselFinalBar} bar`} isDark={isDark} />
+                <ResultRow label="Ajánlott csőméret" value={results.recommendedPipeSize} isDark={isDark} />
+                <ResultRow
+                  label="Áramlási sebesség"
+                  value={`${results.estimatedVelocityMs} m/s`}
+                  sub={results.estimatedVelocityMs > 1.0 ? '⚠ Magas sebesség!' : results.estimatedVelocityMs < 0.3 ? '⚠ Alacsony sebesség' : '✓ Optimális'}
+                  isDark={isDark}
+                />
+                <ResultRow label="Térfogatáram" value={`${results.flowRateLh} L/h`} sub={`${results.flowRateLmin} L/perc`} isDark={isDark} />
+                <ResultRow label="Rendszer-vízmennyiség" value={`${estSystemVol} L`} isDark={isDark} />
+                <ResultRow label="Keringtetés" value="Hőszivattyú saját szivattyúja" isDark={isDark} />
+              </div>
+            )}
+
+            {/* Buffer check */}
+            <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Puffer Ellenőrzés</p>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  results.isBufferAdequate
+                    ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30'
+                    : 'text-amber-600 bg-amber-500/10 border-amber-500/30'
+                }`}>
+                  {results.isBufferAdequate ? '✓ Megfelelő' : '⚠ Kiegészítés javasolt'}
+                </span>
+              </div>
+              <ResultRow label="Szükséges puffertérfogat" value={`${results.recommendedBufferL} L`} isDark={isDark} />
+              <ResultRow label="Rendszertérfogat összesen" value={`${estSystemVol} L`} isDark={isDark} />
+            </div>
+
+            {/* Recommended pump */}
+            <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Javasolt Keringtető Szivattyú</p>
+              <ResultRow label="Modell" value={recommendedPump.model} isDark={isDark} />
+              <ResultRow label="Névleges áramlás" value={recommendedPump.flow} isDark={isDark} />
+              <ResultRow label="Szállítómagasság" value={recommendedPump.head} isDark={isDark} />
+              <p className={`text-[9px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{recommendedPump.note}</p>
+            </div>
+
+            {/* Frost notice */}
+            <div className={`flex gap-1.5 p-2 rounded border text-[9px] leading-snug ${isDark ? 'bg-slate-950/20 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
               <Info className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
               <span>
-                <strong>FAGYVÉDELMI KÖVETELMÉNY:</strong> Monoblokkos kivitelnél a kültéri ágon fagyvédelmi gépészeti lefúvató szelep (pl. Caleffi iFrost fagyszelep) beépítése kötelező! Glikol fagyálló nem kerül alkalmazásra.
+                <strong>FAGYVÉDELMI KÖVETELMÉNY:</strong> Monoblokkos kivitelnél a kültéri ágon fagyvédelmi lefúvató szelep (pl. Caleffi iFrost) beépítése kötelező! Glikol fagyálló nem kerül alkalmazásra.
               </span>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

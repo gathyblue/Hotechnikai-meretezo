@@ -64,16 +64,17 @@ export default function App() {
 
   const [hydraulicState, setHydraulicState] = useState<HydraulicInput>({
     pipeMaterial: 'copper',
-    deltaT: 5, // optimal delta T
-    staticHeight: 4, // standard 2 floors
+    deltaT: 5,
+    staticHeight: 4,
     safetyValvePressure: 3.0,
-    additionalWaterVolumeL: 100, // standard buffer tank (e.g. 100L)
+    additionalWaterVolumeL: 100,
     secondaryLoops: 'radiator',
-    includeHeatExchanger: false, // direct coupling by default, selectable
-    includeDhwTank: true,        // HMV tank included by default
+    includeHeatExchanger: false,
+    includeDhwTank: true,
     primaryPipeSize: 'Auto',
     secondaryPipeSize: 'Auto',
     secondaryPumpOverride: 'Auto',
+    targetVelocityMs: 0.6,
   });
 
   const [hydraulicResults, setHydraulicResults] = useState<HydraulicResults>({
@@ -301,8 +302,15 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Section: Theme Toggle */}
+        {/* Right Section: Settings and Theme Toggle */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsOpenEngineeringModal(true)}
+            className={`p-1.5 rounded-md border flex items-center justify-center cursor-pointer transition-all ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-900' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'}`}
+            title="Mérnöki beállítások és képletek"
+          >
+            <Settings className="w-3.5 h-3.5 text-blue-500" />
+          </button>
           <button
             onClick={() => setIsDark(!isDark)}
             className={`p-1.5 rounded-md border flex items-center justify-center cursor-pointer transition-all ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-900' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'}`}
@@ -324,7 +332,7 @@ export default function App() {
                   <BuildingDataInput data={buildingData} onChange={setBuildingData} theme={theme} />
                 </div>
                 
-                <div className="flex justify-end p-2 border-t border-slate-800">
+                <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <button
                     onClick={() => { setActiveTab('equipment'); }}
                     className={`font-semibold text-[11px] px-6 py-2 rounded-sm shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
@@ -358,7 +366,7 @@ export default function App() {
                   />
                 </div>
                 
-                <div className="flex justify-end p-2 border-t border-slate-800">
+                <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <button
                     onClick={() => { setActiveTab('hydraulics'); }}
                     className={`font-semibold text-[11px] px-6 py-2 rounded-sm shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
@@ -385,7 +393,7 @@ export default function App() {
                   theme={theme}
                 />
                 
-                <div className="flex justify-end p-2 border-t border-slate-800">
+                <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <button
                     onClick={() => { setActiveTab('scheme'); }}
                     className={`font-semibold text-[11px] px-6 py-2 rounded-sm shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
@@ -402,15 +410,11 @@ export default function App() {
             {activeTab === 'scheme' && (
               <div className="space-y-4">
                 <SystemDiagram
-                  selectedModel={selectedModel}
-                  hydraulicResults={hydraulicResults}
-                  emitterType={selectedEmitter}
-                  hydraulicState={hydraulicState}
-                  heatLossKw={calcResults.heatLossKw.total}
-                  theme={theme}
+                  title="Rendszerséma"
+                  description={`${selectedModel?.name ?? 'Nincs kiválasztott modell'} — ${calcResults.heatLossKw.total.toFixed(1)} kW csúcshőigény`}
                 />
                 
-                <div className="flex justify-end p-2 border-t border-slate-800">
+                <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <button
                     onClick={() => { setActiveTab('export'); }}
                     className={`font-semibold text-[11px] px-6 py-2 rounded-sm shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
@@ -542,7 +546,7 @@ export default function App() {
                         })}
                         className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
                       />
-                      <span className="font-mono font-bold text-xs bg-slate-905 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.airHeatCapacityFactor}</span>
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.airHeatCapacityFactor}</span>
                     </div>
                   </div>
 
@@ -567,7 +571,7 @@ export default function App() {
                         })}
                         className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
                       />
-                      <span className="font-mono font-bold text-xs bg-slate-905 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.waterSpecificHeat}</span>
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.waterSpecificHeat}</span>
                     </div>
                   </div>
 
@@ -592,7 +596,7 @@ export default function App() {
                         })}
                         className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
                       />
-                      <span className="font-mono font-bold text-xs bg-slate-905 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.expansionSafetyFactor}</span>
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.expansionSafetyFactor}</span>
                     </div>
                   </div>
 
@@ -617,7 +621,7 @@ export default function App() {
                         })}
                         className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
                       />
-                      <span className="font-mono font-bold text-xs bg-slate-905 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.pexFrictionMultiplier}</span>
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.pexFrictionMultiplier}</span>
                     </div>
                   </div>
 
@@ -641,7 +645,7 @@ export default function App() {
                         })}
                         className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
                       />
-                      <span className="font-mono font-bold text-xs bg-slate-905 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.systemWaterVolumeFloorFactor} L/kW</span>
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.systemWaterVolumeFloorFactor} L/kW</span>
                     </div>
                   </div>
 
@@ -665,7 +669,7 @@ export default function App() {
                         })}
                         className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
                       />
-                      <span className="font-mono font-bold text-xs bg-slate-905 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.systemWaterVolumeRadiatorFactor} L/kW</span>
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.systemWaterVolumeRadiatorFactor} L/kW</span>
                     </div>
                   </div>
 
@@ -690,7 +694,7 @@ export default function App() {
                         })}
                         className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
                       />
-                      <span className="font-mono font-bold text-xs bg-slate-905 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.glycolPercentage} %</span>
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.glycolPercentage} %</span>
                     </div>
                   </div>
                 </div>

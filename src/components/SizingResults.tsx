@@ -187,34 +187,72 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
     <div className="space-y-4" id="sizing-and-heatpump">
       
       {/* Target Heat Loss Card Header display */}
-      <div className={`rounded-md p-4 border transition-all duration-300 ${
-        isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
-      }`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Card 1: Total Heat Loss */}
+        <div className={`rounded-xl p-4 border flex flex-col justify-between transition-all duration-300 ${
+          isDark 
+            ? 'bg-blue-950/20 border-blue-900/60 text-slate-100' 
+            : 'bg-blue-50/50 border-blue-200 text-slate-800'
+        }`}>
           <div>
-            <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-xs font-medium block mb-1`}>Méretezett Hőszükséglet</span>
+            <span className={`${isDark ? 'text-blue-400' : 'text-blue-600'} text-[10px] font-bold uppercase tracking-wider block mb-1`}>Méretezett Hőszükséglet</span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className={`text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{calcResults.heatLossKw.total}</span>
-              <span className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>kW</span>
+              <span className={`text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-blue-950'}`}>{calcResults.heatLossKw.total}</span>
+              <span className={`text-sm font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>kW</span>
             </div>
-            <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-2 font-medium`}>
-              Tervezési belső hőmérséklet: {buildingData.indoorTemp}°C <br/> Helyszíni limit: {buildingData.designTemp}°C
-            </p>
           </div>
+          <div className={`mt-3 pt-2 border-t ${isDark ? 'border-blue-900/40' : 'border-blue-100'} text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Tervezési hőm.: {buildingData.indoorTemp}°C belső / {buildingData.designTemp}°C külső
+          </div>
+        </div>
 
-          <div className={`grid grid-cols-2 gap-4 border-l ${isDark ? 'border-slate-800' : 'border-slate-100'} pl-5 col-span-2 text-xs`}>
-            <div>
-              <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] block font-medium mb-1`}>Transzmissziós veszteség</span>
-              <span className={`text-lg font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{calcResults.heatLossKw.transmission} kW</span>
+        {/* Card 2: Transmission Loss */}
+        <div className={`rounded-xl p-4 border flex flex-col justify-between transition-all duration-300 ${
+          isDark 
+            ? 'bg-amber-950/20 border-amber-900/60 text-slate-100' 
+            : 'bg-amber-50/50 border-amber-200 text-slate-800'
+        }`}>
+          <div>
+            <span className={`${isDark ? 'text-amber-400' : 'text-amber-600'} text-[10px] font-bold uppercase tracking-wider block mb-1`}>Transzmissziós veszteség</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className={`text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-amber-950'}`}>{calcResults.heatLossKw.transmission}</span>
+              <span className={`text-sm font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>kW</span>
             </div>
-            <div>
-              <span className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-[11px] block font-medium mb-1`}>Ventilációs veszteség</span>
-              <span className={`text-lg font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{calcResults.heatLossKw.ventilation} kW</span>
+          </div>
+          <div className={`mt-3 pt-2 border-t ${isDark ? 'border-amber-900/40' : 'border-amber-100'} text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Szerkezeteken (falak, ablakok, födém) távozó hő
+          </div>
+        </div>
+
+        {/* Card 3: Ventilation Loss */}
+        <div className={`rounded-xl p-4 border flex flex-col justify-between transition-all duration-300 ${
+          isDark 
+            ? 'bg-teal-950/20 border-teal-900/60 text-slate-100' 
+            : 'bg-teal-50/50 border-teal-200 text-slate-800'
+        }`}>
+          <div>
+            <span className={`${isDark ? 'text-teal-400' : 'text-teal-600'} text-[10px] font-bold uppercase tracking-wider block mb-1`}>Ventilációs veszteség</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className={`text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-teal-950'}`}>{calcResults.heatLossKw.ventilation}</span>
+              <span className={`text-sm font-medium ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>kW</span>
             </div>
-            <div className={`col-span-2 pt-2 mt-1 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'} flex items-center justify-between text-xs`}>
-              <span className={`font-medium text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Éves fűtési energia hőszükséglet:</span>
-              <span className={`font-mono font-medium text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{calcResults.yearlyEnergyKwh} kWh/év</span>
-            </div>
+          </div>
+          <div className={`mt-3 pt-2 border-t ${isDark ? 'border-teal-900/40' : 'border-teal-100'} text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            Filtrációból és szellőzésből adódó hőveszteség
+          </div>
+        </div>
+
+        {/* Full-width bottom bar for additional details */}
+        <div className={`col-span-1 md:col-span-3 rounded-lg border p-3 flex flex-wrap justify-between items-center text-xs transition-all duration-300 ${
+          isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+        }`}>
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold">Helyszín:</span>
+            <span className="font-mono font-bold text-blue-500">{buildingData.location}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold">Éves fűtési energia hőszükséglet:</span>
+            <span className="font-mono font-bold text-emerald-500">{calcResults.yearlyEnergyKwh} kWh/év</span>
           </div>
         </div>
       </div>
@@ -386,9 +424,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   `${gX(actBivTemp)},${gY(hpCapAtManual)}`,
                   `${gX(dTemp)},${gY(hpCapAtT(dTemp))}`
                 ].join(' ');
-                
-                const gridStroke = isDark ? '#1e293b' : '#f1f5f9';
-                const tickColor = isDark ? '#475569' : '#71717a';
+                                const gridStroke = isDark ? '#1e293b' : '#f1f5f9';
+                 const tickColor = isDark ? '#cbd5e1' : '#374151';
 
                 return (
                   <div className="w-full space-y-3.5">
@@ -860,7 +897,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
       {/* 5. Sleek, Consolidated Investment & Payback Analysis with ZERO clashing background colors (as requested) */}
       {activeHPResults && (
         <div className={`rounded-xl border p-4 transition-all ${
-          isDark ? 'bg-transparent border-slate-805' : 'bg-transparent border-slate-200'
+          isDark ? 'bg-transparent border-slate-800' : 'bg-transparent border-slate-200'
         }`} id="hp-diagnostics-panel">
           
           <div className="space-y-4">

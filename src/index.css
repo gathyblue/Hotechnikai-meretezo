@@ -5,29 +5,29 @@
   --font-sans: "Space Grotesk", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Sepia light mode (warm, low contrast) */
-  --color-slate-50: #fbf9f6;
-  --color-slate-100: #f3ede2;
-  --color-slate-150: #ebe3d5;
-  --color-slate-200: #dfd5c4;
-  --color-slate-250: #d0c4b0;
+  /* Crisp, premium slate colors for high readability */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-150: #eef2f6;
+  --color-slate-200: #e2e8f0;
+  --color-slate-250: #d8e2ec;
   
   /* Muted text colors */
-  --color-slate-300: #b5a995;
-  --color-slate-400: #968e7f;
-  --color-slate-500: #7b7569;
-  --color-slate-600: #605a50;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
   
   /* Dark text colors for light mode && Borders for dark mode */
-  --color-slate-700: #46423b;
-  --color-slate-800: #333336; /* AI Studio hover/border */
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b; 
   
-  /* AI Studio dark mode backgrounds (cool neutral, low contrast) */
-  --color-slate-850: #232426;
-  --color-slate-900: #1e1e20;
-  --color-slate-950: #131314;
+  /* Dark mode backgrounds */
+  --color-slate-850: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
 
-  /* Adjust white and black for less contrast */
-  --color-white: #fcfbf8;
-  --color-black: #0f1011;
+  /* Adjust white and black for clean contrast */
+  --color-white: #ffffff;
+  --color-black: #000000;
 }
