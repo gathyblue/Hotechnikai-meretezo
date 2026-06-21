@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { getThemeClasses } from '../utils/theme';
 import { BuildingData } from '../types';
 import { Flame, Home, Layers, ShieldAlert, Sparkles, Sliders, User, MapPin, CheckCircle, AlertTriangle, Cpu, Calendar } from 'lucide-react';
 import { calculateGasHufCost, calculateGasM3FromHuf, performHeatLossCalculation } from '../utils/calculations';
 import { HUNGARIAN_CITIES, getHungarianZipCode, removeAccents } from '../data/settlements';
+import { SegmentedControl } from './SegmentedControl';
 
 // Heuristic to get recommended design temp
 const getRecommendedTemp = (city: string): number => {
@@ -196,6 +198,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
   };
 
   const isDark = theme === 'dark';
+  const t = getThemeClasses(isDark);
 
   const recommendedTemp = useMemo(() => getRecommendedTemp(data.location), [data.location]);
 
@@ -206,7 +209,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
   const isOverridden = !!data.useManualOverride;
 
   return (
-    <div className={`rounded border shadow-sm overflow-hidden transition-all duration-300 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'}`} id="building-data-form">
+    <div className={`rounded border shadow-sm overflow-hidden transition-all duration-300 ${t.card} ${t.textPrimary}`} id="building-data-form">
       {/* Form Header */}
       <div className={`px-3 py-1.5 border-b flex items-center justify-between ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-800'}`}>
         <div className="flex items-center gap-2">
@@ -391,21 +394,20 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           </div>
 
           {/* Levels (Épület szintjei) */}
-          <div className={`space-y-1 p-1.5 rounded border ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/50 border-slate-200'}`}>
+          <div className={`space-y-1 p-1.5 rounded border flex flex-col justify-between ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/50 border-slate-200'}`}>
             <label className={`text-[9px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Épület szintjei</label>
-            <select
+            <SegmentedControl
+              options={[
+                { value: 1, label: '1 szint' },
+                { value: 2, label: '2 szint' },
+                { value: 3, label: '3 szint' },
+                { value: 4, label: '4 szint' },
+              ]}
               value={data.levels || 1}
-              onChange={(e) => handleDimensionsChange('levels', Number(e.target.value))}
-              className={`w-full px-2 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200/80 text-slate-850'
-              }`}
-            >
-              {[1, 2, 3, 4].map((l) => (
-                <option key={l} value={l}>
-                  {l} szint (Földszintes {l === 1 ? '' : `+ ${l - 1} em.`})
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleDimensionsChange('levels', val)}
+              layoutId="building-levels"
+              theme={theme as 'light' | 'dark'}
+            />
           </div>
 
           {/* Average Ceiling Height */}
@@ -454,29 +456,24 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
         </div>
 
         {/* Temperature Discrete Choices instead of Sliders */}
-        <div className={`p-2 border rounded grid grid-cols-1 md:grid-cols-2 gap-3.5 ${isDark ? 'bg-slate-950/30 border-slate-805' : 'bg-slate-50/50 border-slate-200'}`}>
+        <div className={`p-2.5 border rounded grid grid-cols-1 md:grid-cols-2 gap-3.5 ${isDark ? 'bg-slate-950/20 border-slate-800/50' : 'bg-slate-50/50 border-slate-200'}`}>
           {/* Design Indoor Temp buttons */}
           <div className="space-y-1.5">
-            <label className={`text-[9px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-405' : 'text-slate-500'}`}>
+            <label className={`text-[9px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Belső tervezési hőmérséklet (T_belső)
             </label>
-            <div className="grid grid-cols-3 gap-1">
-              {[20, 22, 24].map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => updateField('indoorTemp', t)}
-                  className={`py-1 rounded text-xs font-bold transition-all border cursor-pointer ${
-                    data.indoorTemp === t
-                      ? (isDark ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-slate-200 text-slate-850 border-slate-400')
-                      : (isDark ? 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-850' : 'bg-slate-100 text-slate-605 border-slate-250 hover:bg-slate-150')
-                  }`}
-                >
-                  {t} °C
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+            <SegmentedControl
+              options={[
+                { value: 20, label: '20 °C' },
+                { value: 22, label: '22 °C' },
+                { value: 24, label: '24 °C' },
+              ]}
+              value={data.indoorTemp}
+              onChange={(val) => updateField('indoorTemp', val)}
+              layoutId="indoor-temp"
+              theme={theme as 'light' | 'dark'}
+            />
+            <div className="flex justify-between text-[9px] text-slate-400 font-medium px-0.5">
               <span>Nyugodt: 20°C</span>
               <span>Átlag: 22°C</span>
               <span>Fürdő/Gyer.: 24°C</span>
@@ -485,26 +482,21 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
           {/* Design Outdoor Temp buttons */}
           <div className="space-y-1.5">
-            <label className={`text-[9px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-405' : 'text-slate-500'}`}>
+            <label className={`text-[9px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Helyszíni mértékadó külső hőfok (T_külső)
             </label>
-            <div className="grid grid-cols-3 gap-1">
-              {[-15, -13, -11].map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => updateField('designTemp', t)}
-                  className={`py-1 rounded text-xs font-bold transition-all border cursor-pointer ${
-                    data.designTemp === t
-                      ? (isDark ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-slate-200 text-slate-850 border-slate-400')
-                      : (isDark ? 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-850' : 'bg-slate-100 text-slate-605 border-slate-250 hover:bg-slate-150')
-                  }`}
-                >
-                  {t} °C
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+            <SegmentedControl
+              options={[
+                { value: -15, label: '-15 °C' },
+                { value: -13, label: '-13 °C' },
+                { value: -11, label: '-11 °C' },
+              ]}
+              value={data.designTemp}
+              onChange={(val) => updateField('designTemp', val)}
+              layoutId="design-temp"
+              theme={theme as 'light' | 'dark'}
+            />
+            <div className="flex justify-between text-[9px] text-slate-400 font-medium px-0.5">
               <span>Kelet-HU: -15°C</span>
               <span>Dél-HU: -13°C</span>
               <span>Nyugat-HU: -11°C</span>
@@ -514,51 +506,48 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
         {/* Method Selection Tabs */}
         <div className="space-y-2">
-          <label className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-405' : 'text-slate-500'}`}>
+          <label className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             Hőigény meghatározási módszer kiválasztása (Szerkesztéshez)
           </label>
-          <div className={`grid grid-cols-3 gap-1 p-0.5 rounded border ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
-            <button
-              type="button"
-              onClick={() => onChange({ ...data, method: 'gas', useManualOverride: false })}
-              className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded text-xs font-bold transition-all cursor-pointer ${
-                data.method === 'gas'
-                  ? (isDark ? 'bg-slate-900 text-blue-400' : 'bg-white text-blue-700 shadow-sm border border-slate-300')
-                  : 'text-slate-550 hover:text-slate-350'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-              Gáz
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange({ ...data, method: 'fabric', useManualOverride: false })}
-              className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded text-xs font-bold transition-all cursor-pointer ${
-                data.method === 'fabric'
-                  ? (isDark ? 'bg-slate-900 text-blue-400' : 'bg-white text-blue-700 shadow-sm border border-slate-300')
-                  : 'text-slate-550 hover:text-slate-300'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              Szerkezet
-            </button>
-            <button
-              type="button"
-              onClick={() => onChange({ ...data, method: 'certificate', useManualOverride: false })}
-              className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded text-xs font-bold transition-all cursor-pointer ${
-                data.method === 'certificate'
-                  ? (isDark ? 'bg-slate-900 text-blue-400' : 'bg-white text-blue-700 shadow-sm border border-slate-300')
-                  : 'text-slate-550 hover:text-slate-300'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              Tanúsítvány
-            </button>
-          </div>
+          <SegmentedControl
+            options={[
+              {
+                value: 'gas',
+                label: (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Flame className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    Gáz
+                  </span>
+                ),
+              },
+              {
+                value: 'fabric',
+                label: (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    Szerkezet
+                  </span>
+                ),
+              },
+              {
+                value: 'certificate',
+                label: (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    Tanúsítvány
+                  </span>
+                ),
+              },
+            ]}
+            value={data.method}
+            onChange={(val) => onChange({ ...data, method: val, useManualOverride: false })}
+            layoutId="calc-method"
+            theme={theme as 'light' | 'dark'}
+          />
 
           {/* METHOD 1: GAS-BASED WITH BIDIRECTIONAL Live SYNC */}
           {data.method === 'gas' && (
-            <div className={`p-3 border rounded grid grid-cols-1 md:grid-cols-3 gap-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-805' : 'bg-slate-50 border-slate-300'}`}>
+            <div className={`p-3 border rounded grid grid-cols-1 md:grid-cols-3 gap-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-300'}`}>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                   Éves gázfogyasztás
@@ -753,21 +742,15 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       
                       <div>
                         <span className="text-[9px] font-bold text-slate-405 block mt-1">Homlokzati EPS Szigetelés (cm)</span>
-                        <div className="flex flex-wrap gap-0.5 mt-0.5">
-                          {[0, 5, 8, 10, 12, 15, 20].map((val) => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => updateStructure('walls', 'insulationThickness', val)}
-                              className={`flex-1 py-1 px-0.5 rounded text-[9px] font-mono font-bold transition-all border cursor-pointer min-w-[28px] ${
-                                data.walls.insulationThickness === val
-                                  ? (isDark ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-slate-200 text-slate-850 border-slate-400')
-                                  : (isDark ? 'bg-slate-900 border-slate-850 text-slate-400 hover:bg-slate-850' : 'bg-slate-100 text-slate-605 border-slate-250 hover:bg-slate-150')
-                              }`}
-                            >
-                              {val}
-                            </button>
-                          ))}
+                        <div className="mt-0.5">
+                          <SegmentedControl
+                            options={[0, 5, 8, 10, 12, 15, 20].map(v => ({ value: v, label: String(v) }))}
+                            value={data.walls.insulationThickness}
+                            onChange={(val) => updateStructure('walls', 'insulationThickness', val)}
+                            layoutId="wall-insulation"
+                            theme={theme as 'light' | 'dark'}
+                            className="text-[8px]"
+                          />
                         </div>
                       </div>
                       
@@ -809,21 +792,15 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
                     <div>
                       <span className="text-[9px] text-slate-405 block font-semibold mt-1">Gyapot Hőszigetelés (cm)</span>
-                      <div className="flex flex-wrap gap-0.5 font-mono mt-0.5">
-                        {[0, 10, 15, 20, 25, 30].map((val) => (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => updateStructure('roof', 'insulationThickness', val)}
-                            className={`flex-1 py-1 rounded text-[9px] font-bold transition-all border cursor-pointer min-w-[30px] ${
-                              data.roof.insulationThickness === val
-                                ? (isDark ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-slate-200 text-slate-850 border-slate-400')
-                                : (isDark ? 'bg-slate-900 border-slate-850 text-slate-400 hover:bg-slate-850' : 'bg-slate-100 text-slate-605 border-slate-250 hover:bg-slate-150')
-                            }`}
-                          >
-                            {val}
-                          </button>
-                        ))}
+                      <div className="mt-0.5">
+                        <SegmentedControl
+                          options={[0, 10, 15, 20, 25, 30].map(v => ({ value: v, label: String(v) }))}
+                          value={data.roof.insulationThickness}
+                          onChange={(val) => updateStructure('roof', 'insulationThickness', val)}
+                          layoutId="roof-insulation"
+                          theme={theme as 'light' | 'dark'}
+                          className="text-[8px]"
+                        />
                       </div>
                     </div>
                   </div>
@@ -861,21 +838,15 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
                     <div>
                       <span className="text-[9px] text-slate-405 block font-semibold mt-1">Aljazat alatti lépésálló / XPS (cm)</span>
-                      <div className="flex flex-wrap gap-0.5 font-mono mt-0.5">
-                        {[0, 5, 8, 10, 15, 20].map((val) => (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => updateStructure('floor', 'insulationThickness', val)}
-                            className={`flex-1 py-1 rounded text-[9px] font-bold transition-all border cursor-pointer min-w-[30px] ${
-                              data.floor.insulationThickness === val
-                                ? (isDark ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-slate-200 text-slate-850 border-slate-400')
-                                : (isDark ? 'bg-slate-900 border-slate-850 text-slate-400 hover:bg-slate-850' : 'bg-slate-100 text-slate-605 border-slate-250 hover:bg-slate-150')
-                            }`}
-                          >
-                            {val}
-                          </button>
-                        ))}
+                      <div className="mt-0.5">
+                        <SegmentedControl
+                          options={[0, 5, 8, 10, 15, 20].map(v => ({ value: v, label: String(v) }))}
+                          value={data.floor.insulationThickness}
+                          onChange={(val) => updateStructure('floor', 'insulationThickness', val)}
+                          layoutId="floor-insulation"
+                          theme={theme as 'light' | 'dark'}
+                          className="text-[8px]"
+                        />
                       </div>
                     </div>
                   </div>
@@ -926,21 +897,18 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                     <Sparkles className="w-4 h-4 text-orange-500 shrink-0" />
                     Szellőzési ráta légcsereszám (n):
                   </div>
-                  <div className="flex gap-1.5">
-                    {[0.3, 0.5, 0.8].map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => updateField('ventilationRate', val)}
-                        className={`px-3 py-1 rounded text-[10px] font-mono font-bold border transition-all cursor-pointer ${
-                          data.ventilationRate === val
-                            ? (isDark ? 'bg-slate-800 text-slate-100 border-slate-700' : 'bg-slate-200 text-slate-850 border-slate-400')
-                            : (isDark ? 'bg-slate-900 border-slate-850 text-slate-400 hover:bg-slate-850' : 'bg-slate-100 text-slate-605 border-slate-250 hover:bg-slate-150')
-                        }`}
-                      >
-                        {val === 0.3 ? '0.3/h (Gépi / Hőv.)' : val === 0.5 ? '0.5/h (Közepes)' : '0.8/h (Gyors légcsere)'}
-                      </button>
-                    ))}
+                  <div>
+                    <SegmentedControl
+                      options={[
+                        { value: 0.3, label: '0.3/h (Hőv.)' },
+                        { value: 0.5, label: '0.5/h (Közepes)' },
+                        { value: 0.8, label: '0.8/h (Gyors)' },
+                      ]}
+                      value={data.ventilationRate}
+                      onChange={(val) => updateField('ventilationRate', val)}
+                      layoutId="ventilation-rate"
+                      theme={theme as 'light' | 'dark'}
+                    />
                   </div>
                 </div>
               </div>

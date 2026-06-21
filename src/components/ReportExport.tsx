@@ -919,7 +919,6 @@ export const ReportExport: React.FC<ReportExportProps> = ({
           <SystemDiagram 
             selectedModel={selectedModel} 
             hydraulicResults={hydraulicResults} 
-            emitterType={selectedEmitter} 
             hydraulicState={hydraulicState} 
             theme="light" 
           />

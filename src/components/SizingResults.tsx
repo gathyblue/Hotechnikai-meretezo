@@ -3,6 +3,7 @@ import { BuildingData, CalculationResults, HeatPumpModel } from '../types';
 import { HEAT_PUMP_DATABASE } from '../heatPumpData';
 import { evaluateHeatPumpEconomics, getHpCapacityAtTemp, getBuildingHeatDemandAtTemp, calculateBivalentCoverage } from '../utils/calculations';
 import { Activity, Flame, Zap, TrendingUp, Shield, CheckCircle2, ChevronRight, HelpCircle, Layers, Settings, BatteryCharging, Info } from 'lucide-react';
+import { SegmentedControl } from './SegmentedControl';
 
 interface SizingResultsProps {
   buildingData: BuildingData;
@@ -269,71 +270,50 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {/* 1. 30°C */}
-          <button
-            type="button"
-            onClick={() => onChangeEmitter('cool18')}
-            className={`p-3 rounded-md border text-left transition-all cursor-pointer flex flex-col justify-between ${
-              selectedEmitter === 'cool18'
-                ? (isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-900')
-                : (isDark ? 'bg-transparent border-slate-800 text-slate-400 hover:border-slate-600' : 'bg-transparent border-slate-200 text-slate-700 hover:border-slate-400')
-            }`}
-          >
-            <div>
-              <span className={`text-xl font-light block tracking-tight ${selectedEmitter === 'cool18' ? (isDark ? 'text-slate-200' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>+30 °C</span>
-              <span className={`text-[11px] font-medium block mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Fal / Mennyezet fűtés</span>
-            </div>
-          </button>
-
-          {/* 2. 35°C */}
-          <button
-            type="button"
-            onClick={() => onChangeEmitter('floor')}
-            className={`p-3 rounded-md border text-left transition-all cursor-pointer flex flex-col justify-between ${
-              selectedEmitter === 'floor'
-                ? (isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-900')
-                : (isDark ? 'bg-transparent border-slate-800 text-slate-400 hover:border-slate-600' : 'bg-transparent border-slate-200 text-slate-700 hover:border-slate-400')
-            }`}
-          >
-            <div>
-              <span className={`text-xl font-light block tracking-tight ${selectedEmitter === 'floor' ? (isDark ? 'text-slate-200' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>+35 °C</span>
-              <span className={`text-[11px] font-medium block mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Padlófűtés</span>
-            </div>
-          </button>
-
-          {/* 3. 50°C */}
-          <button
-            type="button"
-            onClick={() => onChangeEmitter('cool12')}
-            className={`p-3 rounded-md border text-left transition-all cursor-pointer flex flex-col justify-between ${
-              selectedEmitter === 'cool12'
-                ? (isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-900')
-                : (isDark ? 'bg-transparent border-slate-800 text-slate-400 hover:border-slate-600' : 'bg-transparent border-slate-200 text-slate-700 hover:border-slate-400')
-            }`}
-          >
-            <div>
-              <span className={`text-xl font-light block tracking-tight ${selectedEmitter === 'cool12' ? (isDark ? 'text-slate-200' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>+50 °C</span>
-              <span className={`text-[11px] font-medium block mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Fan-Coil rendszerek</span>
-            </div>
-          </button>
-
-          {/* 4. 55°C */}
-          <button
-            type="button"
-            onClick={() => onChangeEmitter('radiator')}
-            className={`p-3 rounded-md border text-left transition-all cursor-pointer flex flex-col justify-between ${
-              selectedEmitter === 'radiator'
-                ? (isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-900')
-                : (isDark ? 'bg-transparent border-slate-800 text-slate-400 hover:border-slate-600' : 'bg-transparent border-slate-200 text-slate-700 hover:border-slate-400')
-            }`}
-          >
-            <div>
-              <span className={`text-xl font-light block tracking-tight ${selectedEmitter === 'radiator' ? (isDark ? 'text-slate-200' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>+55 °C</span>
-              <span className={`text-[11px] font-medium block mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Radiátoros fűtés</span>
-            </div>
-          </button>
-        </div>
+        <SegmentedControl
+          options={[
+            {
+              value: 'cool18',
+              label: (
+                <div className="text-center py-0.5">
+                  <span className="text-xs font-bold block tracking-tight">+30 °C</span>
+                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Fal / Mennyezet</span>
+                </div>
+              ),
+            },
+            {
+              value: 'floor',
+              label: (
+                <div className="text-center py-0.5">
+                  <span className="text-xs font-bold block tracking-tight">+35 °C</span>
+                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Padlófűtés</span>
+                </div>
+              ),
+            },
+            {
+              value: 'cool12',
+              label: (
+                <div className="text-center py-0.5">
+                  <span className="text-xs font-bold block tracking-tight">+50 °C</span>
+                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Fan-Coil</span>
+                </div>
+              ),
+            },
+            {
+              value: 'radiator',
+              label: (
+                <div className="text-center py-0.5">
+                  <span className="text-xs font-bold block tracking-tight">+55 °C</span>
+                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Radiátoros</span>
+                </div>
+              ),
+            },
+          ]}
+          value={selectedEmitter}
+          onChange={onChangeEmitter}
+          layoutId="emitter-select"
+          theme={theme as 'light' | 'dark'}
+        />
       </div>
 
       {/* 4. Highly prominent Bivalence Setup Panel placed RIGHT BEFORE the devices catalog */}
@@ -936,24 +916,19 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-medium text-slate-500">Kedvezmény (%)</span>
-                    <div className="flex gap-1">
-                      {[0, 5, 10, 15, 20, 25].map(pct => (
-                        <button
-                          key={pct}
-                          onClick={() => {
-                            if (onChangeBuildingData) {
-                              onChangeBuildingData({ ...buildingData, productDiscountPct: pct });
-                            }
-                          }}
-                          className={`px-2 py-1 text-[9px] font-medium rounded transition-all ${
-                            discountPct === pct 
-                              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' 
-                              : isDark ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                          }`}
-                        >
-                          {pct}%
-                        </button>
-                      ))}
+                    <div className="min-w-[200px]">
+                      <SegmentedControl
+                        options={[0, 5, 10, 15, 20, 25].map(pct => ({ value: pct, label: `${pct}%` }))}
+                        value={discountPct}
+                        onChange={(val) => {
+                          if (onChangeBuildingData) {
+                            onChangeBuildingData({ ...buildingData, productDiscountPct: val });
+                          }
+                        }}
+                        layoutId="discount-pct"
+                        theme={isDark ? 'dark' : 'light'}
+                        className="text-[9px]"
+                      />
                     </div>
                   </div>
                 </div>

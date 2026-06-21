@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { BuildingData, CalculationResults, HeatPumpModel, HydraulicInput, HydraulicResults, EngineeringParams } from './types';
 import { performHeatLossCalculation, evaluateHeatPumpEconomics } from './utils/calculations';
+import { getThemeClasses } from './utils/theme';
 import { BuildingDataInput } from './components/BuildingDataInput';
 import { SizingResults } from './components/SizingResults';
 import { HydraulicExpansionCalc } from './components/HydraulicExpansionCalc';
@@ -12,7 +14,7 @@ import { Home, Gauge, Activity, FileText, Flame, Zap, Sun, Moon, Settings, X, Bo
 export default function App() {
   // 1. Core State Hooks
   const [isDark, setIsDark] = useState(false);
-  const theme = isDark ? 'dark' : 'light';
+  const theme = isDark ? 'dark' as const : 'light' as const;
   const [buildingData, setBuildingData] = useState<BuildingData>({
     ownerName: '',
     address: '',
@@ -232,10 +234,11 @@ export default function App() {
     radiator: 55
   };
 
+  const t = getThemeClasses(isDark);
   return (
-    <div className={`min-h-screen flex flex-col antialiased font-sans text-[11px] transition-all duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+    <div className={`min-h-screen flex flex-col antialiased font-sans text-[11px] transition-all duration-300 ${t.background} ${t.textPrimary}`}>
       {/* 💻 macOS Style Unified Premium Title & Tab Bar */}
-      <header className={`h-12 flex items-center justify-between px-2 sm:px-4 shrink-0 border-b sticky top-0 z-40 select-none shadow-sm ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-800'}`}>
+      <header className={`h-12 flex items-center justify-between px-2 sm:px-4 shrink-0 border-b sticky top-0 z-40 select-none shadow-sm ${t.card}`}>
         
         {/* Left Section: Compact spacer */}
         <div className="flex items-center gap-1 w-2 sm:w-12">
@@ -243,62 +246,30 @@ export default function App() {
 
         {/* Middle Section: macOS Segmented Control Tab Chooser */}
         <div className="flex items-center justify-center flex-grow">
-          <div className={`p-[2px] rounded border flex gap-0.5 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
-            <button
-              onClick={() => setActiveTab('building')}
-              className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-3 py-1 rounded-[3px] transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'building'
-                  ? (isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm')
-                  : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
-              }`}
-            >
-              <span className="hidden sm:inline">Épület & Hőtechnika</span>
-              <span className="inline sm:hidden">Épület</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('equipment')}
-              className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-3 py-1 rounded-[3px] transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'equipment'
-                  ? (isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm')
-                  : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
-              }`}
-            >
-              <span className="hidden sm:inline">Hőszivattyú</span>
-              <span className="inline sm:hidden">Gép</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('hydraulics')}
-              className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-3 py-1 rounded-[3px] transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'hydraulics'
-                  ? (isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm')
-                  : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
-              }`}
-            >
-              <span className="hidden sm:inline">Hidraulika</span>
-              <span className="inline sm:hidden">Hidra.</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('scheme')}
-              className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-3 py-1 rounded-[3px] transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'scheme'
-                  ? (isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm')
-                  : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
-              }`}
-            >
-              <span className="hidden sm:inline">Rendszerséma</span>
-              <span className="inline sm:hidden">Séma</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('export')}
-              className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-3 py-1 rounded-[3px] transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'export'
-                  ? (isDark ? 'bg-slate-800 text-slate-100 shadow-sm' : 'bg-white text-slate-900 shadow-sm')
-                  : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
-              }`}
-            >
-              <span className="hidden sm:inline">Jegyzőkönyv</span>
-              <span className="inline sm:hidden">Export</span>
-            </button>
+          <div className={`relative p-[2px] rounded-md border flex gap-0.5 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
+            {['building', 'equipment', 'hydraulics', 'scheme', 'export'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`relative z-10 text-[10px] font-bold px-3 py-1.5 rounded-[3px] transition-colors cursor-pointer whitespace-nowrap ${
+                  activeTab === tab
+                    ? 'text-slate-900'
+                    : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
+                }`}
+              >
+                {activeTab === tab && (
+                  <motion.div
+                    layoutId="activeTab"
+                    initial={false}
+                    transition={{ type: 'tween', ease: 'easeInOut', duration: 0.2 }}
+                    className={`absolute inset-0 rounded-[2px] shadow-sm ${isDark ? 'bg-slate-100' : 'bg-white'}`}
+                  />
+                )}
+                <span className="relative z-10 capitalize">
+                    {tab === 'building' ? 'Épület' : tab === 'equipment' ? 'Gép' : tab === 'hydraulics' ? 'Hidraulika' : tab === 'scheme' ? 'Séma' : 'Jegyzőkönyv'}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -412,6 +383,10 @@ export default function App() {
                 <SystemDiagram
                   title="Rendszerséma"
                   description={`${selectedModel?.name ?? 'Nincs kiválasztott modell'} — ${calcResults.heatLossKw.total.toFixed(1)} kW csúcshőigény`}
+                  selectedModel={selectedModel}
+                  hydraulicState={hydraulicState}
+                  hydraulicResults={hydraulicResults}
+                  theme={theme}
                 />
                 
                 <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
