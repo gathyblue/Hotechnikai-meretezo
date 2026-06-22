@@ -307,71 +307,110 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
           </div>
         )}
 
-        {/* ─── ENGINEERING PARAMETERS ─── */}
-        <div className={`p-3 rounded border space-y-4 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-          <SectionLabel label="Mérnöki Paraméterek (Haladó)" isDark={isDark} />
+          {/* ─── ENGINEERING PARAMETERS ─── */}
+          <div className={`p-3 rounded border space-y-4 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+            <SectionLabel label="Mérnöki Paraméterek (Haladó)" isDark={isDark} />
 
-          {/* Target velocity slider */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Tervezett csősebesség</span>
-              <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
-                {hydraulicState.targetVelocityMs?.toFixed(2) ?? '0.60'} m/s
-              </span>
+            {/* Target velocity slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Tervezett csősebesség</span>
+                <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
+                  {hydraulicState.targetVelocityMs?.toFixed(2) ?? '0.60'} m/s
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0.3} max={1.2} step={0.05}
+                value={hydraulicState.targetVelocityMs ?? 0.6}
+                onChange={(e) => updateInput('targetVelocityMs' as any, parseFloat(e.target.value))}
+                className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
+              />
+              <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+                <span>0.3 m/s (Padló min.)</span>
+                <span className="text-blue-500 font-bold">0.6 m/s (Ajánlott primer)</span>
+                <span>1.2 m/s (Max. réz)</span>
+              </div>
             </div>
-            <input
-              type="range"
-              min={0.3} max={1.2} step={0.05}
-              value={hydraulicState.targetVelocityMs ?? 0.6}
-              onChange={(e) => updateInput('targetVelocityMs' as any, parseFloat(e.target.value))}
-              className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
-            />
-            <div className="flex justify-between text-[9px] text-slate-400 font-medium">
-              <span>0.3 m/s (Padló min.)</span>
-              <span className="text-blue-500 font-bold">0.6 m/s (Ajánlott primer)</span>
-              <span>1.2 m/s (Max. réz)</span>
+
+            {/* Pipe length estimate slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Becsült csőhossz (primer kör)</span>
+                <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
+                  {hydraulicState.pipeLengthEstimate ?? 15} m
+                </span>
+              </div>
+              <input
+                type="range"
+                min={5} max={50} step={5}
+                value={hydraulicState.pipeLengthEstimate ?? 15}
+                onChange={(e) => updateInput('pipeLengthEstimate', Number(e.target.value))}
+                className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
+              />
+              <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+                <span>5 m (Közel)</span>
+                <span>25 m (Távoli)</span>
+                <span>50 m (Nagyon távoli)</span>
+              </div>
+            </div>
+
+            {/* Fittings count slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Idomok / szerelvények száma</span>
+                <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
+                  {hydraulicState.fittingsCount ?? 8} db
+                </span>
+              </div>
+              <input
+                type="range"
+                min={2} max={20} step={1}
+                value={hydraulicState.fittingsCount ?? 8}
+                onChange={(e) => updateInput('fittingsCount', Number(e.target.value))}
+                className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
+              />
+            </div>
+
+            {/* Static height slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Statikus magasság (Rendszer)</span>
+                <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
+                  {hydraulicState.staticHeight} m
+                </span>
+              </div>
+              <input
+                type="range"
+                min={1} max={20} step={0.5}
+                value={hydraulicState.staticHeight}
+                onChange={(e) => updateInput('staticHeight', parseFloat(e.target.value))}
+                className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
+              />
+              <div className="flex justify-between text-[9px] text-slate-400 font-medium">
+                <span>1 m (Fsz.)</span>
+                <span>4 m (2 szint)</span>
+                <span>20 m (Torony)</span>
+              </div>
+            </div>
+
+            {/* Safety valve pressure */}
+            <div className="space-y-2">
+              <span className={`text-[10px] font-bold block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Biztonsági szelep nyomása</span>
+              <SegmentedControl
+                options={[
+                  { value: '2.5', label: '2.5 bar' },
+                  { value: '3.0', label: '3.0 bar' },
+                  { value: '4.0', label: '4.0 bar' },
+                  { value: '6.0', label: '6.0 bar' },
+                ]}
+                value={String(hydraulicState.safetyValvePressure)}
+                onChange={(v) => updateInput('safetyValvePressure', parseFloat(v))}
+                layoutId="hydraulic-safety-valve"
+                theme={isDark ? 'dark' : 'light'}
+              />
             </div>
           </div>
-
-          {/* Static height slider */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Statikus magasság (Rendszer)</span>
-              <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${isDark ? 'bg-slate-900 border-slate-800 text-blue-400' : 'bg-white border-slate-300 text-blue-700'}`}>
-                {hydraulicState.staticHeight} m
-              </span>
-            </div>
-            <input
-              type="range"
-              min={1} max={20} step={0.5}
-              value={hydraulicState.staticHeight}
-              onChange={(e) => updateInput('staticHeight', parseFloat(e.target.value))}
-              className="w-full accent-blue-500 cursor-pointer h-1 rounded-lg"
-            />
-            <div className="flex justify-between text-[9px] text-slate-400 font-medium">
-              <span>1 m (Fsz.)</span>
-              <span>4 m (2 szint)</span>
-              <span>20 m (Torony)</span>
-            </div>
-          </div>
-
-          {/* Safety valve pressure */}
-          <div className="space-y-2">
-            <span className={`text-[10px] font-bold block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Biztonsági szelep nyomása</span>
-            <SegmentedControl
-              options={[
-                { value: '2.5', label: '2.5 bar' },
-                { value: '3.0', label: '3.0 bar' },
-                { value: '4.0', label: '4.0 bar' },
-                { value: '6.0', label: '6.0 bar' },
-              ]}
-              value={String(hydraulicState.safetyValvePressure)}
-              onChange={(v) => updateInput('safetyValvePressure', parseFloat(v))}
-              layoutId="hydraulic-safety-valve"
-              theme={isDark ? 'dark' : 'light'}
-            />
-          </div>
-        </div>
 
         <hr className={`my-2 ${isDark ? 'border-slate-800' : 'border-slate-200'}`} />
 
@@ -383,18 +422,26 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
               {/* I. Primary */}
               <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>I. Primer oldal (Hőszivattyú)</p>
-                <ResultRow label="Tágulási tartály" value={`${results.primaryVesselSizeL} L`} isDark={isDark} />
+                <ResultRow label="Tágulási tartály" value={`${results.primaryVesselSizeL} L`} sub={`p₀=${results.prechargeCalculated} bar | pₑ=${results.finalCalculated} bar`} isDark={isDark} />
+                <ResultRow label="Tömegáram" value={`${results.primaryMassFlowKgh} kg/h`} sub={`${results.flowRateLh} L/h`} isDark={isDark} />
                 <ResultRow label="Ajánlott csőméret" value={results.recommendedPipeSize} isDark={isDark} />
                 <ResultRow label="Áramlási sebesség" value={`${results.estimatedVelocityMs} m/s`} sub={results.estimatedVelocityMs > 1.0 ? '⚠ Magas sebesség!' : results.estimatedVelocityMs < 0.3 ? '⚠ Alacsony sebesség' : '✓ Optimális tartomány'} isDark={isDark} />
                 <ResultRow label="Térfogatáram" value={`${results.flowRateLh} L/h`} sub={`${results.flowRateLmin} L/perc`} isDark={isDark} />
-                <ResultRow label="Nyomásveszteség" value={`${results.primaryPressureDropKpa} kPa`} isDark={isDark} />
-                <ResultRow label="Maradék szivattyónyomás" value={`${results.remainingPumpHeadKpa} kPa`} isDark={isDark} />
+                <ResultRow label="ΔT / Hőfoklépcső" value={`${hydraulicState.deltaT} °C`} sub={`E: ${results.primaryFlowTempC}°C → V: ${results.primaryReturnTempC}°C`} isDark={isDark} />
+                <ResultRow label="Nyomásveszteség (cső + helyi)" value={`${results.primaryPipeLossKpa} kPa`} isDark={isDark} />
+                {hydraulicState.includeHeatExchanger && <ResultRow label="HX nyomásveszteség" value={`${(results.primaryPressureDropKpa - results.primaryPipeLossKpa - 1.8).toFixed(1)} kPa`} isDark={isDark} />}
+                <ResultRow label="Összes primer nyomásesés" value={`${results.primaryPressureDropKpa} kPa`} isDark={isDark} />
+                <ResultRow label="Maradék szivattyúnyomás" value={`${results.remainingPumpHeadKpa} kPa`} isDark={isDark} />
+                {results.glycolPercentageUsed > 0 && (
+                  <ResultRow label="Fagyálló (glikol)" value={`${results.glycolPercentageUsed}%`} sub={`ρ=${results.glycolDensityKgm3} kg/m³, cp=${results.glycolSpecificHeatWhKgK} Wh/kgK`} isDark={isDark} />
+                )}
               </div>
 
               {/* II. Secondary */}
               <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>II. Szekunder oldal (Hőleadók)</p>
-                <ResultRow label="Tágulási tartály" value={`${results.secondaryVesselSizeL} L`} isDark={isDark} />
+                <ResultRow label="Tágulási tartály" value={`${results.secondaryVesselSizeL} L`} sub={`p₀=${results.prechargeCalculated} bar | pₑ=${results.finalCalculated} bar`} isDark={isDark} />
+                <ResultRow label="Tömegáram" value={`${results.secondaryMassFlowKgh} kg/h`} sub={`${results.secondaryFlowRateLh} L/h`} isDark={isDark} />
                 <ResultRow label="Csőméret (Gerinc)" value={results.recommendedSecondaryPipeSize ?? '—'} isDark={isDark} />
                 {results.secondaryEstimatedVelocityMs !== undefined && (
                   <ResultRow label="Sebesség (gerinc)" value={`${results.secondaryEstimatedVelocityMs} m/s`} isDark={isDark} />
@@ -405,7 +452,9 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                     : undefined}
                   isDark={isDark}
                 />
-                <ResultRow label="Nyomásveszteség" value={`${results.secondaryPressureDropKpa} kPa`} isDark={isDark} />
+                <ResultRow label="ΔT / Hőfoklépcső" value={`5 °C`} sub={`E: ${results.secondaryFlowTempC}°C → V: ${results.secondaryReturnTempC}°C`} isDark={isDark} />
+                <ResultRow label="Nyomásveszteség (cső + helyi)" value={`${results.secondaryPipeLossKpa} kPa`} isDark={isDark} />
+                <ResultRow label="Összes szekunder nyomásesés" value={`${results.secondaryPressureDropKpa} kPa`} isDark={isDark} />
                 <ResultRow label="Javasolt segédszivattyú" value={results.dabPumpModel} isDark={isDark} />
                 {results.dabPumpSetting && (
                   <ResultRow label="Beállítás / Fokozat" value={`${results.dabPumpSetting} • ${results.dabPumpStage}`} isDark={isDark} />
@@ -424,9 +473,8 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
             /* Unified circuit */
             <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
               <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Egyesített Hidraulikai Kör</p>
-              <ResultRow label="Tágulási tartály" value={`${results.vesselSizeL} L`} isDark={isDark} />
-              <ResultRow label="Előtöltési nyomás" value={`${results.vesselPrechargeBar} bar`} isDark={isDark} />
-              <ResultRow label="Üzemi nyomás (max)" value={`${results.vesselFinalBar} bar`} isDark={isDark} />
+              <ResultRow label="Tágulási tartály" value={`${results.vesselSizeL} L`} sub={`p₀=${results.prechargeCalculated} bar | pₑ=${results.finalCalculated} bar`} isDark={isDark} />
+              <ResultRow label="Tömegáram" value={`${results.primaryMassFlowKgh} kg/h`} sub={`${results.flowRateLh} L/h`} isDark={isDark} />
               <ResultRow label="Ajánlott csőméret" value={results.recommendedPipeSize} isDark={isDark} />
               <ResultRow
                 label="Áramlási sebesség"
@@ -435,7 +483,10 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                 isDark={isDark}
               />
               <ResultRow label="Térfogatáram" value={`${results.flowRateLh} L/h`} sub={`${results.flowRateLmin} L/perc`} isDark={isDark} />
+              <ResultRow label="ΔT / Hőfoklépcső" value={`${hydraulicState.deltaT} °C`} sub={`E: ${results.primaryFlowTempC}°C → V: ${results.primaryReturnTempC}°C`} isDark={isDark} />
               <ResultRow label="Rendszer-vízmennyiség" value={`${estSystemVol} L`} isDark={isDark} />
+              <ResultRow label="Nyomásveszteség" value={`${results.primaryPressureDropKpa} kPa`} isDark={isDark} />
+              <ResultRow label="Maradék szivattyúnyomás" value={`${results.remainingPumpHeadKpa} kPa`} isDark={isDark} />
               <ResultRow label="Keringtetés" value="Hőszivattyú saját szivattyúja" isDark={isDark} />
             </div>
           )}

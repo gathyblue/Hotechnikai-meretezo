@@ -7,7 +7,7 @@ interface ReportExportProps {
   buildingData: BuildingData;
   calcResults: CalculationResults;
   selectedModel: HeatPumpModel | null;
-  selectedEmitter: 'floor' | 'radiator' | 'cool18' | 'cool12';
+  selectedEmitter: 'floor' | 'radiator';
   hydraulicResults: HydraulicResults;
   hydraulicState: HydraulicInput;
   tariffHuf: number;
@@ -47,10 +47,8 @@ export const ReportExport: React.FC<ReportExportProps> = ({
   const useSubsidy = buildingData.useSubsidy !== false;
   const subsidyAmount = buildingData.subsidyValue ?? 3000000;
 
-  const emitterNameMap = {
+  const emitterNameMap: Record<string, string> = {
     floor: 'Padlófűtés / Alacsony hőmérséklet (35°C)',
-    cool18: 'Felületfűtés / Aktív mennyezethűtés (18°C)',
-    cool12: 'Fan-coil kényszer-konvektor hűtés (12°C)',
     radiator: 'Klasszikus fém paneles radiátor (55°C-65°C)',
   };
 
@@ -411,7 +409,7 @@ export const ReportExport: React.FC<ReportExportProps> = ({
         </tr>
         <tr>
           <td class="text-bold">Nyílászárók (Ablakok + Ajtók):</td>
-          <td class="text-right text-mono">${((buildingData.windows?.area || 0) + (buildingData.doors?.area || 0)).toFixed(1)} m²</td>
+            <td class="text-right text-mono">${(buildingData.windows?.area || 0).toFixed(1)} m²</td>
           <td class="text-center text-mono">-</td>
           <td class="text-right text-mono text-bold">${buildingData.windows?.uValue?.toFixed(2) || "1.10"}</td>
           <td style="padding-left: 15px; color: #475569;">${(buildingData.windows?.uValue || 1.1) <= 1.1 ? '3-rétegű hőszigetelt thermo' : '2-rétegű standard hőszigetelő'}</td>
@@ -484,7 +482,7 @@ export const ReportExport: React.FC<ReportExportProps> = ({
       </thead>
       <tbody>
         <tr>
-          <td colSpan={2} class="text-bold text-mono" style="background-color: #f8fafc; font-size: 10px; color: #0f172a;">A. Hőszivattyú alapgép (Bruttó)</td>
+          <td colspan="2" class="text-bold text-mono" style="background-color: #f8fafc; font-size: 10px; color: #0f172a;">A. Hőszivattyú alapgép (Bruttó)</td>
         </tr>
         <tr>
           <td style="padding-left: 20px; color: #475569;">Berendezés bruttó listaára:</td>
@@ -495,10 +493,10 @@ export const ReportExport: React.FC<ReportExportProps> = ({
           <td class="text-right text-mono text-bold">${new Intl.NumberFormat('hu-HU').format(discountedDevicePrice)} Ft</td>
         </tr>
         <tr>
-          <td colSpan={2} class="text-bold text-mono" style="background-color: #f8fafc; font-size: 10px; color: #0f172a;">B. Gépészeti szerelés és telepítés teljes csomag ára (Bruttó)</td>
+          <td colspan="2" class="text-bold text-mono" style="background-color: #f8fafc; font-size: 10px; color: #0f172a;">B. Gépészeti szerelés és telepítés teljes csomag ára (Bruttó)</td>
         </tr>
         <tr>
-          <td colSpan={2} style="padding-left: 20px; color: #475569; font-style: italic;">
+          <td colspan="2" style="padding-left: 20px; color: #475569; font-style: italic;">
             Tartalmazza: ${(selectedModel?.capacityA7W35 || 9) > 10 ? '100 literes' : '60 literes'} Inox puffertartály szigetelve fali rögzítéssel, komplett zárt tágulási rendszerek fűtési körhöz tartókkal, mágneses iszapleválasztó, rézcsövezés szerelvényekkel és beüzemelési díjjal. Egységár tételektől mentesítve.
           </td>
         </tr>
@@ -508,17 +506,17 @@ export const ReportExport: React.FC<ReportExportProps> = ({
         </tr>
 
         <tr>
-          <td colSpan={2} class="text-bold text-mono" style="background-color: #f8fafc; font-size: 10px; color: #0f172a;">C. HMV Modul (Melegvíz kiegészítés)</td>
+          <td colspan="2" class="text-bold text-mono" style="background-color: #f8fafc; font-size: 10px; color: #0f172a;">C. HMV Modul (Melegvíz kiegészítés)</td>
         </tr>
         ${buildingData.includeDhwPackage !== false ? `
         <tr>
-          <td colSpan={2} style="padding-left: 20px; color: #475569; font-style: italic;">
+          <td colspan="2" style="padding-left: 20px; color: #475569; font-style: italic;">
             Tartalmazza: ${dhwVolume}L speciális hőszivattyús HMV tároló megnövelt csőkígyó felülettel, motoros 3-járatú váltószelep, segédszerelvények, fűtőpatron védelmi csomag és beszerelés.
           </td>
         </tr>
         ` : `
         <tr>
-          <td colSpan={2} style="padding-left: 20px; color: #64748b; font-style: italic;">HMV modul nem került kiválasztásra (Kizárólag fűtés/hűtés)</td>
+          <td colspan="2" style="padding-left: 20px; color: #64748b; font-style: italic;">HMV modul nem került kiválasztásra (Kizárólag fűtés/hűtés)</td>
         </tr>
         `}
         <tr>
@@ -567,67 +565,229 @@ export const ReportExport: React.FC<ReportExportProps> = ({
     </div>
 
     <h2>4. Gépészeti Hidraulikai, Tágulási és Hőcserélő Méretezés</h2>
+
+    <h3 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">4.1 Primer oldal (Hőszivattyú kör)</h3>
     <table>
       <thead>
         <tr>
-          <th>Szerkezeti Részegység</th>
-          <th>Tervezett Méret / Specifikáció</th>
-          <th>Tervezési Érdemi Irányelv és Méretezési Érték</th>
+          <th>Paraméter</th>
+          <th class="text-right">Érték</th>
+          <th>Megjegyzés</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td class="text-bold">1. Főnyomó gerinccsatorna:</td>
-          <td class="text-mono text-bold">${hydraulicResults.recommendedPipeSize}</td>
-          <td>Garantált max áramlási sebesség: ${hydraulicResults.estimatedVelocityMs} m/s (&lt; 0.8 m/s lamináris áramláshoz)</td>
+          <td class="text-bold">Hőteljesítmény</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.primaryFlowRateLh > 0 ? (hydraulicResults.primaryFlowRateLh * 1.163 * Number(hydraulicState.deltaT || 5) / 1000).toFixed(2) : "—"} kW</td>
+          <td>Számított a ΔT és térfogatáram alapján</td>
         </tr>
         <tr>
-          <td class="text-bold">2. Zárt tágulási tartályok:</td>
-          <td class="text-mono text-bold">
+          <td class="text-bold">Előremenő hőfok</td>
+          <td class="text-right text-mono">${hydraulicResults.primaryFlowTempC} °C</td>
+          <td>Hőleadó típusának megfelelően</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Visszatérő hőfok</td>
+          <td class="text-right text-mono">${hydraulicResults.primaryReturnTempC} °C</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">ΔT hőlépcső</td>
+          <td class="text-right text-mono">${hydraulicState.deltaT} °C</td>
+          <td>Tervezési paraméter</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Tömegáram</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.primaryMassFlowKgh} kg/h</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Térfogatáram</td>
+          <td class="text-right text-mono">${hydraulicResults.flowRateLh} L/h (${hydraulicResults.flowRateLmin} L/perc)</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Csőméret</td>
+          <td class="text-right text-mono">${hydraulicResults.recommendedPipeSize}</td>
+          <td>Anyag: ${hydraulicState.pipeMaterial === 'copper' ? 'Réz' : hydraulicState.pipeMaterial === 'pex' ? 'PEX' : 'Szénacél'}</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Áramlási sebesség</td>
+          <td class="text-right text-mono">${hydraulicResults.estimatedVelocityMs} m/s</td>
+          <td>${hydraulicResults.estimatedVelocityMs > 1.0 ? '⚠ Magas, zaj léphet fel' : hydraulicResults.estimatedVelocityMs < 0.3 ? '⚠ Alacsony, légbuborékok' : '✓ Optimális'}</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Nyomásesés (cső + helyi)</td>
+          <td class="text-right text-mono">${hydraulicResults.primaryPipeLossKpa} kPa</td>
+          <td>Csőhossz: ${hydraulicState.pipeLengthEstimate ?? 10} m, idomok: ${hydraulicState.fittingsCount ?? 6} db</td>
+        </tr>
+        ${hydraulicState.includeHeatExchanger ? `
+        <tr>
+          <td class="text-bold">HX nyomásesés</td>
+          <td class="text-right text-mono">${(hydraulicResults.primaryPressureDropKpa - hydraulicResults.primaryPipeLossKpa - 1.8).toFixed(1)} kPa</td>
+          <td>Lemezes hőcserélő</td>
+        </tr>` : ''}
+        <tr>
+          <td class="text-bold">Összes primer nyomásesés</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.primaryPressureDropKpa} kPa</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Maradék szivattyúnyomás</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.remainingPumpHeadKpa} kPa</td>
+          <td>HP belső szivattyú (60 kPa)</td>
+        </tr>
+        ${hydraulicResults.glycolPercentageUsed > 0 ? `
+        <tr>
+          <td class="text-bold">Fagyálló (glikol)</td>
+          <td class="text-right text-mono">${hydraulicResults.glycolPercentageUsed}%</td>
+          <td>ρ=${hydraulicResults.glycolDensityKgm3} kg/m³, cp=${hydraulicResults.glycolSpecificHeatWhKgK} Wh/kgK</td>
+        </tr>` : ''}
+      </tbody>
+    </table>
+
+    ${hydraulicState.includeHeatExchanger ? `
+    <h3 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-top: 20px;">4.2 Szekunder oldal (Hőleadók)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Paraméter</th>
+          <th class="text-right">Érték</th>
+          <th>Megjegyzés</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-bold">Hőteljesítmény</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.secondaryFlowRateLh > 0 ? (hydraulicResults.secondaryFlowRateLh * 1.163 * 5 / 1000).toFixed(2) : "—"} kW</td>
+          <td>Szekunder kör</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Előremenő hőfok</td>
+          <td class="text-right text-mono">${hydraulicResults.secondaryFlowTempC} °C</td>
+          <td>HX utáni hőfok</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Visszatérő hőfok</td>
+          <td class="text-right text-mono">${hydraulicResults.secondaryReturnTempC} °C</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">ΔT hőlépcső</td>
+          <td class="text-right text-mono">5 °C</td>
+          <td>Szekunder tervezési ΔT</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Tömegáram</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.secondaryMassFlowKgh} kg/h</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Térfogatáram</td>
+          <td class="text-right text-mono">${hydraulicResults.secondaryFlowRateLh} L/h</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Csőméret (gerinc)</td>
+          <td class="text-right text-mono">${hydraulicResults.recommendedSecondaryPipeSize ?? '—'}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Áramlási sebesség</td>
+          <td class="text-right text-mono">${hydraulicResults.secondaryEstimatedVelocityMs?.toFixed(2) ?? '—'} m/s</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Nyomásesés (összes)</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.secondaryPressureDropKpa} kPa</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="text-bold">Segédszivattyú</td>
+          <td class="text-right text-mono">${hydraulicResults.dabPumpModel}</td>
+          <td>${hydraulicResults.dabPumpSetting} / ${hydraulicResults.dabPumpStage}</td>
+        </tr>
+      </tbody>
+    </table>` : ''}
+
+    <h3 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-top: 20px;">4.3 Tágulási tartály méretezés</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Paraméter</th>
+          <th class="text-right">Érték</th>
+          <th>Megjegyzés</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-bold">Rendszer víztérfogat</td>
+          <td class="text-right text-mono">${hydraulicResults.systemVolumeL} L</td>
+          <td>Számított a hőigény és fajlagos tényező alapján</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Tágulási tartály méret</td>
+          <td class="text-right text-mono text-bold">
             ${hydraulicState.includeHeatExchanger 
               ? `Primer: ${hydraulicResults.primaryVesselSizeL} L / Szekunder: ${hydraulicResults.secondaryVesselSizeL} L` 
               : `${hydraulicResults.vesselSizeL} Liter`}
           </td>
-          <td>Komplett zárt tágulási védelem. Gáznyomás p0: ${hydraulicResults.vesselPrechargeBar} bar, rsz végnyomás pe: ${hydraulicResults.vesselFinalBar} bar</td>
+          <td>${hydraulicState.includeHeatExchanger ? 'Két különálló tágulási kör' : 'Egyesített rendszer'}</td>
         </tr>
         <tr>
-          <td class="text-bold">3. Hidraulikai hőlépcső és áramlás:</td>
-          <td class="text-mono text-bold">ΔT = ${hydraulicState.deltaT} °C fűtési hőlépcső</td>
-          <td>Névleges folyadék tömegáram: <span class="text-mono text-bold">${hydraulicResults.flowRateLh} L/óra</span></td>
+          <td class="text-bold">Előfeszítési nyomás (p₀)</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.prechargeCalculated} bar</td>
+          <td>Számított: h_static × 0.1 + 0.3 (${hydraulicState.staticHeight} m)</td>
         </tr>
         <tr>
-          <td class="text-bold">4. Lemezes fűtési hőcserélő:</td>
-          <td class="text-mono text-bold">
+          <td class="text-bold">Végnyomás (pₑ)</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.finalCalculated} bar</td>
+          <td>Biztonsági szelep × 0.9 (${hydraulicState.safetyValvePressure} bar)</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Tágulási együttható</td>
+          <td class="text-right text-mono">${hydraulicResults.primaryFlowTempC <= 35 ? '0.63%' : hydraulicResults.primaryFlowTempC <= 45 ? '1.04%' : hydraulicResults.primaryFlowTempC <= 55 ? '1.45%' : '1.98%'}</td>
+          <td>Hőfokfüggő (${hydraulicResults.primaryFlowTempC}°C)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-top: 20px;">4.4 Hőcserélő, szivattyú, puffer</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Tétel</th>
+          <th class="text-right">Specifikáció</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-bold">Lemezes hőcserélő</td>
+          <td class="text-right text-mono">
             ${hydraulicState.includeHeatExchanger 
-              ? `${hydraulicResults.recommendedExchangerModel}`
-              : 'Direct bypass fémösszeköttetés (Nincs leválasztás)'}
-          </td>
-          <td>
-            ${hydraulicState.includeHeatExchanger
-              ? `Rozsdamentes saválló kivitel. Optimális átadási felület: ${hydraulicResults.heatExchangerAreaM2} m²`
-              : 'Direct áramkör bypass. Külső fagyvédelmi szelep beépítése fokozottan ajánlott!'}
+              ? `${hydraulicResults.recommendedExchangerModel} (${hydraulicResults.heatExchangerAreaM2} m²)`
+              : 'Nincs (direkt rendszer)'}
           </td>
         </tr>
         <tr>
-          <td class="text-bold">5. Fűtőköri szivattyú (Szekunder):</td>
-          <td class="text-mono text-bold">
-            ${hydraulicResults.dabPumpModel}
-          </td>
-          <td>
-            <strong>Javasolt beállítás:</strong> ${hydraulicResults.dabPumpSetting} / 
-            <strong>Fokozat:</strong> <span class="badge-success">${hydraulicResults.dabPumpStage}</span>
-          </td>
+          <td class="text-bold">HMV tároló</td>
+          <td class="text-right text-mono">${hydraulicState.includeDhwTank ? `${hydraulicResults.heatExchangerWaterFlowLh} L/h átfolyás` : 'Nincs'}</td>
         </tr>
         <tr>
-          <td class="text-bold">6. Rendszer puffer térfogat:</td>
-          <td class="text-mono text-bold">
-            Aktuális puffer: ${hydraulicState.additionalWaterVolumeL || 0} L / Javasolt min: ${hydraulicResults.recommendedBufferL} L
-          </td>
-          <td>
-            ${hydraulicResults.isBufferAdequate 
-              ? '✔ Sikerült elérni a mérnöki szempontból optimális kompresszorvédelmi puffer térfogatot (sűrű indítás ellen).'
-              : `⚠️ Figyelmeztetés: leolvasztási kompresszorvédelemhez legalább ${hydraulicResults.recommendedBufferL} L fűtőpuffer biztosítása javasolt.`}
-          </td>
+          <td class="text-bold">Fűtőköri szivattyú</td>
+          <td class="text-right text-mono">${hydraulicResults.dabPumpModel}</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Szivattyú beállítás</td>
+          <td class="text-right text-mono">${hydraulicResults.dabPumpSetting} / ${hydraulicResults.dabPumpStage}</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Puffer térfogat</td>
+          <td class="text-right text-mono">Aktuális: ${hydraulicState.additionalWaterVolumeL || 0} L / Javasolt: ${hydraulicResults.recommendedBufferL} L</td>
+        </tr>
+        <tr>
+          <td class="text-bold">Puffer ellenőrzés</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.isBufferAdequate ? '✓ Megfelelő' : '⚠ Kiegészítés javasolt'}</td>
         </tr>
       </tbody>
     </table>

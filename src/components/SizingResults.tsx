@@ -8,10 +8,10 @@ import { SegmentedControl } from './SegmentedControl';
 interface SizingResultsProps {
   buildingData: BuildingData;
   calcResults: CalculationResults;
-  onSelectModel: (model: HeatPumpModel, emitterType: 'floor' | 'radiator' | 'cool18' | 'cool12') => void;
+  onSelectModel: (model: HeatPumpModel, emitterType: 'floor' | 'radiator') => void;
   selectedModel: HeatPumpModel | null;
-  selectedEmitter: 'floor' | 'radiator' | 'cool18' | 'cool12';
-  onChangeEmitter: (emitter: 'floor' | 'radiator' | 'cool18' | 'cool12') => void;
+  selectedEmitter: 'floor' | 'radiator';
+  onChangeEmitter: (emitter: 'floor' | 'radiator') => void;
   tariffHuf: number;
   onChangeTariff: (tariff: number) => void;
   bivalentTempManual: number;
@@ -36,8 +36,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 }) => {
   const isDark = theme === 'dark';
   const [selectedInfoModel, setSelectedInfoModel] = useState<HeatPumpModel | null>(null);
+  const [filterNearby, setFilterNearby] = useState<boolean>(true);
   // Investment cost components logically calculated
-  const [filterNearby, setFilterNearby] = useState<boolean>(true);       // Close capacity match only
  
   // Calculate dynamic Total Investment
   const isLargeMachine = selectedModel && selectedModel.capacityA7W35 >= 12;
@@ -98,35 +98,29 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         capacityAtBiv,
         demandAtBiv,
         isAdequate,
-        scop: selectedEmitter === 'radiator' ? hp.scopW55 : selectedEmitter === 'cool12' ? (hp.scopW35 + hp.scopW55) / 2 : hp.scopW35,
+        scop: selectedEmitter === 'radiator' ? hp.scopW55 : hp.scopW35,
         economics,
       };
     }).sort((a, b) => {
-      // Sort primarily by how well they match the chosen bivalent operating point!
-      // A device is a perfect match if its capacity at the bivalent temperature (capacityAtBiv) is closest to the building heat demand at that temp (demandAtBiv).
-      const mismatchA = Math.abs(a.capacityAtBiv - a.demandAtBiv);
-      const mismatchB = Math.abs(b.capacityAtBiv - b.demandAtBiv);
-      
-      // If one satisfies the bivalent point and the other does not, prioritize the satisfying one
+      // Sort primarily by capacity (kW) ascending — user can see the size progression
       if (a.isAdequate && !b.isAdequate) return -1;
       if (!a.isAdequate && b.isAdequate) return 1;
       
-      // Otherwise sort by the absolute minimum mismatch (closest match at bivalent temperature)
-      if (Math.abs(mismatchA - mismatchB) < 0.2) {
-        return a.estimatedPriceHuf - b.estimatedPriceHuf; // break ties with cheaper
-      }
-      return mismatchA - mismatchB;
+      const capA = a.capacityA7W35 || 0;
+      const capB = b.capacityA7W35 || 0;
+      return capA - capB;
     });
   }, [calcResults, selectedEmitter, tariffHuf, bivalentTempManual, buildingData]);
 
-  // 1b. Smart capacity-based filtering of close performance devices
+  // 1b. Tight capacity-based filtering — only show matches within ±10%
   const displayedModels = useMemo(() => {
     if (!filterNearby) return recommendedModels;
     const targetDemand = calcResults.heatLossKw.total;
-    const minLimit = targetDemand * 0.55;
-    const maxLimit = targetDemand * 1.55;
-    const filtered = recommendedModels.filter(m => m.capacityA7W35 >= minLimit && m.capacityA7W35 <= maxLimit);
-    return filtered.length > 0 ? filtered : recommendedModels;
+    const filtered = recommendedModels.filter(m => {
+      const ratio = m.capacityAtBiv / (m.demandAtBiv || 0.1);
+      return ratio >= 0.90 && ratio <= 1.10;
+    });
+    return filtered.length > 0 ? filtered : recommendedModels.slice(0, 3);
   }, [recommendedModels, filterNearby, calcResults.heatLossKw.total]);
 
   // Handle selected model automatically if none chosen
@@ -188,63 +182,57 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
     <div className="space-y-4" id="sizing-and-heatpump">
       
       {/* Target Heat Loss Card Header display */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {/* Card 1: Total Heat Loss */}
-        <div className={`rounded-xl p-4 border flex flex-col justify-between transition-all duration-300 ${
+        <div className={`rounded-lg p-3 border flex flex-row items-center justify-between gap-2 transition-all duration-300 ${
           isDark 
             ? 'bg-blue-950/20 border-blue-900/60 text-slate-100' 
             : 'bg-blue-50/50 border-blue-200 text-slate-800'
         }`}>
-          <div>
-            <span className={`${isDark ? 'text-blue-400' : 'text-blue-600'} text-[10px] font-bold uppercase tracking-wider block mb-1`}>Méretezett Hőszükséglet</span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className={`text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-blue-950'}`}>{calcResults.heatLossKw.total}</span>
-              <span className={`text-sm font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>kW</span>
-            </div>
+          <div className="flex flex-col">
+            <span className={`${isDark ? 'text-blue-400' : 'text-blue-600'} text-[9px] font-bold uppercase tracking-wider`}>Hőszükséglet</span>
+            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tervezési hőm.: {buildingData.indoorTemp}°C / {buildingData.designTemp}°C</span>
           </div>
-          <div className={`mt-3 pt-2 border-t ${isDark ? 'border-blue-900/40' : 'border-blue-100'} text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Tervezési hőm.: {buildingData.indoorTemp}°C belső / {buildingData.designTemp}°C külső
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className={`text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-blue-950'}`}>{calcResults.heatLossKw.total}</span>
+            <span className={`text-[10px] font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>kW</span>
           </div>
         </div>
 
         {/* Card 2: Transmission Loss */}
-        <div className={`rounded-xl p-4 border flex flex-col justify-between transition-all duration-300 ${
+        <div className={`rounded-lg p-3 border flex flex-row items-center justify-between gap-2 transition-all duration-300 ${
           isDark 
             ? 'bg-amber-950/20 border-amber-900/60 text-slate-100' 
             : 'bg-amber-50/50 border-amber-200 text-slate-800'
         }`}>
-          <div>
-            <span className={`${isDark ? 'text-amber-400' : 'text-amber-600'} text-[10px] font-bold uppercase tracking-wider block mb-1`}>Transzmissziós veszteség</span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className={`text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-amber-950'}`}>{calcResults.heatLossKw.transmission}</span>
-              <span className={`text-sm font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>kW</span>
-            </div>
+          <div className="flex flex-col">
+            <span className={`${isDark ? 'text-amber-400' : 'text-amber-600'} text-[9px] font-bold uppercase tracking-wider`}>Transzmisszió</span>
+            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Szerkezeti veszteség</span>
           </div>
-          <div className={`mt-3 pt-2 border-t ${isDark ? 'border-amber-900/40' : 'border-amber-100'} text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Szerkezeteken (falak, ablakok, födém) távozó hő
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className={`text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-amber-950'}`}>{calcResults.heatLossKw.transmission}</span>
+            <span className={`text-[10px] font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>kW</span>
           </div>
         </div>
 
         {/* Card 3: Ventilation Loss */}
-        <div className={`rounded-xl p-4 border flex flex-col justify-between transition-all duration-300 ${
+        <div className={`rounded-lg p-3 border flex flex-row items-center justify-between gap-2 transition-all duration-300 ${
           isDark 
             ? 'bg-teal-950/20 border-teal-900/60 text-slate-100' 
             : 'bg-teal-50/50 border-teal-200 text-slate-800'
         }`}>
-          <div>
-            <span className={`${isDark ? 'text-teal-400' : 'text-teal-600'} text-[10px] font-bold uppercase tracking-wider block mb-1`}>Ventilációs veszteség</span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className={`text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-teal-950'}`}>{calcResults.heatLossKw.ventilation}</span>
-              <span className={`text-sm font-medium ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>kW</span>
-            </div>
+          <div className="flex flex-col">
+            <span className={`${isDark ? 'text-teal-400' : 'text-teal-600'} text-[9px] font-bold uppercase tracking-wider`}>Ventiláció</span>
+            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Szellőzési veszteség</span>
           </div>
-          <div className={`mt-3 pt-2 border-t ${isDark ? 'border-teal-900/40' : 'border-teal-100'} text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Filtrációból és szellőzésből adódó hőveszteség
+          <div className="flex items-baseline gap-1 shrink-0">
+            <span className={`text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-teal-950'}`}>{calcResults.heatLossKw.ventilation}</span>
+            <span className={`text-[10px] font-medium ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>kW</span>
           </div>
         </div>
 
         {/* Full-width bottom bar for additional details */}
-        <div className={`col-span-1 md:col-span-3 rounded-lg border p-3 flex flex-wrap justify-between items-center text-xs transition-all duration-300 ${
+        <div className={`col-span-1 md:col-span-3 rounded-lg border p-2 flex flex-wrap justify-between items-center text-[10px] transition-all duration-300 ${
           isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
         }`}>
           <div className="flex items-center gap-1.5">
@@ -252,15 +240,15 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             <span className="font-mono font-bold text-blue-500">{buildingData.location}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold">Éves fűtési energia hőszükséglet:</span>
+            <span className="font-semibold">Éves fűtési energia:</span>
             <span className="font-mono font-bold text-emerald-500">{calcResults.yearlyEnergyKwh} kWh/év</span>
           </div>
         </div>
       </div>
 
       {/* Emitter types mapping */}
-      <div className={`rounded-md p-4 border space-y-3 transition-all ${
-        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+      <div className={`rounded-lg p-3 border space-y-3 transition-all ${
+        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div>
           <h2 className={`font-medium text-xs flex items-center gap-2 ${
@@ -273,29 +261,11 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         <SegmentedControl
           options={[
             {
-              value: 'cool18',
-              label: (
-                <div className="text-center py-0.5">
-                  <span className="text-xs font-bold block tracking-tight">+30 °C</span>
-                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Fal / Mennyezet</span>
-                </div>
-              ),
-            },
-            {
               value: 'floor',
               label: (
                 <div className="text-center py-0.5">
                   <span className="text-xs font-bold block tracking-tight">+35 °C</span>
                   <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Padlófűtés</span>
-                </div>
-              ),
-            },
-            {
-              value: 'cool12',
-              label: (
-                <div className="text-center py-0.5">
-                  <span className="text-xs font-bold block tracking-tight">+50 °C</span>
-                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Fan-Coil</span>
                 </div>
               ),
             },
@@ -705,7 +675,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
       {/* Recommended Heat Pumps table */}
       <div className="space-y-4 pt-4">
-        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b transition-all ${
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b transition-all ${
           isDark ? 'border-slate-800' : 'border-slate-200'
         }`}>
           <h2 className={`font-medium text-xs flex items-center gap-2 transition-all ${
@@ -713,29 +683,28 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
           }`}>
             Ajánlott hőszivattyús berendezések
           </h2>
-          
-          <label className={`inline-flex items-center gap-2 cursor-pointer text-[11px] font-medium px-3 py-1.5 rounded transition-all ${
+          <label className={`inline-flex items-center gap-2 cursor-pointer text-[10px] font-medium px-2 py-1 rounded transition-all ${
             isDark
-              ? 'hover:bg-slate-800 text-slate-300'
-              : 'hover:bg-slate-100 text-slate-600'
+              ? 'hover:bg-slate-800 text-slate-400'
+              : 'hover:bg-slate-100 text-slate-500'
           }`}>
             <input
               type="checkbox"
               checked={filterNearby}
               onChange={(e) => setFilterNearby(e.target.checked)}
-              className="w-3.5 h-3.5 text-slate-600 rounded focus:ring-0 cursor-pointer"
+              className="w-3 h-3 text-slate-600 rounded focus:ring-0 cursor-pointer"
             />
-            {filterNearby ? `Csak a releváns teljesítményosztály (${displayedModels.length} db)` : `Összes megjelenítése (${recommendedModels.length} db)`}
+            {filterNearby ? `Szűkített (${displayedModels.length} db)` : `Összes (${recommendedModels.length} db)`}
           </label>
         </div>
 
-        <div className={`overflow-x-hidden rounded-lg border transition-all ${
-          isDark ? 'border-slate-800 bg-slate-950/20' : 'border-slate-200 bg-slate-50'
+        <div className={`overflow-hidden rounded-lg border transition-all ${
+          isDark ? 'border-slate-800' : 'border-slate-200'
         }`} id="hp-selection-table">
-          <table className="w-full text-left border-collapse text-[10px]">
+          <table className={`w-full text-left border-collapse text-[10px] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
             <thead>
               <tr className={`border-b font-medium transition-all text-slate-500 text-[10px] ${
-                isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200'
+                isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
               }`}>
                 <th className="py-2 px-3">Típus</th>
                 <th className="py-2 px-3 text-center hidden md:table-cell">W35 (Telj/SCOP)</th>
@@ -754,48 +723,36 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 let rowBgClass = "";
                 let statusBadge = null;
 
-                if (bivalentRatio >= 0.85 && bivalentRatio <= 1.35) {
+                if (bivalentRatio >= 0.90 && bivalentRatio <= 1.10) {
                   statusPill = "Optimum";
                   statusBadge = (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400 shrink-0">
                       Optimum
                     </span>
                   );
-                  rowBgClass = isSelected
-                    ? (isDark 
-                        ? "bg-slate-800 text-white font-medium border-l-[4px] border-l-emerald-500" 
-                        : "bg-emerald-50 text-slate-900 border-l-[4px] border-l-emerald-500 font-medium")
-                    : (isDark 
-                        ? "bg-emerald-900/10 text-slate-300 hover:bg-slate-900/50" 
-                        : "bg-emerald-50/30 text-slate-700 hover:bg-slate-50 border-l-[4px] border-l-transparent hover:border-l-emerald-300");
-                } else if ((bivalentRatio >= 0.65 && bivalentRatio < 0.85) || (bivalentRatio > 1.35 && bivalentRatio <= 1.65)) {
+                  rowBgClass = isDark 
+                      ? "bg-emerald-900/15 text-slate-200 hover:bg-emerald-900/25 border-l-[4px] border-l-emerald-500" 
+                      : "bg-emerald-50 text-slate-800 hover:bg-emerald-100/80 border-l-[4px] border-l-emerald-500";
+                } else if ((bivalentRatio >= 0.85 && bivalentRatio < 0.90) || (bivalentRatio > 1.10 && bivalentRatio <= 1.15)) {
                   statusPill = "Elfogadható";
                   statusBadge = (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400 shrink-0">
-                      Határ
+                      Elfogadható
                     </span>
                   );
-                  rowBgClass = isSelected
-                    ? (isDark 
-                        ? "bg-slate-800 text-white font-medium border-l-[4px] border-l-yellow-500" 
-                        : "bg-yellow-50 text-slate-900 border-l-[4px] border-l-yellow-500 font-medium")
-                    : (isDark 
-                        ? "bg-yellow-900/10 text-slate-400 hover:bg-slate-900/50" 
-                        : "bg-yellow-50/30 text-slate-600 hover:bg-slate-50 border-l-[4px] border-l-transparent hover:border-l-yellow-300");
+                  rowBgClass = isDark 
+                      ? "bg-yellow-900/15 text-slate-300 hover:bg-yellow-900/25 border-l-[4px] border-l-yellow-500" 
+                      : "bg-yellow-50 text-slate-700 hover:bg-yellow-100/80 border-l-[4px] border-l-yellow-500";
                 } else {
                   statusPill = "Nem javasolt";
                   statusBadge = (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-400 shrink-0">
-                      Alul/Túlméretezve
+                      Nem javasolt
                     </span>
                   );
-                  rowBgClass = isSelected
-                    ? (isDark 
-                        ? "bg-slate-800 text-white font-medium shadow-sm border-l-[4px] border-l-rose-500" 
-                        : "bg-rose-50 text-slate-900 border-l-[4px] border-l-rose-500 font-medium")
-                    : (isDark 
-                        ? "bg-rose-900/10 text-slate-500 hover:bg-slate-900/50" 
-                        : "bg-rose-50/30 text-slate-500 hover:bg-slate-50 border-l-[4px] border-l-transparent hover:border-l-rose-300");
+                  rowBgClass = isDark 
+                      ? "bg-rose-900/10 text-slate-500 hover:bg-rose-900/20 border-l-[4px] border-l-rose-500/50 opacity-60" 
+                      : "bg-rose-50/40 text-slate-500 hover:bg-rose-100/60 border-l-[4px] border-l-rose-400/50 opacity-70";
                 }
 
                 const getModelDimensions = (m: any) => {
@@ -819,8 +776,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     className={`cursor-pointer border-b text-xs ${rowBgClass}`}
                   >
                     {/* Megnevezés Column (Name only as requested) */}
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-3">
+                    <td className="py-1.5 px-2">
+                      <div className="flex items-center gap-2">
                         {/* Selected Radio Indicator */}
                         <span className={`w-3 h-3 rounded-full border shrink-0 inline-block ${
                           isSelected
@@ -836,23 +793,23 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       </div>
                     </td>
 
-                    <td className={`py-3 px-3 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       {item.capacityA7W35.toFixed(1)} kW / {item.scopW35.toFixed(1)}
                     </td>
 
-                    <td className={`py-3 px-3 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       {(item.capacityA7W35 * 0.85).toFixed(1)} kW / {item.scopW55.toFixed(1)}
                     </td>
 
-                    <td className={`py-3 px-3 text-center hidden md:table-cell ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <td className={`py-1.5 px-2 text-center hidden md:table-cell ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {item.soundDba} dB(A)
                     </td>
 
-                    <td className="py-3 px-3 text-center hidden md:table-cell font-mono">
+                    <td className="py-1.5 px-2 text-center hidden md:table-cell font-mono">
                       {item.phases === 1 ? '230V' : '400V'}
                     </td>
 
-                    <td className="py-3 px-3 text-right font-mono font-medium">
+                    <td className="py-1.5 px-2 text-right font-mono font-medium">
                       {discountPct > 0 ? (
                         <div className="flex flex-col items-end">
                           <span className="line-through text-[10px] text-slate-400">
@@ -876,11 +833,11 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
       {/* 5. Sleek, Consolidated Investment & Payback Analysis with ZERO clashing background colors (as requested) */}
       {activeHPResults && (
-        <div className={`rounded-xl border p-4 transition-all ${
-          isDark ? 'bg-transparent border-slate-800' : 'bg-transparent border-slate-200'
+        <div className={`rounded-lg border p-3 transition-all ${
+          isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
         }`} id="hp-diagnostics-panel">
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             
             {/* Header */}
             <div className="border-b pb-1.5 flex justify-between items-center">
@@ -895,9 +852,9 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
             {/* 1. Surcharges breakdown (tight 3-column grid) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              
-              {/* Item A: Surcharges & Base Price */}
-              <div className={`p-3 rounded-md border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+               
+               {/* Item A: Surcharges & Base Price */}
+               <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
                 <div>
                   <span className="text-slate-500 text-[10px] font-medium block">Hőszivattyú alapgép {discountPct === 0 && '(Listaár)'}</span>
                   <span className={`text-sm font-mono mt-1 block ${discountPct > 0 ? (isDark ? 'text-slate-500 line-through' : 'text-slate-400 line-through') : (isDark ? 'text-slate-200' : 'text-slate-800')}`}>{formatHu(baseDevicePrice)} Ft</span>
@@ -935,7 +892,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               </div>
 
               {/* Item B: Compact Install Rate (Selectable Packages!) */}
-              <div className={`p-3 rounded-md border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+              <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
                 <div>
                   <span className="text-slate-500 text-[10px] font-medium block mb-1">Gépészeti szerelés és telepítés csomag</span>
                   <span className={`text-sm font-mono block mb-1.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(installationSurcharge)} Ft</span>
@@ -980,7 +937,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               </div>
 
               {/* Item C: Accessories (DHW Packages only) */}
-              <div className={`p-3 rounded-md border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+              <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
                 <div className="space-y-2">
                   {/* HMV Toggle Checkbox */}
                   <div className="flex items-center justify-between">
@@ -1037,7 +994,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                                     });
                                   }
                                 }}
-                                className={`p-1.5 rounded-md border text-center cursor-pointer transition-all ${
+                                className={`p-2 rounded-lg border text-center cursor-pointer transition-all ${
                                   isSelected
                                     ? (isDark ? 'border-slate-500 bg-slate-800/80 shadow text-slate-100' : 'border-slate-400 bg-white shadow-sm ring-1 ring-slate-200 text-slate-900') 
                                     : (isDark ? 'border-slate-800 bg-transparent text-slate-400 hover:bg-slate-800' : 'border-slate-200 bg-transparent text-slate-600 hover:bg-slate-100')
@@ -1059,7 +1016,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             </div>
 
             {/* Standalone State Subsidy / Pályázat Row - Positioned lower, not part of technical costs */}
-            <div className={`p-3 rounded-md border mt-3 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`p-3 rounded-lg border mt-3 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-medium block text-slate-500">
@@ -1124,7 +1081,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 <div className="flex justify-between items-center text-[10px] font-medium text-slate-500">
                   <span>BERUHÁZÁS ÖSSZESÍTÉS</span>
                 </div>
-                <div className={`p-3 rounded-md border space-y-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+                <div className={`p-3 rounded-lg border space-y-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
                   <div className="flex justify-between text-[10px] text-slate-500">
                     <span>Bruttó teljes költség:</span>
                     <span className="font-mono">{formatHu(totalInvestmentCost)} Ft</span>
@@ -1149,7 +1106,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       key={x.val}
                       type="button"
                       onClick={() => onChangeTariff(x.val)}
-                      className={`p-1.5 rounded-md border text-center cursor-pointer transition-all ${
+                      className={`p-2 rounded-lg border text-center cursor-pointer transition-all ${
                         tariffHuf === x.val
                           ? (isDark ? 'bg-slate-800 border-slate-500 text-slate-100 shadow' : 'bg-slate-200 border-slate-400 text-slate-900 shadow-sm')
                           : (isDark ? 'bg-transparent border-slate-800 text-slate-400 hover:bg-slate-800' : 'bg-transparent border-slate-200 text-slate-500 hover:bg-slate-100')
@@ -1165,27 +1122,29 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             </div>
 
             {/* 3 & 4. Comparative savings and payback in one tight grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
-              <div className="flex flex-col">
-                <span className="text-slate-500 text-[10px] font-medium">Régi gáz fűtés (éves)</span>
-                <span className={`text-sm font-mono mt-0.5 block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{formatHu(calcResults.gasCostHuf)}</span>
-              </div>
+            <div className={`rounded-lg border p-3 transition-all ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="flex flex-col">
+                  <span className="text-slate-500 text-[10px] font-medium">Régi gáz fűtés (éves)</span>
+                  <span className={`text-sm font-mono mt-0.5 block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{formatHu(calcResults.gasCostHuf)}</span>
+                </div>
 
-              <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
-                <span className="text-slate-500 text-[10px] font-medium">Új hőszivattyús fűtés</span>
-                <span className="text-sm font-mono mt-0.5 block text-blue-500">{formatHu(calcResults.hpCostHuf)}</span>
-              </div>
+                <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
+                  <span className="text-slate-500 text-[10px] font-medium">Új hőszivattyús fűtés</span>
+                  <span className="text-sm font-mono mt-0.5 block text-blue-500">{formatHu(calcResults.hpCostHuf)}</span>
+                </div>
 
-              <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
-                <span className="text-slate-500 text-[10px] font-medium">Éves megtakarítás</span>
-                <span className="text-sm font-mono mt-0.5 block text-emerald-500">+{formatHu(calcResults.yearlySavingsHuf)}</span>
-              </div>
+                <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
+                  <span className="text-slate-500 text-[10px] font-medium">Éves megtakarítás</span>
+                  <span className="text-sm font-mono mt-0.5 block text-emerald-500">+{formatHu(calcResults.yearlySavingsHuf)}</span>
+                </div>
 
-              <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
-                <span className="text-slate-500 text-[10px] font-medium">Várt megtérülés (Állami)</span>
-                <span className={`text-sm font-mono mt-0.5 block ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                  {paybackYears === 99 ? 'Nincs' : `${paybackYears} Év`}
-                </span>
+                <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
+                  <span className="text-slate-500 text-[10px] font-medium">Várt megtérülés (Állami)</span>
+                  <span className={`text-sm font-mono mt-0.5 block ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                    {paybackYears === 99 ? 'Nincs' : `${paybackYears} Év`}
+                  </span>
+                </div>
               </div>
             </div>
 

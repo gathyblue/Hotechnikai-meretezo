@@ -110,6 +110,8 @@ export interface HydraulicInput {
   secondaryPipeSize?: string;     // separate secondary diameter
   secondaryPumpOverride?: string; // custom manual secondary pump selection
   targetVelocityMs?: number;      // design target flow velocity m/s (default 0.6)
+  pipeLengthEstimate?: number;    // estimated total pipe length in meters (5-50)
+  fittingsCount?: number;         // number of fittings/elbows in circuit
 }
 
 export interface EngineeringParams {
@@ -148,4 +150,19 @@ export interface HydraulicResults {
   dabPumpStage?: string;          // DAB pump suggested stage
   recommendedBufferL?: number;    // Recommended buffer tank volume
   isBufferAdequate?: boolean;     // Whether additional volume >= recommended
+  // NEW FIELDS for mass flow, glycol, precharge calc
+  primaryMassFlowKgh: number;     // kg/h primary
+  secondaryMassFlowKgh: number;   // kg/h secondary
+  glycolDensityKgm3: number;      // kg/m3 at current glycol%
+  glycolSpecificHeatWhKgK: number; // Wh/kgK at current glycol%
+  glycolPercentageUsed: number;
+  systemVolumeL: number;          // total estimated system volume
+  prechargeCalculated: number;    // precharge from static height
+  finalCalculated: number;        // final pressure from safety valve
+  primaryPipeLossKpa: number;     // pipe-only pressure drop (excl HX)
+  secondaryPipeLossKpa: number;   // pipe-only pressure drop (excl HX)
+  primaryFlowTempC: number;      // primary flow temperature
+  primaryReturnTempC: number;    // primary return temperature
+  secondaryFlowTempC: number;    // secondary flow temperature
+  secondaryReturnTempC: number;  // secondary return temperature
 }

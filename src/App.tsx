@@ -18,7 +18,7 @@ export default function App() {
   const [buildingData, setBuildingData] = useState<BuildingData>({
     ownerName: '',
     address: '',
-    location: '6000 Kecskemét',
+    location: '',
     designTemp: -13, // standard Central HU
     heatedArea: 120, // average HU square meters
     ceilingHeight: 2.7,
@@ -44,14 +44,18 @@ export default function App() {
   });
 
   const [selectedModel, setSelectedModel] = useState<HeatPumpModel | null>(null);
-  const [selectedEmitter, setSelectedEmitter] = useState<'floor' | 'radiator' | 'cool18' | 'cool12'>('radiator');
+  const [selectedEmitter, setSelectedEmitter] = useState<'floor' | 'radiator'>('radiator');
   const [tariffHuf, setTariffHuf] = useState<number>(23); // H-tarifa default: 23 Ft
   const [bivalentTempManual, setBivalentTempManual] = useState<number>(-13); // manual bivalent point slider, defaults to match designTemp (-13) pour Kecskemét
 
-  // Synchronize bivalentTempManual to designTemp when designTemp changes, keeping it as "no bivalence, full heat pump operation" by default
+  // Initialize bivalentTempManual to designTemp only on first mount
+  const [bivalentInitialized, setBivalentInitialized] = useState(false);
   useEffect(() => {
-    setBivalentTempManual(buildingData.designTemp);
-  }, [buildingData.designTemp]);
+    if (!bivalentInitialized) {
+      setBivalentTempManual(buildingData.designTemp);
+      setBivalentInitialized(true);
+    }
+  }, [bivalentInitialized, buildingData.designTemp]);
 
   const [engineeringParams, setEngineeringParams] = useState<EngineeringParams>({
     airHeatCapacityFactor: 0.34,
@@ -70,13 +74,15 @@ export default function App() {
     staticHeight: 4,
     safetyValvePressure: 3.0,
     additionalWaterVolumeL: 100,
-    secondaryLoops: 'radiator',
+    secondaryLoops: 'radiators',
     includeHeatExchanger: false,
     includeDhwTank: true,
     primaryPipeSize: 'Auto',
     secondaryPipeSize: 'Auto',
     secondaryPumpOverride: 'Auto',
     targetVelocityMs: 0.6,
+    pipeLengthEstimate: 15,
+    fittingsCount: 8,
   });
 
   const [hydraulicResults, setHydraulicResults] = useState<HydraulicResults>({
@@ -208,29 +214,27 @@ export default function App() {
   }, [calcResults.heatLossKw.total, selectedEmitter, bivalentTempManual, buildingData.designTemp, HEAT_PUMP_DATABASE]);
 
   // Handle selected HP and automatic hydraulic emitter updates
-  const handleSelectModel = (model: HeatPumpModel, emitterType: 'floor' | 'radiator' | 'cool18' | 'cool12') => {
+  const handleSelectModel = (model: HeatPumpModel, emitterType: 'floor' | 'radiator') => {
     setSelectedModel(model);
     setSelectedEmitter(emitterType);
     
     // update secondary loop in hydraulic settings automatically
     setHydraulicState(prev => ({
       ...prev,
-      secondaryLoops: emitterType === 'radiator' ? 'radiators' : emitterType === 'cool12' ? 'fan_coil' : 'floor'
+      secondaryLoops: emitterType === 'radiator' ? 'radiators' : 'floor'
     }));
   };
 
-  const handleEmitterChange = (emitter: 'floor' | 'radiator' | 'cool18' | 'cool12') => {
+  const handleEmitterChange = (emitter: 'floor' | 'radiator') => {
     setSelectedEmitter(emitter);
     setHydraulicState(prev => ({
       ...prev,
-      secondaryLoops: emitter === 'radiator' ? 'radiators' : emitter === 'cool12' ? 'fan_coil' : 'floor'
+      secondaryLoops: emitter === 'radiator' ? 'radiators' : 'floor'
     }));
   };
 
-  const flowTempForEmitters = {
+  const flowTempForEmitters: Record<string, number> = {
     floor: 35,
-    cool18: 35, // floor temp in winter is 35
-    cool12: 45, // fan-coil temp in winter is 45
     radiator: 55
   };
 
@@ -251,18 +255,17 @@ export default function App() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
-                className={`relative z-10 text-[10px] font-bold px-3 py-1.5 rounded-[3px] transition-colors cursor-pointer whitespace-nowrap ${
+                className={`relative flex-1 flex items-center justify-center text-[10px] font-bold px-3 py-1.5 rounded-[3px] transition-colors cursor-pointer whitespace-nowrap min-w-0 ${
                   activeTab === tab
-                    ? 'text-slate-900'
+                    ? isDark ? 'text-slate-100' : 'text-slate-900'
                     : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
                 }`}
               >
                 {activeTab === tab && (
                   <motion.div
                     layoutId="activeTab"
-                    initial={false}
-                    transition={{ type: 'tween', ease: 'easeInOut', duration: 0.2 }}
-                    className={`absolute inset-0 rounded-[2px] shadow-sm ${isDark ? 'bg-slate-100' : 'bg-white'}`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 33 }}
+                    className={`absolute inset-0 rounded-[2px] shadow-sm ${isDark ? 'bg-slate-850 border border-slate-700/50' : 'bg-white'}`}
                   />
                 )}
                 <span className="relative z-10 capitalize">
