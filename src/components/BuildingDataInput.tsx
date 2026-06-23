@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { getThemeClasses } from '../utils/theme';
 import { BuildingData } from '../types';
-import { Flame, Home, Layers, ShieldAlert, Sparkles, Sliders, User, MapPin, CheckCircle, AlertTriangle, Cpu, Calendar } from 'lucide-react';
+import { Flame, Home, Layers, ShieldAlert, Sparkles, Sliders, User, MapPin, CheckCircle, Cpu, Calendar } from 'lucide-react';
 import { calculateGasHufCost, calculateGasM3FromHuf, performHeatLossCalculation } from '../utils/calculations';
 import { HUNGARIAN_CITIES, getHungarianZipCode, removeAccents } from '../data/settlements';
 import { SegmentedControl } from './SegmentedControl';
@@ -31,7 +32,9 @@ export const CONSTRUCTION_YEAR_GROUPS = [
     roof: { baseUValue: 1.1, insulationThickness: 0 },
     floor: { baseUValue: 0.9, insulationThickness: 0 },
     windows: { uValue: 3.0 },
-    ventilationRate: 0.8
+    ventilationRate: 0.8,
+    typicalGasM3PerM2: 28,
+    typicalCertQ: 1.20,
   },
   {
     id: '1980-1990',
@@ -41,7 +44,9 @@ export const CONSTRUCTION_YEAR_GROUPS = [
     roof: { baseUValue: 1.1, insulationThickness: 0 },
     floor: { baseUValue: 0.9, insulationThickness: 0 },
     windows: { uValue: 2.8 },
-    ventilationRate: 0.5
+    ventilationRate: 0.5,
+    typicalGasM3PerM2: 25,
+    typicalCertQ: 1.00,
   },
   {
     id: '1991-2001',
@@ -51,7 +56,9 @@ export const CONSTRUCTION_YEAR_GROUPS = [
     roof: { baseUValue: 1.1, insulationThickness: 10 },
     floor: { baseUValue: 0.9, insulationThickness: 5 },
     windows: { uValue: 2.8 },
-    ventilationRate: 0.5
+    ventilationRate: 0.5,
+    typicalGasM3PerM2: 18,
+    typicalCertQ: 0.75,
   },
   {
     id: '2002-2015',
@@ -61,7 +68,9 @@ export const CONSTRUCTION_YEAR_GROUPS = [
     roof: { baseUValue: 1.3, insulationThickness: 15 },
     floor: { baseUValue: 0.9, insulationThickness: 5 },
     windows: { uValue: 1.5 },
-    ventilationRate: 0.5
+    ventilationRate: 0.5,
+    typicalGasM3PerM2: 12,
+    typicalCertQ: 0.45,
   },
   {
     id: '2016-2020',
@@ -71,7 +80,9 @@ export const CONSTRUCTION_YEAR_GROUPS = [
     roof: { baseUValue: 1.3, insulationThickness: 20 },
     floor: { baseUValue: 0.9, insulationThickness: 10 },
     windows: { uValue: 1.1 },
-    ventilationRate: 0.5
+    ventilationRate: 0.5,
+    typicalGasM3PerM2: 8,
+    typicalCertQ: 0.30,
   },
   {
     id: '2021-',
@@ -81,8 +92,10 @@ export const CONSTRUCTION_YEAR_GROUPS = [
     roof: { baseUValue: 0.8, insulationThickness: 25 },
     floor: { baseUValue: 0.6, insulationThickness: 15 },
     windows: { uValue: 0.7 },
-    ventilationRate: 0.3
-  }
+    ventilationRate: 0.3,
+    typicalGasM3PerM2: 5,
+    typicalCertQ: 0.18,
+  },
 ];
 
 interface BuildingDataInputProps {
@@ -141,26 +154,13 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
     onChange({
       ...data,
       constructionYearGroup: yearId,
-      walls: {
-        ...data.walls,
-        baseUValue: preset.walls.baseUValue,
-        insulationThickness: preset.walls.insulationThickness
-      },
-      roof: {
-        ...data.roof,
-        baseUValue: preset.roof.baseUValue,
-        insulationThickness: preset.roof.insulationThickness
-      },
-      floor: {
-        ...data.floor,
-        baseUValue: preset.floor.baseUValue,
-        insulationThickness: preset.floor.insulationThickness
-      },
-      windows: {
-        ...data.windows,
-        uValue: preset.windows.uValue
-      },
-      ventilationRate: preset.ventilationRate
+      walls: { ...data.walls, baseUValue: preset.walls.baseUValue, insulationThickness: preset.walls.insulationThickness },
+      roof: { ...data.roof, baseUValue: preset.roof.baseUValue, insulationThickness: preset.roof.insulationThickness },
+      floor: { ...data.floor, baseUValue: preset.floor.baseUValue, insulationThickness: preset.floor.insulationThickness },
+      windows: { ...data.windows, uValue: preset.windows.uValue },
+      ventilationRate: preset.ventilationRate,
+      gasAnnualM3: Math.round(preset.typicalGasM3PerM2 * data.heatedArea),
+      certSpecificLossQ: preset.typicalCertQ,
     });
   };
 
@@ -194,6 +194,15 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
     updated.windows = { ...data.windows, area: windowArea };
     updated.walls = { ...data.walls, area: grossWallArea };
     
+    // If heatedArea changed and a construction year preset is active, sync gas & cert q
+    if (field === 'heatedArea') {
+      const preset = CONSTRUCTION_YEAR_GROUPS.find(g => g.id === data.constructionYearGroup);
+      if (preset) {
+        updated.gasAnnualM3 = Math.round(preset.typicalGasM3PerM2 * val);
+        updated.certSpecificLossQ = preset.typicalCertQ;
+      }
+    }
+    
     onChange(updated);
   };
 
@@ -205,8 +214,6 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
   // Compute live comparison values across all methods
   const calcResults = performHeatLossCalculation(data);
   const { gasKw = 0, fabricKw = 0, certKw = 0 } = calcResults.comparison || {};
-  const maxComputedKw = Math.max(gasKw, fabricKw, certKw);
-  const isOverridden = !!data.useManualOverride;
 
   return (
     <div className={`rounded border shadow-sm overflow-hidden transition-all duration-300 ${t.card} ${t.textPrimary}`} id="building-data-form">
@@ -260,13 +267,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             <div className="relative">
               <input
                 type="text"
-                value={showCityDropdown ? citySearch : (data.location || '')}
-                onFocus={(e) => {
-                  setCitySearch(data.location || '');
-                  setShowCityDropdown(true);
-                  setFocusedIndex(-1);
-                  e.currentTarget.select();
-                }}
+                value={data.location || ''}
                 onKeyDown={(e) => {
                   if (!showCityDropdown) return;
                   const cleanSearch = removeAccents(citySearch.replace(/^\d{4}\s+/, "").trim().toLowerCase());
@@ -389,7 +390,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200/80 text-slate-850'
                 }`}
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-450 text-[9px] font-bold">m²</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[9px] font-bold">m²</span>
             </div>
           </div>
 
@@ -425,7 +426,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200/80 text-slate-850'
                 }`}
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-450 text-[9px] font-bold">m</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[9px] font-bold">m</span>
             </div>
           </div>
 
@@ -448,7 +449,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               </select>
             </div>
             {data.constructionYearGroup && (
-              <div className="text-[8px] text-slate-450 leading-tight font-medium mt-0.5">
+              <div className="text-[8px] text-slate-400 leading-tight font-medium mt-0.5">
                 {CONSTRUCTION_YEAR_GROUPS.find(g => g.id === data.constructionYearGroup)?.description}
               </div>
             )}
@@ -540,7 +541,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               },
             ]}
             value={data.method}
-            onChange={(val) => onChange({ ...data, method: val, useManualOverride: false })}
+            onChange={(val) => onChange({ ...data, method: val })}
             layoutId="calc-method"
             theme={theme as 'light' | 'dark'}
           />
@@ -698,7 +699,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
           {/* METHOD 2: STRUCTURES (FABRIC) WITH DISCRETE BUTTON GROUPS */}
           {data.method === 'fabric' && (
-            <div className={`p-3 border rounded space-y-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-805' : 'bg-slate-50 border-slate-300'}`}>
+            <div className={`p-3 border rounded space-y-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-300'}`}>
               <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest pb-1 border-b border-slate-800">
                 <Sliders className="w-3.5 h-3.5 text-blue-500" />
                 Méretezett szerkezeti elemek (Alapterület alapú predikcióval)
@@ -719,7 +720,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         onChange={(e) => updateStructure('walls', 'area', Number(e.target.value))}
                         className={`w-full pl-2 pr-6 py-0.5 border rounded text-xs font-mono font-bold ${isDark ? 'bg-slate-900 border-slate-850 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-800'}`}
                       />
-                      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-450 text-[9px] font-bold">m²</span>
+                      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-[9px] font-bold">m²</span>
                     </div>
                   </div>
                     <div className="grid grid-cols-1 gap-1">
@@ -728,7 +729,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         <select
                           value={data.walls.baseUValue}
                           onChange={(e) => updateStructure('walls', 'baseUValue', Number(e.target.value))}
-                          className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-705'}`}
+                          className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
                         >
                           <option value={1.45}>Kisméretű tömör tégla (38cm) - U=1.45</option>
                           <option value={1.50}>B30-as blokktégla (30cm) - U=1.50</option>
@@ -741,7 +742,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       </div>
                       
                       <div>
-                        <span className="text-[9px] font-bold text-slate-405 block mt-1">Homlokzati EPS Szigetelés (cm)</span>
+                        <span className="text-[9px] font-bold text-slate-400 block mt-1">Homlokzati EPS Szigetelés (cm)</span>
                         <div className="mt-0.5">
                           <SegmentedControl
                             options={[0, 5, 8, 10, 12, 15, 20].map(v => ({ value: v, label: String(v) }))}
@@ -754,7 +755,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         </div>
                       </div>
                       
-                      <div className="pt-0.5 select-none text-[8px] text-slate-405 leading-tight font-medium">
+                      <div className="pt-0.5 select-none text-[8px] text-slate-400 leading-tight font-medium">
                         Az ablakok felülete ({data.windows.area} m²) a számításkor automatikusan levonásra kerül a falfelületből!
                       </div>
                     </div>
@@ -770,7 +771,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         type="number"
                         value={data.roof.area || 0}
                         onChange={(e) => updateStructure('roof', 'area', Number(e.target.value))}
-                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-350'}`}
+                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
                       />
                       <span className="text-[9px] text-slate-500 font-bold">m²</span>
                     </div>
@@ -791,7 +792,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                     </div>
 
                     <div>
-                      <span className="text-[9px] text-slate-405 block font-semibold mt-1">Gyapot Hőszigetelés (cm)</span>
+                      <span className="text-[9px] text-slate-400 block font-semibold mt-1">Gyapot Hőszigetelés (cm)</span>
                       <div className="mt-0.5">
                         <SegmentedControl
                           options={[0, 10, 15, 20, 25, 30].map(v => ({ value: v, label: String(v) }))}
@@ -816,7 +817,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         type="number"
                         value={data.floor.area || 0}
                         onChange={(e) => updateStructure('floor', 'area', Number(e.target.value))}
-                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-350'}`}
+                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
                       />
                       <span className="text-[9px] text-slate-500 font-bold">m²</span>
                     </div>
@@ -828,7 +829,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       <select
                         value={data.floor.baseUValue}
                         onChange={(e) => updateStructure('floor', 'baseUValue', Number(e.target.value))}
-                        className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-707'}`}
+                        className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
                       >
                         <option value={0.9}>Szigetelés nélküli beton (talajon) (U=0.9)</option>
                         <option value={1.1}>Fafödém pinceszint felett (U=1.1)</option>
@@ -837,7 +838,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                     </div>
 
                     <div>
-                      <span className="text-[9px] text-slate-405 block font-semibold mt-1">Aljazat alatti lépésálló / XPS (cm)</span>
+                      <span className="text-[9px] text-slate-400 block font-semibold mt-1">Aljazat alatti lépésálló / XPS (cm)</span>
                       <div className="mt-0.5">
                         <SegmentedControl
                           options={[0, 5, 8, 10, 15, 20].map(v => ({ value: v, label: String(v) }))}
@@ -862,7 +863,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         type="number"
                         value={data.windows.area || 0}
                         onChange={(e) => updateStructure('windows', 'area', Number(e.target.value))}
-                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-350'}`}
+                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
                       />
                       <span className="text-[9px] text-slate-500 font-bold">m²</span>
                     </div>
@@ -874,7 +875,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       <select
                         value={data.windows.uValue}
                         onChange={(e) => updateStructure('windows', 'uValue', Number(e.target.value))}
-                        className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-705'}`}
+                        className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
                       >
                         <option value={3.0}>Egyrétegű fém v. gerébtokos fa (U=3.0)</option>
                         <option value={2.8}>Kétrétegű régi termo üvegezés (U=2.8)</option>
@@ -917,7 +918,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
           {/* METHOD 3: ENERGY CERTIFICATE WITH ZERO CONSTRAINT FREEDOM */}
           {data.method === 'certificate' && (
-            <div className={`p-3 border rounded space-y-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-805' : 'bg-slate-50 border-slate-300'}`}>
+            <div className={`p-3 border rounded space-y-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-300'}`}>
               <div className={`p-2.5 border rounded flex items-start gap-2 ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
                 <ShieldAlert className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                 <p className="text-[10px] leading-normal font-semibold">
@@ -968,7 +969,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       }`}
                       placeholder="Pl. 0.38"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-550 text-[10px] font-bold font-mono">W/m³K</span>
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold font-mono">W/m³K</span>
                   </div>
                   <p className="text-[9px] text-slate-500 font-medium">U_közép jellemző tényező (csak ha a fenti kW = 0).</p>
                 </div>
@@ -993,208 +994,58 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             </div>
           </div>
 
-          {/* 4-column smart comparison and selector grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-            
-            {/* Method 1: Gas */}
-            <div 
-              type="button"
-              onClick={() => {
-                onChange({
-                  ...data,
-                  useManualOverride: false,
-                  method: 'gas'
-                });
-               }}
-               className={`p-1.5 md:p-2 rounded border text-center relative overflow-hidden flex flex-col justify-between transition-all duration-300 backdrop-blur-xs cursor-pointer select-none ${
-                 isOverridden
-                   ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-850 opacity-20 filter grayscale desaturate'
-                   : data.method === 'gas'
-                     ? (isDark 
-                         ? 'bg-blue-950/45 border-blue-500 ring-1 ring-blue-500/30' 
-                         : 'bg-blue-50 border-blue-300 shadow-xs ring-1 ring-blue-400/20')
-                     : 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-               }`}
-             >
-               {!isOverridden && maxComputedKw === gasKw && (
-                 <span className="absolute right-1 top-1 bg-rose-500 text-white font-extrabold px-1 rounded-[2px] text-[6px] tracking-wider scale-90">MAX</span>
-               )}
-               <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-wider block ${
-                 !isOverridden && data.method === 'gas' ? (isDark ? 'text-blue-400' : 'text-blue-700') : 'text-slate-400'
-               }`}>Gázfogyasztás</span>
-               <span className={`text-sm md:text-base font-black font-mono block mt-0.5 ${
-                 isDark ? 'text-slate-100' : 'text-slate-800'
-               }`}>{gasKw.toFixed(1)} <span className="text-[8px] font-normal font-sans">kW</span></span>
-               <span className="text-[7.5px] font-bold text-slate-500 block leading-none mt-0.5">{data.gasAnnualM3 || 0} m³/év bázis</span>
-             </div>
- 
-             {/* Method 2: Fabric */}
-             <div 
-               type="button"
-               onClick={() => {
-                 onChange({
-                   ...data,
-                   useManualOverride: false,
-                   method: 'fabric'
-                 });
-               }}
-               className={`p-2.5 rounded border text-center relative overflow-hidden flex flex-col justify-between transition-all duration-305 cursor-pointer select-none ${
-                 isOverridden
-                   ? 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-850 opacity-25 filter grayscale desaturate'
-                   : data.method === 'fabric'
-                     ? (isDark 
-                         ? 'bg-slate-800 border-slate-600 shadow-md scale-[1.01]' 
-                         : 'bg-slate-200 border-slate-405 shadow-sm scale-[1.01]')
-                     : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-850 opacity-50 hover:opacity-100'
-               }`}
-             >
-               {!isOverridden && maxComputedKw === fabricKw && (
-                 <span className="absolute -right-3 -top-3 w-8 h-8 bg-slate-505 rotate-45 flex items-center justify-center font-bold text-[6px] text-slate-101 shrink-0">MAX</span>
-               )}
-               <span className={`text-[7.5px] font-extrabold uppercase tracking-widest block ${
-                 !isOverridden && data.method === 'fabric' ? (isDark ? 'text-slate-200' : 'text-slate-800') : 'text-slate-405'
-               }`}>Szerkezeti U</span>
-               <span className={`text-lg font-black font-mono block mt-1 ${
-                 isDark ? 'text-slate-100' : 'text-slate-800'
-               }`}>{fabricKw.toFixed(1)} <span className="text-[8px] font-bold font-sans">kW</span></span>
-               <span className="text-[8px] font-bold text-slate-500 block leading-none mt-1">{data.heatedArea} m² alapján</span>
-             </div>
- 
-             {/* Method 3: Certificate */}
-             <div 
-               type="button"
-               onClick={() => {
-                 onChange({
-                   ...data,
-                   useManualOverride: false,
-                   method: 'certificate'
-                 });
-               }}
-               className={`p-1.5 md:p-2 rounded border text-center relative overflow-hidden flex flex-col justify-between transition-all duration-300 backdrop-blur-xs cursor-pointer select-none ${
-                 isOverridden
-                   ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-850 opacity-20 filter grayscale desaturate'
-                   : data.method === 'certificate'
-                     ? (isDark 
-                         ? 'bg-blue-950/45 border-blue-500 ring-1 ring-blue-500/30' 
-                         : 'bg-blue-50 border-blue-300 shadow-xs ring-1 ring-blue-400/20')
-                     : 'bg-slate-50/50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-               }`}
-             >
-               {!isOverridden && maxComputedKw === certKw && (
-                 <span className="absolute right-1 top-1 bg-rose-500 text-white font-extrabold px-1 rounded-[2px] text-[6px] tracking-wider scale-90">MAX</span>
-               )}
-               <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-wider block ${
-                 !isOverridden && data.method === 'certificate' ? (isDark ? 'text-blue-400' : 'text-blue-700') : 'text-slate-400'
-               }`}>Tanúsítvány</span>
-               <span className={`text-sm md:text-base font-black font-mono block mt-0.5 add-padding-x ${
-                 isDark ? 'text-slate-100' : 'text-slate-800'
-               }`}>{certKw.toFixed(1)} <span className="text-[8px] font-normal font-sans">kW</span></span>
-               <span className="text-[7.5px] font-bold text-slate-500 block leading-none mt-0.5">{data.certHeatDemandKw > 0 ? 'Beírt érték' : 'Fajlagos q'}</span>
-             </div>
-
-            {/* Method 4: Manual Override */}
-            <div 
-              type="button"
-              onClick={() => {
-                onChange({
-                  ...data,
-                  useManualOverride: true,
-                  manualOverrideKw: data.manualOverrideKw || maxComputedKw
-                });
-              }}
-              className={`p-1.5 md:p-2 rounded border text-center relative overflow-hidden flex flex-col justify-between transition-all duration-300 backdrop-blur-xs cursor-pointer select-none ${
-                isOverridden
-                  ? (isDark 
-                      ? 'bg-amber-950/30 border-amber-500 ring-1 ring-amber-500/40 shadow-xs' 
-                      : 'bg-amber-50 border-amber-400 shadow-xs ring-1 ring-amber-450/25')
-                  : 'bg-white dark:bg-slate-900/25 border-slate-200 dark:border-slate-850 border-dashed hover:bg-amber-500/5 hover:border-amber-500/30'
-              }`}
-            >
-              {isOverridden && (
-                <span className="absolute right-1 top-1 bg-amber-500 text-white font-extrabold px-1 rounded-[2px] text-[6px] tracking-wider scale-90">AKTÍV</span>
-              )}
-              <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-wider block ${
-                isOverridden ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'
-              }`}>Kézi érték</span>
-              <span className={`text-sm md:text-base font-black font-mono block mt-0.5 ${
-                isOverridden ? 'text-amber-600 dark:text-amber-400' : (isDark ? 'text-slate-400' : 'text-slate-700')
-              }`}>{(data.manualOverrideKw || maxComputedKw).toFixed(1)} <span className="text-[8px] font-normal font-sans">kW</span></span>
-              <span className="text-[7.5px] font-bold text-amber-500/95 block leading-none mt-0.5">{isOverridden ? 'Megadott fűtés' : 'Manuális beadó'}</span>
-            </div>
-
-          </div>
-
-          {/* Manual override action form */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-            <div className="flex items-center justify-between">
-              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={!!data.useManualOverride}
-                  onChange={(e) => {
-                    onChange({
-                      ...data,
-                      useManualOverride: e.target.checked,
-                      manualOverrideKw: e.target.checked ? data.manualOverrideKw || maxComputedKw : undefined
-                    });
-                  }}
-                  className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
-                />
-                <span className="font-bold text-[10px] text-slate-850 dark:text-slate-200 uppercase tracking-wider">
-                  Mértékadó hőigény manuális felülbírálata
-                </span>
-              </label>
-
-              {data.useManualOverride && (
-                <span className="inline-flex items-center gap-1.5 text-[8.5px] font-black text-amber-700 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 border border-amber-200 rounded uppercase">
-                  <AlertTriangle className="w-2.5 h-2.5" /> Felülbírálat aktív
-                </span>
-              )}
-            </div>
-
-            {/* If Manual override is selected, show Slider and value input */}
-            {data.useManualOverride && (
-              <div className="mt-2.5 bg-amber-500/5 border border-amber-300/30 p-3 rounded space-y-2.5 animate-fadeIn">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-0.5">
-                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest block font-bold">Felhasználói egyedi hőigény</span>
-                    <span className="text-[10px] text-slate-400 leading-normal block">Az itt beírt érték fog teljesülni az egész méretezési számításban!</span>
+          {/* 3-method comparison grid — compact horizontal style */}
+          <div className="grid grid-cols-3 gap-2">
+            {(() => {
+              const methods = [
+                { key: 'gas' as const, label: 'Gázfogyasztás', kw: gasKw, note: `${data.gasAnnualM3 || 0} m³/év`, darkBg: 'bg-rose-950/20', darkBorder: 'border-rose-900/60', lightBg: 'bg-rose-50/50', lightBorder: 'border-rose-200', textDark: 'text-rose-400', textLight: 'text-rose-600', valueDark: 'text-white', valueLight: 'text-rose-950' },
+                { key: 'fabric' as const, label: 'Szerkezeti U', kw: fabricKw, note: `${data.heatedArea} m² alapján`, darkBg: 'bg-amber-950/20', darkBorder: 'border-amber-900/60', lightBg: 'bg-amber-50/50', lightBorder: 'border-amber-200', textDark: 'text-amber-400', textLight: 'text-amber-600', valueDark: 'text-white', valueLight: 'text-amber-950' },
+                { key: 'certificate' as const, label: 'Tanúsítvány', kw: certKw, note: data.certHeatDemandKw > 0 ? 'Beírt érték' : `q=${data.certSpecificLossQ.toFixed(2)}`, darkBg: 'bg-blue-950/20', darkBorder: 'border-blue-900/60', lightBg: 'bg-blue-50/50', lightBorder: 'border-blue-200', textDark: 'text-blue-400', textLight: 'text-blue-600', valueDark: 'text-white', valueLight: 'text-blue-950' },
+              ];
+              const sorted = [...methods].sort((a, b) => b.kw - a.kw);
+              const rankColors = ['#ef4444', '#f97316', '#3b82f6'];
+              return methods.map((m) => {
+                const rank = sorted.indexOf(m);
+                const color = rankColors[rank];
+                const active = data.method === m.key;
+                return (
+                  <div
+                    key={m.key}
+                    onClick={() => onChange({ ...data, method: m.key })}
+                    className={`relative overflow-hidden rounded-lg border cursor-pointer select-none transition-all duration-300 ${
+                      active
+                        ? isDark ? `${m.darkBg} shadow-sm` : `${m.lightBg} shadow-sm`
+                        : isDark ? `${m.darkBg} ${m.darkBorder} opacity-40 hover:opacity-70` : `${m.lightBg} ${m.lightBorder} opacity-40 hover:opacity-70`
+                    }`}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="heat-demand"
+                        transition={{ type: 'spring', stiffness: 400, damping: 33 }}
+                        className={`absolute inset-0 rounded-[5px] ${
+                          isDark ? 'bg-slate-850 border border-slate-700/50' : 'bg-white border border-slate-250'
+                        }`}
+                      />
+                    )}
+                    <div className="relative z-10 flex flex-row items-center justify-between p-3 gap-2 w-full">
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`font-bold text-[9px] uppercase tracking-wider ${isDark ? m.textDark : m.textLight}`}>{m.label}</span>
+                          {rank === 0 && !active && (
+                            <span className="text-[7px] font-extrabold text-white bg-rose-500 px-1 rounded-[2px]">MAX</span>
+                          )}
+                        </div>
+                        <span className={`text-[9px] font-medium mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{m.note}</span>
+                      </div>
+                      <div className="flex items-baseline gap-1 shrink-0">
+                        <span className={`font-light text-2xl md:text-3xl tracking-tight leading-none ${isDark ? m.valueDark : m.valueLight}`}>{m.kw.toFixed(1)}</span>
+                        <span className={`text-[10px] font-medium ${isDark ? m.textDark : m.textLight}`}>kW</span>
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="2"
-                      max="40"
-                      value={data.manualOverrideKw || maxComputedKw}
-                      onChange={(e) => updateField('manualOverrideKw', Number(e.target.value))}
-                      className="w-20 px-2 py-1 bg-white dark:bg-slate-950 border border-amber-500/40 rounded text-center text-xs font-black font-mono text-amber-600 focus:outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-bold">kW</span>
-                  </div>
-                </div>
-
-                {/* Range Slider for UX */}
-                <div className="space-y-1">
-                  <input
-                    type="range"
-                    min="2"
-                    max="30"
-                    step="0.5"
-                    value={data.manualOverrideKw || maxComputedKw}
-                    onChange={(e) => updateField('manualOverrideKw', Number(e.target.value))}
-                    className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                  />
-                  <div className="flex justify-between text-[8px] font-mono text-slate-400 font-bold">
-                    <span>2.0 kW (Passzív ház)</span>
-                    <span>10.0 kW (Átlagos)</span>
-                    <span>20.0 kW (Nagy ház)</span>
-                    <span>30.0 kW+ (Vidéki kastély)</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                );
+              });
+            })()}
           </div>
         </div>
       </div>

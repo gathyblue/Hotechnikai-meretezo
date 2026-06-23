@@ -15748,7 +15748,30 @@ export const HUNGARIAN_CITIES = [
     "name": "Zsurk",
     "temp": -15,
     "zip": "4627"
-  }
+  },
+  { "name": "Budapest I. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest II. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest III. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest IV. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest V. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest VI. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest VII. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest VIII. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest IX. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest X. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XI. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XII. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XIII. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XIV. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XV. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XVI. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XVII. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XVIII. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XIX. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XX. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XXI. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XXII. kerület", "temp": -13, "zip": "" },
+  { "name": "Budapest XXIII. kerület", "temp": -13, "zip": "" }
 ];
 
 export function removeAccents(str: string): string {

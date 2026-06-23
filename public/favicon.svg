@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Solar panel / heat pump icon -->
+  <rect x="12" y="20" width="40" height="28" rx="4" fill="#3b82f6" />
+  <rect x="16" y="24" width="14" height="14" rx="2" fill="#60a5fa" />
+  <rect x="34" y="24" width="14" height="14" rx="2" fill="#60a5fa" />
+  <rect x="16" y="40" width="14" height="4" rx="1" fill="#93c5fd" />
+  <rect x="34" y="40" width="14" height="4" rx="1" fill="#93c5fd" />
+  <!-- Sun rays -->
+  <circle cx="32" cy="12" r="5" fill="#f59e0b" />
+  <path d="M32 4v3M32 17v3M23 7l2 2M41 17l2 2M23 17l2-2M41 7l2 2" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
+  <!-- Snowflake / cold -->
+  <circle cx="32" cy="48" r="3" fill="#38bdf8" />
+</svg>

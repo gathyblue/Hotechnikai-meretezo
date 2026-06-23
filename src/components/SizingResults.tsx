@@ -102,10 +102,6 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         economics,
       };
     }).sort((a, b) => {
-      // Sort primarily by capacity (kW) ascending — user can see the size progression
-      if (a.isAdequate && !b.isAdequate) return -1;
-      if (!a.isAdequate && b.isAdequate) return 1;
-      
       const capA = a.capacityA7W35 || 0;
       const capB = b.capacityA7W35 || 0;
       return capA - capB;
@@ -376,6 +372,16 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 ].join(' ');
                                 const gridStroke = isDark ? '#1e293b' : '#f1f5f9';
                  const tickColor = isDark ? '#cbd5e1' : '#374151';
+                const labelX = gX(bivalentTempManual);
+                const demandY = gY(demandAtTempManual);
+                const hpY = gY(hpCapAtManual);
+                const labelW = 100;
+                const labelH = 18;
+                const labelGap = 28;
+                const labelsOverlap = activeHPResults && Math.abs(demandY - hpY) < labelGap;
+                const midY = (hpY + demandY) / 2;
+                const hpLabelY = labelsOverlap ? midY - labelGap / 2 : hpY;
+                const demandLabelY = labelsOverlap ? midY + labelGap / 2 : demandY;
 
                 return (
                   <div className="w-full space-y-3.5">
@@ -586,41 +592,16 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       />
  
                       {/* Precise values on the curves */}
-                      {/* 1. Demand Intersection Point */}
-                      <circle cx={gX(bivalentTempManual)} cy={gY(demandAtTempManual)} r="5.5" fill="#f97316" stroke="#ffffff" strokeWidth="1.5" />
-                      <g className="font-sans font-bold">
-                        <rect 
-                          x={gX(bivalentTempManual) + (bivalentTempManual > 2 ? -95 : 10)} 
-                          y={gY(demandAtTempManual) - 9} 
-                          width="85" 
-                          height="17" 
-                          rx="3" 
-                          fill="#ffffff" 
-                          stroke="#f97316" 
-                          strokeWidth="1.2" 
-                          opacity="0.95"
-                        />
-                        <text 
-                          x={gX(bivalentTempManual) + (bivalentTempManual > 2 ? -90 : 15)} 
-                          y={gY(demandAtTempManual) + 3} 
-                          fill="#ea580c" 
-                          fontSize="9.5" 
-                          textAnchor="start"
-                        >
-                          {demandAtTempManual.toFixed(1)} kW (Hőigény)
-                        </text>
-                      </g>
- 
-                      {/* 2. Heat Pump Capacity Intersection Point */}
+                      {/* 1. Heat Pump Capacity Intersection Point (Készülék) */}
                       {activeHPResults && (
                         <>
-                          <circle cx={gX(bivalentTempManual)} cy={gY(hpCapAtManual)} r="5.5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
+                          <circle cx={labelX} cy={hpY} r="5.5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
                           <g className="font-sans font-bold">
                             <rect 
-                              x={gX(bivalentTempManual) + (bivalentTempManual > 2 ? -95 : 10)} 
-                              y={gY(hpCapAtManual) - 9} 
-                              width="85" 
-                              height="17" 
+                              x={labelX + 10}
+                              y={hpLabelY - labelH / 2}
+                              width={labelW}
+                              height={labelH}
                               rx="3" 
                               fill="#ffffff" 
                               stroke="#3b82f6" 
@@ -628,17 +609,42 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                               opacity="0.95"
                             />
                             <text 
-                              x={gX(bivalentTempManual) + (bivalentTempManual > 2 ? -90 : 15)} 
-                              y={gY(hpCapAtManual) + 3} 
+                              x={labelX + 15}
+                              y={hpLabelY + labelH / 4}
                               fill="#2563eb" 
-                              fontSize="9.5" 
+                              fontSize="10"
                               textAnchor="start"
                             >
-                              {hpCapAtManual.toFixed(1)} kW (Gép)
+                              {hpCapAtManual.toFixed(1)} kW (Készülék)
                             </text>
                           </g>
                         </>
                       )}
+  
+                      {/* 2. Demand Intersection Point (Hőigény) */}
+                      <circle cx={labelX} cy={demandY} r="5.5" fill="#f97316" stroke="#ffffff" strokeWidth="1.5" />
+                      <g className="font-sans font-bold">
+                        <rect 
+                          x={labelX + 10}
+                          y={demandLabelY - labelH / 2}
+                          width={labelW}
+                          height={labelH}
+                          rx="3" 
+                          fill="#ffffff" 
+                          stroke="#f97316" 
+                          strokeWidth="1.2" 
+                          opacity="0.95"
+                        />
+                        <text 
+                          x={labelX + 15}
+                          y={demandLabelY + labelH / 4}
+                          fill="#ea580c" 
+                          fontSize="10"
+                          textAnchor="start"
+                        >
+                          {demandAtTempManual.toFixed(1)} kW (Hőigény)
+                        </text>
+                      </g>
  
                       {/* Bivalent point mark circle */}
                       <circle cx={gX(actBivTemp)} cy={gY(dMin15 * (1 - (actBivTemp - dTemp) / tRange))} r="5" fill="#10b981" stroke="#ffffff" strokeWidth="1" />
@@ -773,7 +779,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   <tr
                     key={item.id}
                     onClick={() => onSelectModel(item, selectedEmitter)}
-                    className={`cursor-pointer border-b text-xs ${rowBgClass}`}
+                    className={`cursor-pointer text-xs ${rowBgClass}`}
                   >
                     {/* Megnevezés Column (Name only as requested) */}
                     <td className="py-1.5 px-2">
