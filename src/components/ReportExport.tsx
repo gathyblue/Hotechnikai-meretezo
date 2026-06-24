@@ -37,8 +37,8 @@ export const ReportExport: React.FC<ReportExportProps> = ({
   const installDistance = 'short'; // Kis távolságot feltételezünk alapértelmezésben
   const installBaseHuf = 450000;
   
-  const dhwVolume = buildingData.dhwVolume ?? 200;
-  const dhwTankHuf = dhwVolume === 300 ? 730000 : 530000; // 530k is 200L, 730k is 300L
+  const dhwVolume = buildingData.dhwVolume ?? 0;
+  const dhwTankHuf = dhwVolume === 300 ? 730000 : (dhwVolume === 200 ? 530000 : 0);
   const dhwValveHuf = 95000; // motoros váltószelep
   const dhwPipingHuf = 155000; // csövezők és szerelvények
   const dhwHeaterHuf = 70000; // fűtőkiegészítés
@@ -87,7 +87,7 @@ export const ReportExport: React.FC<ReportExportProps> = ({
     let installPipeSizeDesc = isLargeMachine ? '5/4" (DN32)' : '1" (DN25)';
 
     const installationSurcharge = buildingData.mechanicalInstallCost ?? 2500000;
-    const dhwSurcharge = buildingData.includeDhwPackage !== false ? (dhwTankHuf + dhwValveHuf + dhwPipingHuf + dhwHeaterHuf + dhwLaborHuf) : 0;
+    const dhwSurcharge = dhwVolume > 0 ? (dhwTankHuf + dhwValveHuf + dhwPipingHuf + dhwHeaterHuf + dhwLaborHuf) : 0;
     const totalInvestment = discountedDevicePrice + installationSurcharge + dhwSurcharge;
     const activeSubsidy = useSubsidy ? subsidyAmount : 0;
     const netInvestment = Math.max(0, totalInvestment - activeSubsidy);
@@ -508,7 +508,7 @@ export const ReportExport: React.FC<ReportExportProps> = ({
         <tr>
           <td colspan="2" class="text-bold text-mono" style="background-color: #f8fafc; font-size: 10px; color: #0f172a;">C. HMV Modul (Melegvíz kiegészítés)</td>
         </tr>
-        ${buildingData.includeDhwPackage !== false ? `
+        ${dhwVolume > 0 ? `
         <tr>
           <td colspan="2" style="padding-left: 20px; color: #475569; font-style: italic;">
             Tartalmazza: ${dhwVolume}L speciális hőszivattyús HMV tároló megnövelt csőkígyó felülettel, motoros 3-járatú váltószelep, segédszerelvények, fűtőpatron védelmi csomag és beszerelés.

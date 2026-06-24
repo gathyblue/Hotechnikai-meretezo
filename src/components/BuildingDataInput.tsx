@@ -1,8 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
 import { getThemeClasses } from '../utils/theme';
 import { BuildingData } from '../types';
-import { Flame, Home, Layers, ShieldAlert, Sparkles, Sliders, User, MapPin, CheckCircle, Cpu, Calendar } from 'lucide-react';
+import { Flame, Layers, ShieldAlert, Sparkles, Sliders, User, MapPin, Calendar } from 'lucide-react';
 import { calculateGasHufCost, calculateGasM3FromHuf, performHeatLossCalculation } from '../utils/calculations';
 import { HUNGARIAN_CITIES, getHungarianZipCode, removeAccents } from '../data/settlements';
 import { SegmentedControl } from './SegmentedControl';
@@ -216,16 +215,16 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
   const { gasKw = 0, fabricKw = 0, certKw = 0 } = calcResults.comparison || {};
 
   return (
-    <div className={`rounded border shadow-sm overflow-hidden transition-all duration-300 ${t.card} ${t.textPrimary}`} id="building-data-form">
-      {/* Form Header */}
-      <div className={`px-3 py-1.5 border-b flex items-center justify-between ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-100 border-slate-300 text-slate-800'}`}>
-        <div className="flex items-center gap-2">
-          <Home className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-blue-400' : 'text-slate-600'}`} />
-          <span className="font-bold text-[11px] uppercase tracking-wider">Ingatlan alapadatai & Helyszín</span>
+    <div className="space-y-4" id="building-data-form">
+      {/* 1. Ingatlan alapadatai */}
+      <div className={`rounded-lg border p-4 transition-all ${
+        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <div className="border-b pb-1.5">
+          <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+            Ingatlan alapadatai
+          </h3>
         </div>
-      </div>
-
-      <div className="p-3 space-y-3">
         {/* Owner Name, Date, City and Property Address */}
         <div className={`grid grid-cols-1 md:grid-cols-4 gap-2 pb-2.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
           <div className="space-y-1">
@@ -504,6 +503,17 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 2. Hőigény meghatározás */}
+      <div className={`rounded-lg border p-4 transition-all ${
+        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <div className="border-b pb-1.5">
+          <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+            Hőigény meghatározás
+          </h3>
+        </div>
 
         {/* Method Selection Tabs */}
         <div className="space-y-2">
@@ -548,7 +558,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
           {/* METHOD 1: GAS-BASED WITH BIDIRECTIONAL Live SYNC */}
           {data.method === 'gas' && (
-            <div className={`p-3 border rounded grid grid-cols-1 md:grid-cols-3 gap-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-300'}`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                   Éves gázfogyasztás
@@ -699,7 +709,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
           {/* METHOD 2: STRUCTURES (FABRIC) WITH DISCRETE BUTTON GROUPS */}
           {data.method === 'fabric' && (
-            <div className={`p-3 border rounded space-y-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-300'}`}>
+            <div className="space-y-3">
               <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest pb-1 border-b border-slate-800">
                 <Sliders className="w-3.5 h-3.5 text-blue-500" />
                 Méretezett szerkezeti elemek (Alapterület alapú predikcióval)
@@ -901,9 +911,9 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   <div>
                     <SegmentedControl
                       options={[
-                        { value: 0.3, label: '0.3/h (Hőv.)' },
-                        { value: 0.5, label: '0.5/h (Közepes)' },
-                        { value: 0.8, label: '0.8/h (Gyors)' },
+                        { value: 0.3, label: '0.3/h (Erős szellőzés)' },
+                        { value: 0.5, label: '0.5/h (Normál üzem)' },
+                        { value: 0.8, label: '0.8/h (Rosszul záró nyílászárók)' },
                       ]}
                       value={data.ventilationRate}
                       onChange={(val) => updateField('ventilationRate', val)}
@@ -918,7 +928,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
           {/* METHOD 3: ENERGY CERTIFICATE WITH ZERO CONSTRAINT FREEDOM */}
           {data.method === 'certificate' && (
-            <div className={`p-3 border rounded space-y-3 animate-fadeIn ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-300'}`}>
+            <div className="space-y-3">
               <div className={`p-2.5 border rounded flex items-start gap-2 ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
                 <ShieldAlert className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                 <p className="text-[10px] leading-normal font-semibold">
@@ -977,76 +987,62 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             </div>
           )}
         </div>
+      </div>
 
-        {/* INTEGRATED GÉPÉSZ HOLDING DESIGN RECOMMENDATION & OVERRIDE */}
-        <div className={`mt-3 p-3.5 rounded border ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'} space-y-3`}>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-            <div className="space-y-0.5">
-              <span className={`text-[9px] font-black uppercase tracking-wider block ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Hőigény-összesítés & mérnöki javaslat</span>
-              <h3 className={`text-sm font-black uppercase tracking-wide flex items-center gap-1.5 ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-                <Cpu className="w-4 h-4 text-blue-500 animate-pulse" />
-                Mértékadó fűtési hőigény bázis
-              </h3>
-            </div>
-            
-            <div className={`text-[8px] font-mono px-2 py-0.5 rounded border uppercase font-extrabold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-              Helyszín: <span className="text-blue-600 font-extrabold font-mono">{data.location}</span> ({data.designTemp} °C)
-            </div>
-          </div>
+      {/* 3. Hőigény összesítő & Mérnöki javaslat */}
+      <div className={`rounded-lg border p-4 transition-all ${
+        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <div className="border-b pb-1.5">
+          <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+            Hőigény összesítő &amp; Mérnöki javaslat
+          </h3>
+        </div>
 
-          {/* 3-method comparison grid — compact horizontal style */}
-          <div className="grid grid-cols-3 gap-2">
-            {(() => {
-              const methods = [
-                { key: 'gas' as const, label: 'Gázfogyasztás', kw: gasKw, note: `${data.gasAnnualM3 || 0} m³/év`, darkBg: 'bg-rose-950/20', darkBorder: 'border-rose-900/60', lightBg: 'bg-rose-50/50', lightBorder: 'border-rose-200', textDark: 'text-rose-400', textLight: 'text-rose-600', valueDark: 'text-white', valueLight: 'text-rose-950' },
-                { key: 'fabric' as const, label: 'Szerkezeti U', kw: fabricKw, note: `${data.heatedArea} m² alapján`, darkBg: 'bg-amber-950/20', darkBorder: 'border-amber-900/60', lightBg: 'bg-amber-50/50', lightBorder: 'border-amber-200', textDark: 'text-amber-400', textLight: 'text-amber-600', valueDark: 'text-white', valueLight: 'text-amber-950' },
-                { key: 'certificate' as const, label: 'Tanúsítvány', kw: certKw, note: data.certHeatDemandKw > 0 ? 'Beírt érték' : `q=${data.certSpecificLossQ.toFixed(2)}`, darkBg: 'bg-blue-950/20', darkBorder: 'border-blue-900/60', lightBg: 'bg-blue-50/50', lightBorder: 'border-blue-200', textDark: 'text-blue-400', textLight: 'text-blue-600', valueDark: 'text-white', valueLight: 'text-blue-950' },
-              ];
-              const sorted = [...methods].sort((a, b) => b.kw - a.kw);
-              const rankColors = ['#ef4444', '#f97316', '#3b82f6'];
-              return methods.map((m) => {
-                const rank = sorted.indexOf(m);
-                const color = rankColors[rank];
-                const active = data.method === m.key;
-                return (
-                  <div
-                    key={m.key}
-                    onClick={() => onChange({ ...data, method: m.key })}
-                    className={`relative overflow-hidden rounded-lg border cursor-pointer select-none transition-all duration-300 ${
-                      active
-                        ? isDark ? `${m.darkBg} shadow-sm` : `${m.lightBg} shadow-sm`
-                        : isDark ? `${m.darkBg} ${m.darkBorder} opacity-40 hover:opacity-70` : `${m.lightBg} ${m.lightBorder} opacity-40 hover:opacity-70`
-                    }`}
-                  >
-                    {active && (
-                      <motion.div
-                        layoutId="heat-demand"
-                        transition={{ type: 'spring', stiffness: 400, damping: 33 }}
-                        className={`absolute inset-0 rounded-[5px] ${
-                          isDark ? 'bg-slate-850 border border-slate-700/50' : 'bg-white border border-slate-250'
-                        }`}
-                      />
-                    )}
-                    <div className="relative z-10 flex flex-row items-center justify-between p-3 gap-2 w-full">
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`font-bold text-[9px] uppercase tracking-wider ${isDark ? m.textDark : m.textLight}`}>{m.label}</span>
-                          {rank === 0 && !active && (
-                            <span className="text-[7px] font-extrabold text-white bg-rose-500 px-1 rounded-[2px]">MAX</span>
-                          )}
-                        </div>
-                        <span className={`text-[9px] font-medium mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{m.note}</span>
-                      </div>
-                      <div className="flex items-baseline gap-1 shrink-0">
-                        <span className={`font-light text-2xl md:text-3xl tracking-tight leading-none ${isDark ? m.valueDark : m.valueLight}`}>{m.kw.toFixed(1)}</span>
-                        <span className={`text-[10px] font-medium ${isDark ? m.textDark : m.textLight}`}>kW</span>
-                      </div>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Helyszín: <strong className={isDark ? 'text-slate-200' : 'text-slate-700'}>{data.location}</strong> ({data.designTemp} °C)
+          </span>
+        </div>
+
+        {/* 3-method comparison grid */}
+        <div className="grid grid-cols-3 gap-2">
+          {(() => {
+            const methods = [
+              { key: 'gas' as const, label: 'Gázfogyasztás', kw: gasKw, note: `${data.gasAnnualM3 || 0} m³/év` },
+              { key: 'fabric' as const, label: 'Szerkezeti U', kw: fabricKw, note: `${data.heatedArea} m² alapján` },
+              { key: 'certificate' as const, label: 'Tanúsítvány', kw: certKw, note: data.certHeatDemandKw > 0 ? 'Beírt érték' : `q=${data.certSpecificLossQ.toFixed(2)}` },
+            ];
+            return methods.map((m) => {
+              const active = data.method === m.key;
+              return (
+                <div
+                  key={m.key}
+                  onClick={() => onChange({ ...data, method: m.key })}
+                  className={`rounded-lg border cursor-pointer select-none transition-all duration-300 ${
+                    active
+                      ? isDark
+                        ? 'bg-slate-800/50 border-slate-700 shadow-sm'
+                        : 'bg-slate-100 border-slate-300 shadow-sm'
+                      : isDark
+                        ? 'bg-slate-900/30 border-slate-800 opacity-50 hover:opacity-80'
+                        : 'bg-white border-slate-200 opacity-50 hover:opacity-80'
+                  }`}
+                >
+                  <div className="flex flex-row items-center justify-between p-3 gap-2 w-full">
+                    <div className="flex flex-col min-w-0">
+                      <span className={`font-semibold text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{m.label}</span>
+                      <span className={`text-[10px] font-medium mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{m.note}</span>
+                    </div>
+                    <div className="flex items-baseline gap-1 shrink-0">
+                      <span className={`font-light text-2xl md:text-3xl tracking-tight leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{m.kw.toFixed(1)}</span>
+                      <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>kW</span>
                     </div>
                   </div>
-                );
-              });
-            })()}
-          </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     </div>

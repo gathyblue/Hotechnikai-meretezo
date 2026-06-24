@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { BuildingData, CalculationResults, HeatPumpModel } from '../types';
 import { HEAT_PUMP_DATABASE } from '../heatPumpData';
 import { evaluateHeatPumpEconomics, getHpCapacityAtTemp, getBuildingHeatDemandAtTemp, calculateBivalentCoverage } from '../utils/calculations';
-import { Activity, Flame, Zap, TrendingUp, Shield, CheckCircle2, ChevronRight, HelpCircle, Layers, Settings, BatteryCharging, Info } from 'lucide-react';
+import { CONSTRUCTION_YEAR_GROUPS } from './BuildingDataInput';
+import { Activity, Flame, Zap, Shield, CheckCircle2, ChevronRight, HelpCircle, Layers, Settings, BatteryCharging, Info } from 'lucide-react';
 import { SegmentedControl } from './SegmentedControl';
 
 interface SizingResultsProps {
@@ -49,16 +50,17 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
   
   const installationSurcharge = buildingData.mechanicalInstallCost ?? 2500000;
 
-  const dhwVolume = buildingData.dhwVolume ?? 200;
-  const dhwTankHuf = dhwVolume === 300 ? 730000 : 530000; // 530k is 200L, 730k is 300L
-  const dhwValveHuf = 95000; // motoros váltószelep
-  const dhwPipingHuf = 155000; // csövezők és szerelvények
-  const dhwHeaterHuf = 70000; // fűtőkiegészítés
-  const dhwLaborHuf = 100000; // gépészeti szerelési díj
-  const dhwSurcharge = buildingData.includeDhwPackage !== false ? (dhwTankHuf + dhwValveHuf + dhwPipingHuf + dhwHeaterHuf + dhwLaborHuf) : 0; // 950,000 Ft for 200L, 1,150,000 Ft for 300L with all fittings included
+  const dhwVolume = buildingData.dhwVolume ?? 0;
+  const dhwTankHuf = dhwVolume === 300 ? 730000 : (dhwVolume === 200 ? 530000 : 0);
+  const dhwValveHuf = 95000;
+  const dhwPipingHuf = 155000;
+  const dhwHeaterHuf = 70000;
+  const dhwLaborHuf = 100000;
+  const dhwSurcharge = dhwVolume > 0 ? (dhwTankHuf + dhwValveHuf + dhwPipingHuf + dhwHeaterHuf + dhwLaborHuf) : 0;
   
   const totalInvestmentCost = discountedDevicePrice + installationSurcharge + dhwSurcharge;
-  const activeSubsidy = buildingData.useSubsidy !== false ? (buildingData.subsidyValue ?? 3000000) : 0;
+  const isGrantMode = buildingData.useSubsidy === true;
+  const activeSubsidy = isGrantMode ? (buildingData.subsidyValue ?? 3000000) : 0;
   const netInvestmentCost = Math.max(0, totalInvestmentCost - activeSubsidy);
 
   // 1. Recalculate match for all models based on selections
@@ -102,8 +104,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         economics,
       };
     }).sort((a, b) => {
-      const capA = a.capacityA7W35 || 0;
-      const capB = b.capacityA7W35 || 0;
+      const capA = a.capacityAm15W35 || 0;
+      const capB = b.capacityAm15W35 || 0;
       return capA - capB;
     });
   }, [calcResults, selectedEmitter, tariffHuf, bivalentTempManual, buildingData]);
@@ -145,6 +147,16 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
     return new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF', maximumFractionDigits: 0 }).format(val);
   };
 
+  const boilerTypeLabels: Record<string, string> = {
+    old_atmospheric: 'Régi atmoszférikus',
+    new_atmospheric: 'Új atmoszférikus',
+    condensing: 'Kondenzációs'
+  };
+
+  const yearPreset = CONSTRUCTION_YEAR_GROUPS.find(g => g.id === buildingData.constructionYearGroup);
+  const estimatedGasM3 = buildingData.method === 'gas' ? buildingData.gasAnnualM3 : Math.round(calcResults.yearlyEnergyKwh / (9.44 * 0.80));
+  const boilerLabel = buildingData.gasBoilerType ? (boilerTypeLabels[buildingData.gasBoilerType] ?? buildingData.gasBoilerType) : 'Ismeretlen';
+
   // SVG Chart calculation parameters
   const svgWidth = 300;
   const svgHeight = 150;
@@ -177,130 +189,28 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
   return (
     <div className="space-y-4" id="sizing-and-heatpump">
       
-      {/* Target Heat Loss Card Header display */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        {/* Card 1: Total Heat Loss */}
-        <div className={`rounded-lg p-3 border flex flex-row items-center justify-between gap-2 transition-all duration-300 ${
-          isDark 
-            ? 'bg-blue-950/20 border-blue-900/60 text-slate-100' 
-            : 'bg-blue-50/50 border-blue-200 text-slate-800'
-        }`}>
-          <div className="flex flex-col">
-            <span className={`${isDark ? 'text-blue-400' : 'text-blue-600'} text-[9px] font-bold uppercase tracking-wider`}>Hőszükséglet</span>
-            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tervezési hőm.: {buildingData.indoorTemp}°C / {buildingData.designTemp}°C</span>
-          </div>
-          <div className="flex items-baseline gap-1 shrink-0">
-            <span className={`text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-blue-950'}`}>{calcResults.heatLossKw.total}</span>
-            <span className={`text-[10px] font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>kW</span>
-          </div>
-        </div>
+      {/* (Heat loss cards removed per user request — section starts with bivalence graph) */}
 
-        {/* Card 2: Transmission Loss */}
-        <div className={`rounded-lg p-3 border flex flex-row items-center justify-between gap-2 transition-all duration-300 ${
-          isDark 
-            ? 'bg-amber-950/20 border-amber-900/60 text-slate-100' 
-            : 'bg-amber-50/50 border-amber-200 text-slate-800'
-        }`}>
-          <div className="flex flex-col">
-            <span className={`${isDark ? 'text-amber-400' : 'text-amber-600'} text-[9px] font-bold uppercase tracking-wider`}>Transzmisszió</span>
-            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Szerkezeti veszteség</span>
-          </div>
-          <div className="flex items-baseline gap-1 shrink-0">
-            <span className={`text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-amber-950'}`}>{calcResults.heatLossKw.transmission}</span>
-            <span className={`text-[10px] font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>kW</span>
-          </div>
-        </div>
-
-        {/* Card 3: Ventilation Loss */}
-        <div className={`rounded-lg p-3 border flex flex-row items-center justify-between gap-2 transition-all duration-300 ${
-          isDark 
-            ? 'bg-teal-950/20 border-teal-900/60 text-slate-100' 
-            : 'bg-teal-50/50 border-teal-200 text-slate-800'
-        }`}>
-          <div className="flex flex-col">
-            <span className={`${isDark ? 'text-teal-400' : 'text-teal-600'} text-[9px] font-bold uppercase tracking-wider`}>Ventiláció</span>
-            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Szellőzési veszteség</span>
-          </div>
-          <div className="flex items-baseline gap-1 shrink-0">
-            <span className={`text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-teal-950'}`}>{calcResults.heatLossKw.ventilation}</span>
-            <span className={`text-[10px] font-medium ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>kW</span>
-          </div>
-        </div>
-
-        {/* Full-width bottom bar for additional details */}
-        <div className={`col-span-1 md:col-span-3 rounded-lg border p-2 flex flex-wrap justify-between items-center text-[10px] transition-all duration-300 ${
-          isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
-        }`}>
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold">Helyszín:</span>
-            <span className="font-mono font-bold text-blue-500">{buildingData.location}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold">Éves fűtési energia:</span>
-            <span className="font-mono font-bold text-emerald-500">{calcResults.yearlyEnergyKwh} kWh/év</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Emitter types mapping */}
-      <div className={`rounded-lg p-3 border space-y-3 transition-all ${
+      {/* 1. Munkapont meghatározás — unified card with graph + emitter */}
+      <div className={`rounded-lg border p-3 transition-all ${
         isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
-        <div>
-          <h2 className={`font-medium text-xs flex items-center gap-2 ${
-            isDark ? 'text-slate-200' : 'text-slate-800'
-          }`}>
-            Tervezési téli előremenő vízhőmérséklet
-          </h2>
+        <div className="border-b pb-1.5">
+          <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+            Munkapont meghatározás
+          </h3>
         </div>
 
-        <SegmentedControl
-          options={[
-            {
-              value: 'floor',
-              label: (
-                <div className="text-center py-0.5">
-                  <span className="text-xs font-bold block tracking-tight">+35 °C</span>
-                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Padlófűtés</span>
-                </div>
-              ),
-            },
-            {
-              value: 'radiator',
-              label: (
-                <div className="text-center py-0.5">
-                  <span className="text-xs font-bold block tracking-tight">+55 °C</span>
-                  <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Radiátoros</span>
-                </div>
-              ),
-            },
-          ]}
-          value={selectedEmitter}
-          onChange={onChangeEmitter}
-          layoutId="emitter-select"
-          theme={theme as 'light' | 'dark'}
-        />
-      </div>
-
-      {/* 4. Highly prominent Bivalence Setup Panel placed RIGHT BEFORE the devices catalog */}
-      <div className={`p-4 rounded-md border transition-all duration-300 ${
-        isDark 
-          ? 'bg-slate-900 border-slate-800 text-slate-100' 
-          : 'bg-white border-slate-200 text-slate-800'
-      }`} id="bivalence-prominent-control">
-        
-        <div className="space-y-4">
+        <div className="space-y-4 mt-3">
           
-          {/* Top Row: Slim Slider & Essential indicator */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between border-b pb-4 border-slate-200 dark:border-slate-800">
+          {/* Bivalencia hőmérséklet — Slider & indicator */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="space-y-1 max-w-sm flex-shrink-0">
-              <span className="text-xs font-semibold text-emerald-500 tracking-wide block">Bivalens Munkapont</span>
-              <h3 className={`text-sm font-medium flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-                Hőmérséklet:
-                <span className="text-emerald-500 text-lg font-light leading-none tracking-tight">{bivalentTempManual} °C</span>
-              </h3>
-              <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Rásegítési pont. Ajánlott: <strong className="text-emerald-500 font-medium">-5°C és -7°C</strong> között.
+              <span className={`text-base font-light tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                Bivalencia hőmérséklet: <strong>{bivalentTempManual} °C</strong>
+              </span>
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Rásegítési pont. Ajánlott: <strong className="font-medium">-5°C és -7°C</strong> között.
               </p>
             </div>
             
@@ -328,12 +238,10 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
           <div className="flex flex-col space-y-2">
             
             {/* Embedded High Fidelity responsive SVG Graph */}
-            <div className={`p-2 rounded border flex items-center justify-center overflow-hidden transition-all ${
-              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-            }`}>
+            <div className="w-full overflow-hidden">
               {(() => {
-                const sW = 600;
-                const sH = 210;
+                const sW = 800;
+                const sH = 280;
                 const mKw = Math.max(16, calcResults.heatLossKw.total * 1.4, activeHPResults ? activeHPResults.capacityA7W35 * 1.25 : 12);
                 
                 const dTemp = buildingData.designTemp;
@@ -390,7 +298,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
                     }`}>
                       <div className="space-y-1.5">
-                        <span className="text-[11px] font-semibold text-emerald-600 block">Élő adatok ({bivalentTempManual} °C hőmérsékleten)</span>
+                        <span className={`text-[11px] font-semibold block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Élő adatok ({bivalentTempManual} °C hőmérsékleten)</span>
                         <div className={`flex flex-wrap gap-4 text-xs font-mono font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                           <div>
                             Hőigény: <strong className={`font-normal text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{demandAtTempManual.toFixed(2)} kW</strong>
@@ -405,9 +313,9 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       <div className="flex items-center gap-2 shrink-0">
                         {hpCapAtManual >= demandAtTempManual ? (
                           <span className={`text-[11px] font-medium px-3 py-1.5 rounded flex items-center gap-1.5 ${
-                            isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
+                            isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-600'
                           }`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
                             Önálló fűtés (Nincs szükség rásegítésre)
                           </span>
                         ) : (
@@ -668,7 +576,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
                     {/* Highly descriptive summary of integrated metrics below graph */}
                     <div className={`text-[10px] border-t pt-2.5 mt-2 text-center leading-relaxed ${isDark ? 'text-slate-400 border-slate-850' : 'text-slate-500 border-slate-100'}`}>
-                      A beállított bivalens pont <strong className="text-emerald-500">{bivalentTempManual}°C</strong> alapján a hőszivattyús kompresszor az éves fűtési hőszükséglet <strong className="text-emerald-500 font-mono">{calculateBivalentCoverage(bivalentTempManual, buildingData.designTemp).toFixed(1)}%</strong>-át teljesen önállóan lefedi. Az ez alatti {bivalentTempManual}°C és {dTemp}°C közötti fagyos időszakokban <strong className="text-rose-500">külső kisegítő fűtés (kazán vagy fűtőpatron)</strong> rásegítése szükséges ({calcResults.bivalentElectricHeaterKw.toFixed(1)} kW fűtési teljesítményigénnyel) a fűtési hőszükséglet biztonságos ellátásához.
+                      A beállított bivalens pont <strong>{bivalentTempManual}°C</strong> alapján a hőszivattyús kompresszor az éves fűtési hőszükséglet <strong className="font-mono">{calculateBivalentCoverage(bivalentTempManual, buildingData.designTemp).toFixed(1)}%</strong>-át teljesen önállóan lefedi. Az ez alatti {bivalentTempManual}°C és {dTemp}°C közötti fagyos időszakokban <strong className="text-rose-500">külső kisegítő fűtés (kazán vagy fűtőpatron)</strong> rásegítése szükséges ({calcResults.bivalentElectricHeaterKw.toFixed(1)} kW fűtési teljesítményigénnyel) a fűtési hőszükséglet biztonságos ellátásához.
                     </div>
                   </div>
                 );
@@ -676,32 +584,76 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Emitter selector integrated in this section */}
+        <div>
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className={`font-medium text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Tervezési téli előremenő vízhőmérséklet
+              </h2>
+            </div>
+
+            <SegmentedControl
+              options={[
+                {
+                  value: 'floor',
+                  label: (
+                    <div className="text-center py-0.5">
+                      <span className="text-xs font-bold block tracking-tight">+35 °C</span>
+                      <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Padlófűtés</span>
+                    </div>
+                  ),
+                },
+                {
+                  value: 'radiator',
+                  label: (
+                    <div className="text-center py-0.5">
+                      <span className="text-xs font-bold block tracking-tight">+55 °C</span>
+                      <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Radiátoros</span>
+                    </div>
+                  ),
+                },
+              ]}
+              value={selectedEmitter}
+              onChange={onChangeEmitter}
+              layoutId="emitter-select"
+              theme={theme as 'light' | 'dark'}
+            />
+          </div>
       </div>
 
 
-      {/* Recommended Heat Pumps table */}
-      <div className="space-y-4 pt-4">
-        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b transition-all ${
-          isDark ? 'border-slate-800' : 'border-slate-200'
-        }`}>
-          <h2 className={`font-medium text-xs flex items-center gap-2 transition-all ${
-            isDark ? 'text-slate-100' : 'text-slate-800'
-          }`}>
+      {/* 2. Ajánlott hőszivattyús berendezések */}
+      <div className={`rounded-lg border p-3 transition-all ${
+        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <div className="border-b pb-1.5">
+          <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Ajánlott hőszivattyús berendezések
-          </h2>
-          <label className={`inline-flex items-center gap-2 cursor-pointer text-[10px] font-medium px-2 py-1 rounded transition-all ${
-            isDark
-              ? 'hover:bg-slate-800 text-slate-400'
-              : 'hover:bg-slate-100 text-slate-500'
-          }`}>
-            <input
-              type="checkbox"
-              checked={filterNearby}
-              onChange={(e) => setFilterNearby(e.target.checked)}
-              className="w-3 h-3 text-slate-600 rounded focus:ring-0 cursor-pointer"
-            />
-            {filterNearby ? `Szűkített (${displayedModels.length} db)` : `Összes (${recommendedModels.length} db)`}
-          </label>
+          </h3>
+        </div>
+
+        <div className="mt-3 mb-3">
+          <SegmentedControl
+            options={[
+              {
+                value: 'recommended',
+                label: (
+                  <span className="text-xs font-medium px-2">Ajánlott ({displayedModels.length})</span>
+                ),
+              },
+              {
+                value: 'all',
+                label: (
+                  <span className="text-xs font-medium px-2">Összes ({recommendedModels.length})</span>
+                ),
+              },
+            ]}
+            value={filterNearby ? 'recommended' : 'all'}
+            onChange={(v) => setFilterNearby(v === 'recommended')}
+            layoutId="hp-filter"
+            theme={theme as 'light' | 'dark'}
+          />
         </div>
 
         <div className={`overflow-hidden rounded-lg border transition-all ${
@@ -713,10 +665,11 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
               }`}>
                 <th className="py-2 px-3">Típus</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">W35 (Telj/SCOP)</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">W55 (Telj/SCOP)</th>
+                <th className="py-2 px-3 text-center hidden md:table-cell">W35</th>
+                <th className="py-2 px-3 text-center hidden md:table-cell">W55</th>
                 <th className="py-2 px-3 text-center hidden md:table-cell">Zaj</th>
                 <th className="py-2 px-3 text-center hidden md:table-cell">Táp(V)</th>
+                <th className="py-2 px-3 text-center hidden md:table-cell">Megszakító</th>
                 <th className="py-2 px-3 text-right">Bruttó ár</th>
               </tr>
             </thead>
@@ -800,11 +753,11 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     </td>
 
                     <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      {item.capacityA7W35.toFixed(1)} kW / {item.scopW35.toFixed(1)}
+                      {item.capacityAm15W35.toFixed(1)} kW
                     </td>
 
                     <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      {item.capacityA7W55.toFixed(1)} kW / {item.scopW55.toFixed(1)}
+                      {item.capacityAm15W55.toFixed(1)} kW
                     </td>
 
                     <td className={`py-1.5 px-2 text-center hidden md:table-cell ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -815,19 +768,12 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       {item.phases === 1 ? '230V' : '400V'}
                     </td>
 
-                    <td className="py-1.5 px-2 text-right font-mono font-medium">
-                      {discountPct > 0 ? (
-                        <div className="flex flex-col items-end">
-                          <span className="line-through text-[10px] text-slate-400">
-                            {formatHu(item.estimatedPriceHuf)}
-                          </span>
-                          <span className="text-emerald-500">
-                            {formatHu(item.estimatedPriceHuf * (1 - discountPct / 100))}
-                          </span>
-                        </div>
-                      ) : (
-                        <span>{formatHu(item.estimatedPriceHuf)}</span>
-                      )}
+                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {item.ampereRequired}
+                    </td>
+
+                    <td className={`py-1.5 px-2 text-right font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                      {formatHu(item.estimatedPriceHuf)}
                     </td>
                   </tr>
                 );
@@ -837,318 +783,245 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         </div>
       </div>
 
-      {/* 5. Sleek, Consolidated Investment & Payback Analysis with ZERO clashing background colors (as requested) */}
+      {/* 3. Árajánlat — 3-card row layout */}
       {activeHPResults && (
         <div className={`rounded-lg border p-3 transition-all ${
           isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
-        }`} id="hp-diagnostics-panel">
+        }`} id="hp-quotation-panel">
           
           <div className="space-y-3">
             
-            {/* Header */}
-            <div className="border-b pb-1.5 flex justify-between items-center">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
-                <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-                  Beruházás & Megtérülés részletezése
-                </h3>
-              </div>
-              <span className="text-[10px] text-slate-500 font-medium">Pénzügyi kalkuláció</span>
+            <div className="border-b pb-1.5">
+              <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                Árajánlat
+              </h3>
             </div>
 
-            {/* 1. Surcharges breakdown (tight 3-column grid) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                
-               {/* Item A: Surcharges & Base Price */}
-               <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                <div>
-                  <span className="text-slate-500 text-[10px] font-medium block">Hőszivattyú alapgép {discountPct === 0 && '(Listaár)'}</span>
-                  <span className={`text-sm font-mono mt-1 block ${discountPct > 0 ? (isDark ? 'text-slate-500 line-through' : 'text-slate-400 line-through') : (isDark ? 'text-slate-200' : 'text-slate-800')}`}>{formatHu(baseDevicePrice)} Ft</span>
-                  {discountPct > 0 && (
-                     <span className={`text-base font-mono mt-0.5 block text-emerald-500`}>{formatHu(discountedDevicePrice)} Ft</span>
-                  )}
-                  {selectedModel && (
-                    <div className="mt-2 space-y-1 text-[9px] text-slate-500 border-t border-slate-200 dark:border-slate-800 pt-2 leading-relaxed">
-                      <span className={`block font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{selectedModel.name}</span>
-                      <span className="block">SCOP: <strong>{selectedModel.scopW35}</strong> (W35) / <strong>{selectedModel.scopW55}</strong> (W55)</span>
-                      <span className="block">Méret: {selectedModel.dimensions || 'n.a.'} • {selectedModel.weightKg} kg</span>
-                      <span className="block">Zaj (LwA / LpA 1m): <strong>{selectedModel.soundDba} dB(A)</strong> / <strong>{selectedModel.soundPressureDba1m} dB(A)</strong></span>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium text-slate-500">Kedvezmény (%)</span>
-                    <div className="min-w-[200px]">
-                      <SegmentedControl
-                        options={[0, 5, 10, 15, 20, 25].map(pct => ({ value: pct, label: `${pct}%` }))}
-                        value={discountPct}
-                        onChange={(val) => {
-                          if (onChangeBuildingData) {
-                            onChangeBuildingData({ ...buildingData, productDiscountPct: val });
-                          }
-                        }}
-                        layoutId="discount-pct"
-                        theme={isDark ? 'dark' : 'light'}
-                        className="text-[9px]"
-                      />
-                    </div>
+              {/* Card 1: Base Price + Discount + Tech Params */}
+              <div className={`p-2.5 rounded-lg border flex flex-col ${
+                isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
+              }`}>
+                <div className="flex items-start justify-between gap-2 mb-2 min-h-[2rem]">
+                  <span className="text-slate-500 text-[10px] font-medium">Hőszivattyú alapgép {discountPct === 0 && '(Listaár)'}</span>
+                  <div className="flex items-center gap-1.5 text-right shrink-0 flex-wrap justify-end">
+                    <span className={`text-sm font-mono ${discountPct > 0 ? (isDark ? 'text-slate-500 line-through' : 'text-slate-400 line-through') : (isDark ? 'text-slate-200' : 'text-slate-800')}`}>{formatHu(baseDevicePrice)}</span>
+                    {discountPct > 0 && (
+                      <span className="text-sm font-mono text-emerald-500">{formatHu(discountedDevicePrice)}</span>
+                    )}
                   </div>
                 </div>
-              </div>
-
-              {/* Item B: Compact Install Rate (Selectable Packages!) */}
-              <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                <div>
-                  <span className="text-slate-500 text-[10px] font-medium block mb-1">Gépészeti szerelés és telepítés csomag</span>
-                  <span className={`text-sm font-mono block mb-1.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(installationSurcharge)} Ft</span>
-                  <p className="text-[9px] text-slate-500 leading-relaxed mb-3">
-                    Tartalmazza: komplett zárt tágulási rendszerek fűtéskörhöz, nyomásmérők, légtelenítők, biztonsági szelepek, prémium rézcsövezés telepítése beüzemelési munkadíjjal.
-                  </p>
-                  
-                  {/* Package Cards Side-by-Side as requested */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { val: 2000000, name: 'Egyszerű', desc: 'Rövid nyomvonal, kis gép' },
-                      { val: 2500000, name: 'Normál', desc: 'Sztenderd anyagok' },
-                      { val: 3000000, name: 'Komplex', desc: 'Hosszú nyomvonal, spec.' }
-                    ].map((pkg) => {
-                      const isSelected = installationSurcharge === pkg.val;
-                      return (
-                        <button
-                          key={pkg.val}
-                          type="button"
-                          onClick={() => {
-                            if (onChangeBuildingData) {
-                              onChangeBuildingData({
-                                ...buildingData,
-                                mechanicalInstallCost: pkg.val
-                              });
-                            }
-                          }}
-                          className={`p-2 rounded-md border text-left flex flex-col justify-start cursor-pointer transition-all ${
-                            isSelected
-                              ? (isDark ? 'border-slate-500 bg-slate-800/80 shadow text-slate-100' : 'border-slate-400 bg-white shadow-sm ring-1 ring-slate-200 text-slate-900') 
-                              : (isDark ? 'border-slate-800 bg-transparent text-slate-400 hover:bg-slate-800' : 'border-slate-200 bg-transparent text-slate-600 hover:bg-slate-100')
-                          }`}
-                        >
-                          <span className={`text-[10px] font-medium leading-tight block ${isSelected ? '' : ''}`}>{pkg.name}</span>
-                          <span className={`text-[10px] font-mono block mt-0.5 ${isSelected ? (isDark ? 'text-slate-100' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>{formatHu(pkg.val)} Ft</span>
-                          <span className={`text-[9px] leading-relaxed mt-1 block ${isSelected ? (isDark ? 'text-slate-400': 'text-slate-600') : 'text-slate-400'}`}>{pkg.desc}</span>
-                        </button>
-                      );
-                    })}
+                <SegmentedControl
+                  options={[0, 5, 10, 15, 20, 25].map(pct => ({ value: pct, label: `${pct}%` }))}
+                  value={discountPct}
+                  onChange={(val) => {
+                    if (onChangeBuildingData) {
+                      onChangeBuildingData({ ...buildingData, productDiscountPct: val });
+                    }
+                  }}
+                  layoutId="discount-pct"
+                  theme={isDark ? 'dark' : 'light'}
+                  className="text-[9px] w-full"
+                />
+                {selectedModel && (
+                  <div className="mt-auto pt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-slate-500 leading-relaxed">
+                    <span className={`w-full font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{selectedModel.name}</span>
+                    <span>SCOP ({selectedEmitter === 'radiator' ? 'W55' : 'W35'}): <strong className={isDark ? 'text-slate-300' : 'text-slate-700'}>{selectedEmitter === 'radiator' ? selectedModel.scopW55 : selectedModel.scopW35}</strong></span>
+                    <span>|</span>
+                    <span>Méret: {selectedModel.dimensions || 'n.a.'} • {selectedModel.weightKg} kg</span>
+                    <span>|</span>
+                    <span>Zaj: <strong className={isDark ? 'text-slate-300' : 'text-slate-700'}>{selectedModel.soundDba} dB(A)</strong></span>
+                    <span>|</span>
+                    <span>Megszakító: <strong className={isDark ? 'text-slate-300' : 'text-slate-700'}>{selectedModel.ampereRequired}</strong></span>
                   </div>
-                </div>
+                )}
               </div>
 
-              {/* Item C: Accessories (DHW Packages only) */}
-              <div className={`p-2.5 rounded-lg border flex flex-col justify-between ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                <div className="space-y-2">
-                  {/* HMV Toggle Checkbox */}
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={buildingData.includeDhwPackage !== false}
-                        onChange={(e) => {
-                          if (onChangeBuildingData) {
-                            onChangeBuildingData({
-                              ...buildingData,
-                              includeDhwPackage: e.target.checked
-                            });
-                          }
-                        }}
-                        className="w-3.5 h-3.5"
-                      />
-                      <span className="text-[10px] font-medium text-slate-500">
-                        HMV Csatlakoztatás
-                      </span>
-                    </label>
-                    <span className={`text-[11px] font-mono ${buildingData.includeDhwPackage !== false ? (isDark ? 'text-slate-200' : 'text-slate-800') : 'text-slate-400'}`}>
-                      {buildingData.includeDhwPackage !== false ? `+${formatHu(dhwSurcharge)} Ft` : 'Kikapcsolva'}
-                    </span>
-                  </div>
-
-                  {buildingData.includeDhwPackage !== false ? (
-                    <div className="space-y-2">
-                      <div className="text-[9px] text-slate-500 leading-relaxed mt-2 space-y-0.5">
-                        <span className="block">A komplett szerelt HMV csomag részei:</span>
-                        <span className="block">• {dhwVolume}L indirekt HMV-tároló fűtőpatronnal</span>
-                        <span className="block">• 3-járatú fűtés-HMV váltószelep</span>
-                        <span className="block">• Extra víz és elektromos kiegészítők</span>
-                      </div>
-                      
-                      {/* DHW Size chooser button toggle */}
-                      <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <span className="text-[9px] text-slate-500 block font-medium">Tároló Mérete</span>
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { lit: 200, price: 950000, label: '200 L', desc: 'Standard csomag' },
-                            { lit: 300, price: 1150000, label: '300 L', desc: 'Nagycsaládos' }
-                          ].map((sz) => {
-                            const isSelected = (buildingData.dhwVolume ?? 200) === sz.lit;
-                            return (
-                              <button
-                                key={sz.lit}
-                                type="button"
-                                onClick={() => {
-                                  if (onChangeBuildingData) {
-                                    onChangeBuildingData({
-                                      ...buildingData,
-                                      dhwVolume: sz.lit as 200 | 300
-                                    });
-                                  }
-                                }}
-                                className={`p-2 rounded-lg border text-center cursor-pointer transition-all ${
-                                  isSelected
-                                    ? (isDark ? 'border-slate-500 bg-slate-800/80 shadow text-slate-100' : 'border-slate-400 bg-white shadow-sm ring-1 ring-slate-200 text-slate-900') 
-                                    : (isDark ? 'border-slate-800 bg-transparent text-slate-400 hover:bg-slate-800' : 'border-slate-200 bg-transparent text-slate-600 hover:bg-slate-100')
-                                }`}
-                              >
-                                <span className="text-[10px] font-medium block leading-none">{sz.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-[9px] text-slate-500 italic mt-2">Nincs melegvíztároló kiválasztva.</div>
-                  )}
+              {/* Card 2: Install with segmented control + buffer tank */}
+              <div className={`p-2.5 rounded-lg border flex flex-col ${
+                isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
+              }`}>
+                <div className="flex items-start justify-between gap-2 mb-2 min-h-[2rem]">
+                  <span className="text-slate-500 text-[10px] font-medium">Gépészeti szerelés és telepítés</span>
+                  <span className={`text-sm font-mono text-right shrink-0 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(installationSurcharge)}</span>
                 </div>
-              </div>
-
-            </div>
-
-            {/* Standalone State Subsidy / Pályázat Row - Positioned lower, not part of technical costs */}
-            <div className={`p-3 rounded-lg border mt-3 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <span className="text-[10px] font-medium block text-slate-500">
-                    Állami és Pályázati Támogatás
+                <SegmentedControl
+                  options={[
+                    { value: 2000000, label: 'Egyszerű' },
+                    { value: 2500000, label: 'Normál' },
+                    { value: 3000000, label: 'Komplex' }
+                  ]}
+                  value={installationSurcharge}
+                  onChange={(val) => {
+                    if (onChangeBuildingData) {
+                      onChangeBuildingData({ ...buildingData, mechanicalInstallCost: val });
+                    }
+                  }}
+                  layoutId="install-pkg"
+                  theme={isDark ? 'dark' : 'light'}
+                  className="text-[9px] w-full"
+                />
+                <div className="mt-auto pt-2 text-[9px] text-slate-500 leading-relaxed">
+                  <span className="block">
+                    {installationSurcharge === 2000000 && 'Kisebb készülék, rövid csövezés, egyszerű kialakítás.'}
+                    {installationSurcharge === 2500000 && 'Sztenderd telepítés, normál nyomvonal, átlagos megoldások.'}
+                    {installationSurcharge === 3000000 && 'Nagyobb készülék, hosszabb csövezés, bonyolultabb kialakítás.'}
                   </span>
-                  <p className="text-[9px] text-slate-500 leading-relaxed">
-                    A beruházás bruttó végösszegéből levonandó állami támogatás.
-                  </p>
+                  <span className="block mt-0.5">Tartalmazza: zárt tágulási rendszer, nyomásmérők, légtelenítők, biztonsági szelepek, fagyvédelmi szelep, keringető szekundérköri szivattyú, rézcsövezés, puffertartály, beüzemelés.</span>
                 </div>
-                
-                <div className="flex flex-wrap items-center gap-3 sm:justify-end shrink-0">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={buildingData.useSubsidy !== false}
-                      onChange={(e) => {
-                        if (onChangeBuildingData) {
-                          onChangeBuildingData({
-                            ...buildingData,
-                            useSubsidy: e.target.checked
-                          });
-                        }
-                      }}
-                      className="w-3.5 h-3.5"
-                    />
-                    <span className="text-[10px] font-medium text-slate-500">Támogatás bevonása</span>
-                  </label>
+              </div>
 
-                  {buildingData.useSubsidy !== false && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] text-slate-500 font-medium shrink-0">Érték:</span>
-                      <div className="relative w-32">
-                        <input
-                          type="number"
-                          value={buildingData.subsidyValue ?? 3000000}
-                          onChange={(e) => {
-                            const v = parseInt(e.target.value) || 0;
-                            if (onChangeBuildingData) {
-                              onChangeBuildingData({
-                                ...buildingData,
-                                subsidyValue: v
-                              });
-                            }
-                          }}
-                          className={`w-full px-2 py-1 pr-6 text-xs font-mono rounded-md border focus:outline-none focus:ring-1 focus:ring-slate-400 ${
-                            isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'
-                          }`}
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-slate-500">Ft</span>
-                      </div>
-                    </div>
+              {/* Card 3: DHW with 3-way segmented control */}
+              <div className={`p-2.5 rounded-lg border flex flex-col ${
+                isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
+              }`}>
+                <div className="flex items-start justify-between gap-2 mb-2 min-h-[2rem]">
+                  <span className="text-slate-500 text-[10px] font-medium">HMV tároló</span>
+                  <span className={`text-sm font-mono text-right shrink-0 ${dhwVolume > 0 ? (isDark ? 'text-slate-200' : 'text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                    {dhwVolume > 0 ? formatHu(dhwSurcharge) : 'Nincs'}
+                  </span>
+                </div>
+                <SegmentedControl
+                  options={[
+                    { value: 0, label: 'Nincs' },
+                    { value: 200, label: '200L' },
+                    { value: 300, label: '300L' }
+                  ]}
+                  value={dhwVolume}
+                  onChange={(val) => {
+                    if (onChangeBuildingData) {
+                      onChangeBuildingData({ ...buildingData, dhwVolume: val });
+                    }
+                  }}
+                  layoutId="dhw-vol"
+                  theme={isDark ? 'dark' : 'light'}
+                  className="text-[9px] w-full"
+                />
+                {dhwVolume > 0 && (
+                  <div className="mt-auto pt-2 space-y-0.5 text-[9px] text-slate-500 leading-relaxed">
+                    <span className="block">• {dhwVolume}L indirekt HMV-tároló fűtőpatronnal</span>
+                    <span className="block">• 3-járatú fűtés-HMV váltószelep</span>
+                    <span className="block">• Extra víz és elektromos kiegészítők</span>
+                  </div>
+                )}
+                {dhwVolume === 0 && (
+                  <div className="mt-auto pt-2 text-[9px] text-slate-500 italic">Nincs melegvíztároló kiválasztva.</div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Megtérülés — outer card wrapping two inner cards */}
+      {activeHPResults && (
+        <div className={`rounded-lg border p-3 transition-all ${
+          isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+        }`}>
+
+          <div className="border-b pb-1.5">
+            <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>Megtérülés</h3>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
+
+            {/* Left card: Bemenő adatok — 2/3 */}
+            <div className={`p-4 rounded-lg border lg:col-span-2 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+              <span className="text-xs font-medium text-slate-500 block mb-4">Bemenő adatok</span>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 flex-wrap text-sm">
+                  <SegmentedControl
+                    options={[
+                      { value: 'self', label: 'Önerő' },
+                      { value: 'grant', label: 'Pályázat' }
+                    ]}
+                    value={isGrantMode ? 'grant' : 'self'}
+                    onChange={(val) => {
+                      if (onChangeBuildingData) {
+                        onChangeBuildingData({ ...buildingData, useSubsidy: val === 'grant' });
+                      }
+                    }}
+                    layoutId="funding-type"
+                    theme={isDark ? 'dark' : 'light'}
+                    className="text-xs"
+                  />
+                  <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                    Bruttó: {formatHu(totalInvestmentCost)}
+                  </span>
+                  {isGrantMode && (
+                    <>
+                      <span className="text-slate-400">–</span>
+                      <span className="text-xs text-slate-500">Támogatás:</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={(buildingData.subsidyValue ?? 3000000).toLocaleString('hu-HU')}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/\D/g, '');
+                          const v = parseInt(raw, 10) || 0;
+                          if (onChangeBuildingData) {
+                            onChangeBuildingData({ ...buildingData, subsidyValue: v });
+                          }
+                        }}
+                        className={`w-28 px-1.5 py-0.5 text-sm font-mono rounded border text-right focus:outline-none focus:ring-1 focus:ring-slate-400 ${
+                          isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'
+                        }`}
+                      />
+                      <span className="text-slate-400">=</span>
+                      <span className={`font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {formatHu(netInvestmentCost)}
+                      </span>
+                    </>
                   )}
                 </div>
+
+                <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-slate-500">
+                  <span>Év: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{yearPreset?.label ?? buildingData.constructionYearGroup ?? '—'}</strong></span>
+                  <span>Kazán: <strong>{boilerLabel} ({buildingData.boilerEfficiency}%)</strong></span>
+                  <span>Gáz: <strong>{estimatedGasM3.toLocaleString('hu-HU')} m³</strong></span>
+                  <span>Hőigény: <strong>{calcResults.heatLossKw.total.toFixed(1)} kW</strong></span>
+                </div>
+
+                <div>
+                  <span className="text-xs text-slate-500 font-medium block mb-1.5">Villamos tarifa</span>
+                  <SegmentedControl
+                    options={[
+                      { value: 23, label: 'H-Tarifa (23 Ft/kWh)' },
+                      { value: 36, label: 'A1 Limit (36 Ft/kWh)' },
+                      { value: 70, label: 'A1 Piaci (70 Ft/kWh)' }
+                    ]}
+                    value={tariffHuf}
+                    onChange={onChangeTariff}
+                    layoutId="tariff-val"
+                    theme={isDark ? 'dark' : 'light'}
+                    className="text-xs w-full"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* 2. Sleek, Simple Investment costs and Tariff Selection */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-              
-              {/* Left col: Total and Net investment costs - No colors, just borders */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-medium text-slate-500">
-                  <span>BERUHÁZÁS ÖSSZESÍTÉS</span>
+            {/* Right card: only the four result numbers — 1/3 */}
+            <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Gáz fűtés (éves)</span>
+                  <span className={`text-sm font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(calcResults.gasCostHuf)}</span>
                 </div>
-                <div className={`p-3 rounded-lg border space-y-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                  <div className="flex justify-between text-[10px] text-slate-500">
-                    <span>Bruttó teljes költség:</span>
-                    <span className="font-mono">{formatHu(totalInvestmentCost)} Ft</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-medium border-t border-slate-200 dark:border-slate-800 pt-2 mt-2">
-                    <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Saját erő összesen (Bruttó):</span>
-                    <span className="font-mono text-emerald-500">{formatHu(netInvestmentCost)} Ft</span>
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Hőszivattyú</span>
+                  <span className="text-sm font-mono font-medium text-blue-500">{formatHu(calcResults.hpCostHuf)}</span>
                 </div>
-              </div>
-
-              {/* Right col: Tariff selector on same gray baseline */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-medium text-slate-500 block">Villamos tarifa választó</span>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { val: 23, title: 'H-Tarifa', sub: 'Kedvezményes' },
-                    { val: 36, title: 'A1 Limit', sub: 'Rezsigát alatt' },
-                    { val: 70, title: 'A1 Piaci', sub: 'Rezsilimit felett' }
-                  ].map((x) => (
-                    <button
-                      key={x.val}
-                      type="button"
-                      onClick={() => onChangeTariff(x.val)}
-                      className={`p-2 rounded-lg border text-center cursor-pointer transition-all ${
-                        tariffHuf === x.val
-                          ? (isDark ? 'bg-slate-800 border-slate-500 text-slate-100 shadow' : 'bg-slate-200 border-slate-400 text-slate-900 shadow-sm')
-                          : (isDark ? 'bg-transparent border-slate-800 text-slate-400 hover:bg-slate-800' : 'bg-transparent border-slate-200 text-slate-500 hover:bg-slate-100')
-                      }`}
-                    >
-                      <span className="text-[10px] font-medium block">{x.title}</span>
-                      <span className={`text-[10px] font-mono block leading-none mt-0.5 ${tariffHuf === x.val ? '' : 'text-slate-400'}`}>{x.val} Ft</span>
-                    </button>
-                  ))}
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Éves megtakarítás</span>
+                  <span className="text-sm font-mono font-medium text-emerald-500">+{formatHu(calcResults.yearlySavingsHuf)}</span>
                 </div>
-              </div>
-
-            </div>
-
-            {/* 3 & 4. Comparative savings and payback in one tight grid */}
-            <div className={`rounded-lg border p-3 transition-all ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="flex flex-col">
-                  <span className="text-slate-500 text-[10px] font-medium">Régi gáz fűtés (éves)</span>
-                  <span className={`text-sm font-mono mt-0.5 block ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{formatHu(calcResults.gasCostHuf)}</span>
-                </div>
-
-                <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
-                  <span className="text-slate-500 text-[10px] font-medium">Új hőszivattyús fűtés</span>
-                  <span className="text-sm font-mono mt-0.5 block text-blue-500">{formatHu(calcResults.hpCostHuf)}</span>
-                </div>
-
-                <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
-                  <span className="text-slate-500 text-[10px] font-medium">Éves megtakarítás</span>
-                  <span className="text-sm font-mono mt-0.5 block text-emerald-500">+{formatHu(calcResults.yearlySavingsHuf)}</span>
-                </div>
-
-                <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
-                  <span className="text-slate-500 text-[10px] font-medium">Várt megtérülés (Állami)</span>
-                  <span className={`text-sm font-mono mt-0.5 block ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                    {paybackYears === 99 ? 'Nincs' : `${paybackYears} Év`}
+                <div className={`pt-3 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
+                  <span className="text-xs font-medium text-slate-500">Várt megtérülés</span>
+                  <span className={`text-base font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {paybackYears === 99 ? 'Nincs' : `${paybackYears} év`}
                   </span>
                 </div>
               </div>
