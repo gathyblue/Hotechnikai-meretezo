@@ -54,6 +54,7 @@ export interface HeatPumpModel {
   refrigerant: 'R290';
   capacityA7W35: number; // kW
   copA7W35: number;
+  capacityA7W55: number; // kW
   capacityAm7W35: number; // kW
   copAm7W35: number;
   capacityAm7W55: number; // kW

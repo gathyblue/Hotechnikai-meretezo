@@ -175,7 +175,7 @@ export function getHpCapacityAtTemp(
   if (emitterType === 'radiator') {
     capMin15 = hp.capacityAm15W55;
     capMin7 = hp.capacityAm7W55;
-    capPlus7 = hp.capacityA7W35;
+    capPlus7 = hp.capacityA7W55;
   }
 
   if (temp <= -15) return capMin15;
