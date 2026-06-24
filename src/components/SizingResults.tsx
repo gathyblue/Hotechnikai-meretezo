@@ -804,7 +804,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     </td>
 
                     <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      {(item.capacityA7W35 * 0.85).toFixed(1)} kW / {item.scopW55.toFixed(1)}
+                      {item.capacityA7W35.toFixed(1)} kW / {item.scopW55.toFixed(1)}
                     </td>
 
                     <td className={`py-1.5 px-2 text-center hidden md:table-cell ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
