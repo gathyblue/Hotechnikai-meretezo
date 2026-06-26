@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { BuildingData, CalculationResults, HeatPumpModel, HydraulicInput, HydraulicResults, EngineeringParams } from './types';
 import { performHeatLossCalculation, evaluateHeatPumpEconomics } from './utils/calculations';
@@ -213,7 +213,7 @@ export default function App() {
   }, [calcResults.heatLossKw.total, selectedEmitter, bivalentTempManual, buildingData.designTemp, HEAT_PUMP_DATABASE]);
 
   // Handle selected HP and automatic hydraulic emitter updates
-  const handleSelectModel = (model: HeatPumpModel, emitterType: 'floor' | 'radiator') => {
+  const handleSelectModel = useCallback((model: HeatPumpModel, emitterType: 'floor' | 'radiator') => {
     setSelectedModel(model);
     setSelectedEmitter(emitterType);
     
@@ -222,7 +222,7 @@ export default function App() {
       ...prev,
       secondaryLoops: emitterType === 'radiator' ? 'radiators' : 'floor'
     }));
-  };
+  }, []);
 
   const handleEmitterChange = (emitter: 'floor' | 'radiator') => {
     setSelectedEmitter(emitter);

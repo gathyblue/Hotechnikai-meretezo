@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { getThemeClasses } from '../utils/theme';
 import { BuildingData } from '../types';
-import { Flame, Layers, ShieldAlert, Sparkles, Sliders, User, MapPin, Calendar } from 'lucide-react';
+import { Flame, Layers, ShieldAlert, Sliders, User, MapPin, Calendar } from 'lucide-react';
 import { calculateGasHufCost, calculateGasM3FromHuf, performHeatLossCalculation } from '../utils/calculations';
 import { HUNGARIAN_CITIES, getHungarianZipCode, removeAccents } from '../data/settlements';
 import { SegmentedControl } from './SegmentedControl';
@@ -217,7 +217,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
   return (
     <div className="space-y-4" id="building-data-form">
       {/* 1. Ingatlan alapadatai */}
-      <div className={`rounded-lg border p-4 transition-all ${
+      <div className={`rounded-lg border p-3 transition-all ${
         isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className="border-b pb-1.5">
@@ -225,10 +225,11 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             Ingatlan alapadatai
           </h3>
         </div>
+        <div className="mt-3">
         {/* Owner Name, Date, City and Property Address */}
-        <div className={`grid grid-cols-1 md:grid-cols-4 gap-2 pb-2.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+        <div className={`grid grid-cols-1 md:grid-cols-4 gap-3 ${isDark ? '' : ''}`}>
           <div className="space-y-1">
-            <label className={`text-[9.5px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <label className={`text-[10px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <User className="w-3.5 h-3.5 text-slate-400" />
               Tulajdonos neve
             </label>
@@ -237,14 +238,14 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               value={data.ownerName || ''}
               onChange={(e) => updateField('ownerName', e.target.value)}
               placeholder="Pl. Kis Péter"
-              className={`w-full px-2 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
+              className={`w-full px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
                 isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
               }`}
             />
           </div>
 
           <div className="space-y-1">
-            <label className={`text-[9.5px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <label className={`text-[10px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               Felmérés dátuma
             </label>
@@ -252,14 +253,14 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               type="date"
               value={data.surveyDate || ''}
               onChange={(e) => updateField('surveyDate', e.target.value)}
-              className={`w-full px-2 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
+              className={`w-full px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
                 isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
               }`}
             />
           </div>
 
           <div className="space-y-1 relative" ref={cityInputRef}>
-            <label className={`text-[9.5px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <label className={`text-[10px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <MapPin className="w-3.5 h-3.5 text-slate-400" />
               Település (Város)
             </label>
@@ -308,12 +309,12 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   }
                 }}
                 placeholder="Pl. 6000 Kecskemét"
-                className={`w-full px-2 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
+                className={`w-full px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
                   isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
                 }`}
               />
               {showCityDropdown && (
-                <div className={`absolute z-50 w-full mt-1 max-h-48 overflow-y-auto border rounded shadow-lg ${
+                <div className={`absolute z-50 w-full mt-1 max-h-48 overflow-y-auto border rounded-lg shadow-lg ${
                   isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
                 }`}>
                   {(() => {
@@ -357,7 +358,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           </div>
 
           <div className="space-y-1">
-            <label className={`text-[9.5px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <label className={`text-[10px] font-bold uppercase tracking-wider block flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <MapPin className="w-3.5 h-3.5 text-slate-400" />
               Ingatlan pontos címe
             </label>
@@ -366,7 +367,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               value={data.address || ''}
               onChange={(e) => updateField('address', e.target.value)}
               placeholder="Pl. Petőfi Sándor u. 12."
-              className={`w-full px-2 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
+              className={`w-full px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold ${
                 isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
               }`}
             />
@@ -374,10 +375,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
         </div>
 
         {/* Global Sizing Parameters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-3">
           {/* Heated Area */}
-          <div className={`space-y-1 p-1.5 rounded border ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/50 border-slate-200'}`}>
-            <label className={`text-[9px] font-bold uppercase tracking-wider block font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>A-fűtött alapterület</label>
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Fűtött alapterület</label>
             <div className="relative">
               <input
                 type="number"
@@ -385,7 +386,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 max="1000"
                 value={data.heatedArea || ''}
                 onChange={(e) => handleDimensionsChange('heatedArea', Number(e.target.value))}
-                className={`w-full pl-2 pr-6 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                className={`w-full pl-2 pr-6 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
                   isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200/80 text-slate-850'
                 }`}
               />
@@ -394,8 +395,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           </div>
 
           {/* Levels (Épület szintjei) */}
-          <div className={`space-y-1 p-1.5 rounded border flex flex-col justify-between ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/50 border-slate-200'}`}>
-            <label className={`text-[9px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Épület szintjei</label>
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Épület szintjei</label>
             <SegmentedControl
               options={[
                 { value: 1, label: '1 szint' },
@@ -411,8 +412,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           </div>
 
           {/* Average Ceiling Height */}
-          <div className={`space-y-1 p-1.5 rounded border ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/50 border-slate-200'}`}>
-            <label className={`text-[9px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Átlagos belmagasság</label>
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Átlagos belmagasság</label>
             <div className="relative">
               <input
                 type="number"
@@ -421,7 +422,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 max="6.0"
                 value={data.ceilingHeight || ''}
                 onChange={(e) => handleDimensionsChange('ceilingHeight', Number(e.target.value))}
-                className={`w-full pl-2 pr-6 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-medium font-mono ${
+                className={`w-full pl-2 pr-6 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-medium font-mono ${
                   isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200/80 text-slate-850'
                 }`}
               />
@@ -430,36 +431,30 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           </div>
 
           {/* Construction Year (Építés éve) */}
-          <div className={`relative space-y-1 p-1.5 rounded border flex flex-col justify-between ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/50 border-slate-200'}`}>
-            <div>
-              <label className={`text-[9px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Építés éve (Alapprofil)</label>
-              <select
-                value={data.constructionYearGroup || '2002-2015'}
-                onChange={(e) => handleConstructionYearChange(e.target.value)}
-                className={`w-full px-2 py-0.5 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold ${
-                  isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200/80 text-slate-850'
-                }`}
-              >
-                {CONSTRUCTION_YEAR_GROUPS.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {data.constructionYearGroup && (
-              <div className="text-[8px] text-slate-400 leading-tight font-medium mt-0.5">
-                {CONSTRUCTION_YEAR_GROUPS.find(g => g.id === data.constructionYearGroup)?.description}
-              </div>
-            )}
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Építés éve (Alapprofil)</label>
+            <select
+              value={data.constructionYearGroup || '2002-2015'}
+              onChange={(e) => handleConstructionYearChange(e.target.value)}
+              className={`w-full px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:14px] bg-[right_8px_center] ${
+                isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-200/80 text-slate-850'
+              }`}
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
+            >
+              {CONSTRUCTION_YEAR_GROUPS.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {/* Temperature Discrete Choices instead of Sliders */}
-        <div className={`p-2.5 border rounded grid grid-cols-1 md:grid-cols-2 gap-3.5 ${isDark ? 'bg-slate-950/20 border-slate-800/50' : 'bg-slate-50/50 border-slate-200'}`}>
+        {/* Temperature Discrete Choices — 2-col */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
           {/* Design Indoor Temp buttons */}
           <div className="space-y-1.5">
-            <label className={`text-[9px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <label className={`text-[10px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Belső tervezési hőmérséklet (T_belső)
             </label>
             <SegmentedControl
@@ -473,7 +468,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               layoutId="indoor-temp"
               theme={theme as 'light' | 'dark'}
             />
-            <div className="flex justify-between text-[9px] text-slate-400 font-medium px-0.5">
+            <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
               <span>Nyugodt: 20°C</span>
               <span>Átlag: 22°C</span>
               <span>Fürdő/Gyer.: 24°C</span>
@@ -482,7 +477,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
           {/* Design Outdoor Temp buttons */}
           <div className="space-y-1.5">
-            <label className={`text-[9px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <label className={`text-[10px] font-bold uppercase block tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Helyszíni mértékadó külső hőfok (T_külső)
             </label>
             <SegmentedControl
@@ -496,7 +491,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               layoutId="design-temp"
               theme={theme as 'light' | 'dark'}
             />
-            <div className="flex justify-between text-[9px] text-slate-400 font-medium px-0.5">
+            <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
               <span>Kelet-HU: -15°C</span>
               <span>Dél-HU: -13°C</span>
               <span>Nyugat-HU: -11°C</span>
@@ -504,9 +499,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           </div>
         </div>
       </div>
+      </div>
 
       {/* 2. Hőigény meghatározás */}
-      <div className={`rounded-lg border p-4 transition-all ${
+      <div className={`rounded-lg border p-3 transition-all ${
         isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className="border-b pb-1.5">
@@ -514,6 +510,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             Hőigény meghatározás
           </h3>
         </div>
+        <div className="mt-3">
 
         {/* Method Selection Tabs */}
         <div className="space-y-2">
@@ -559,9 +556,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           {/* METHOD 1: GAS-BASED WITH BIDIRECTIONAL Live SYNC */}
           {data.method === 'gas' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Éves gázfogyasztás
+              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Éves gázfogyasztás
                 </label>
                 <div className="relative">
                   <input
@@ -576,7 +574,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         gasAnnualM3: Number(e.target.value)
                       });
                     }}
-                    className={`w-full pl-2 pr-12 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                    className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
                       isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                     }`}
                     placeholder="pl. 1600"
@@ -584,10 +582,12 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">m³/év</span>
                 </div>
               </div>
+              </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Éves gázköltség
+              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Éves gázköltség
                 </label>
                 <div className="relative">
                   <input
@@ -613,7 +613,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       });
                     }}
                     onBlur={() => updateField('gasCalculationSource', 'm3')}
-                    className={`w-full pl-2 pr-12 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                    className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
                       isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                     }`}
                     placeholder="pl. 175493"
@@ -621,10 +621,12 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/év</span>
                 </div>
               </div>
+              </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Havi átalány
+              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Havi átalány
                 </label>
                 <div className="relative">
                   <input
@@ -650,7 +652,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       });
                     }}
                     onBlur={() => updateField('gasCalculationSource', 'm3')}
-                    className={`w-full pl-2 pr-12 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                    className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
                       isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                     }`}
                     placeholder="pl. 14600"
@@ -658,8 +660,9 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/hó</span>
                 </div>
               </div>
+              </div>
               
-              <div className="space-y-1 md:col-span-3 pb-2 border-b border-slate-800/20 dark:border-slate-800">
+              <div className={`rounded-lg border p-2.5 md:col-span-3 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -676,7 +679,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </label>
               </div>
 
-              <div className="space-y-1 md:col-span-3">
+              <div className={`rounded-lg border p-2.5 md:col-span-3 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                   Lecserélésre kerülő meglévő gázkazán típusa
                 </label>
@@ -695,9 +698,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       boilerEfficiency: eff
                     });
                   }}
-                  className={`w-full px-2 py-1.5 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold ${
-                    isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'
+                  className={`w-full px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:14px] bg-[right_8px_center] ${
+                    isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                   }`}
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
                 >
                   <option value="old_atmospheric">Régi atmoszférikus (kéményes) kazán – kb. 70% hatásfok</option>
                   <option value="new_atmospheric">Zárt égésterű (turbós) kazán – kb. 82% hatásfok</option>
@@ -717,71 +721,66 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* WALLS */}
-                <div className={`p-2 border rounded space-y-1.5 text-xs ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
-                    <span className="font-bold text-slate-400">Külső falazat (bruttó)</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase block">Falfelület (ablakokkal)</label>
-                    <div className="relative">
+                    <span className="font-bold text-slate-400">Külső falazat (bruttó, ablakokkal együtt)</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-500">Felület:</span>
                       <input
                         type="number"
                         value={data.walls.area || 0}
                         onChange={(e) => updateStructure('walls', 'area', Number(e.target.value))}
-                        className={`w-full pl-2 pr-6 py-0.5 border rounded text-xs font-mono font-bold ${isDark ? 'bg-slate-900 border-slate-850 text-slate-100' : 'bg-slate-50 border-slate-300 text-slate-800'}`}
+                        className={`w-14 px-1 py-1.5 border rounded-lg text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
                       />
-                      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-[9px] font-bold">m²</span>
+                      <span className="text-[9px] text-slate-500 font-bold">m²</span>
                     </div>
                   </div>
-                    <div className="grid grid-cols-1 gap-1">
-                      <div>
-                        <span className="text-[9px] text-slate-400 block font-semibold leading-none mb-0.5">Fal szerkezet - Rétegrend bázis</span>
-                        <select
-                          value={data.walls.baseUValue}
-                          onChange={(e) => updateStructure('walls', 'baseUValue', Number(e.target.value))}
-                          className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
-                        >
-                          <option value={1.45}>Kisméretű tömör tégla (38cm) - U=1.45</option>
-                          <option value={1.50}>B30-as blokktégla (30cm) - U=1.50</option>
-                          <option value={1.20}>Szilikát (30cm) - U=1.20</option>
-                          <option value={0.55}>Porotherm 30 N+F - U=0.55</option>
-                          <option value={0.25}>Porotherm 38 K (Klímatégla) - U=0.25</option>
-                          <option value={1.80}>Beton / Panelfal - U=1.80</option>
-                          <option value={1.30}>Vályogfal (50cm) - U=1.30</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-400 block mt-1">Homlokzati EPS Szigetelés (cm)</span>
-                        <div className="mt-0.5">
-                          <SegmentedControl
-                            options={[0, 5, 8, 10, 12, 15, 20].map(v => ({ value: v, label: String(v) }))}
-                            value={data.walls.insulationThickness}
-                            onChange={(val) => updateStructure('walls', 'insulationThickness', val)}
-                            layoutId="wall-insulation"
-                            theme={theme as 'light' | 'dark'}
-                            className="text-[8px]"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="pt-0.5 select-none text-[8px] text-slate-400 leading-tight font-medium">
-                        Az ablakok felülete ({data.windows.area} m²) a számításkor automatikusan levonásra kerül a falfelületből!
+                  <div className="grid grid-cols-1 gap-1">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-semibold leading-none mb-0.5">Fal szerkezet - Rétegrend bázis</span>
+                      <select
+                        value={data.walls.baseUValue}
+                        onChange={(e) => updateStructure('walls', 'baseUValue', Number(e.target.value))}
+                        className={`w-full px-1.5 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:14px] bg-[right_8px_center] ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
+                      >
+                        <option value={1.45}>Kisméretű tömör tégla (38cm) - U=1.45</option>
+                        <option value={1.50}>B30-as blokktégla (30cm) - U=1.50</option>
+                        <option value={1.20}>Szilikát (30cm) - U=1.20</option>
+                        <option value={0.55}>Porotherm 30 N+F - U=0.55</option>
+                        <option value={0.25}>Porotherm 38 K (Klímatégla) - U=0.25</option>
+                        <option value={1.80}>Beton / Panelfal - U=1.80</option>
+                        <option value={1.30}>Vályogfal (50cm) - U=1.30</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 block mt-1">Homlokzati EPS Szigetelés (cm)</span>
+                      <div className="mt-0.5">
+                        <SegmentedControl
+                          options={[0, 5, 8, 10, 12, 15, 20].map(v => ({ value: v, label: String(v) }))}
+                          value={data.walls.insulationThickness}
+                          onChange={(val) => updateStructure('walls', 'insulationThickness', val)}
+                          layoutId="wall-insulation"
+                          theme={theme as 'light' | 'dark'}
+                          className="text-[8px]"
+                        />
                       </div>
                     </div>
+                  </div>
                 </div>
 
                 {/* ROOF */}
-                <div className={`p-2 border rounded space-y-1.5 text-xs ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
                     <span className="font-bold text-slate-400">Födém / Tető</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] text-slate-500">Felület:</span>
+                      <span className="text-[10px] text-slate-500">Felület:</span>
                       <input
                         type="number"
                         value={data.roof.area || 0}
                         onChange={(e) => updateStructure('roof', 'area', Number(e.target.value))}
-                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
+                        className={`w-14 px-1 py-1.5 border rounded-lg text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
                       />
                       <span className="text-[9px] text-slate-500 font-bold">m²</span>
                     </div>
@@ -789,11 +788,12 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   
                   <div className="grid grid-cols-1 gap-1">
                     <div>
-                      <span className="text-[9px] text-slate-400 block font-semibold leading-none mb-0.5">Födém alap-U (szigetelés nélkül)</span>
+                      <span className="text-[10px] text-slate-400 block font-semibold leading-none mb-0.5">Födém alap-U (szigetelés nélkül)</span>
                       <select
                         value={data.roof.baseUValue}
                         onChange={(e) => updateStructure('roof', 'baseUValue', Number(e.target.value))}
-                        className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                        className={`w-full px-1.5 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:14px] bg-[right_8px_center] ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
                       >
                         <option value={1.3}>Vasbeton tálcás / béléstest (U=1.3)</option>
                         <option value={1.1}>Fagerendás sárfödém / salakos (U=1.1)</option>
@@ -802,7 +802,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                     </div>
 
                     <div>
-                      <span className="text-[9px] text-slate-400 block font-semibold mt-1">Gyapot Hőszigetelés (cm)</span>
+                      <span className="text-[10px] text-slate-400 block font-semibold mt-1">Gyapot Hőszigetelés (cm)</span>
                       <div className="mt-0.5">
                         <SegmentedControl
                           options={[0, 10, 15, 20, 25, 30].map(v => ({ value: v, label: String(v) }))}
@@ -818,16 +818,16 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* FLOOR */}
-                <div className={`p-2 border rounded space-y-1.5 text-xs ${isDark ? 'bg-slate-950 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
                     <span className="font-bold text-slate-400">Padló / Aljzat</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] text-slate-500">Felület:</span>
+                      <span className="text-[10px] text-slate-500">Felület:</span>
                       <input
                         type="number"
                         value={data.floor.area || 0}
                         onChange={(e) => updateStructure('floor', 'area', Number(e.target.value))}
-                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
+                        className={`w-14 px-1 py-1.5 border rounded-lg text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
                       />
                       <span className="text-[9px] text-slate-500 font-bold">m²</span>
                     </div>
@@ -835,11 +835,12 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   
                   <div className="grid grid-cols-1 gap-1">
                     <div>
-                      <span className="text-[9px] text-slate-400 block font-semibold leading-none mb-0.5">Aljzat alap-U (szigetelés nélkül)</span>
+                      <span className="text-[10px] text-slate-400 block font-semibold leading-none mb-0.5">Aljzat alap-U (szigetelés nélkül)</span>
                       <select
                         value={data.floor.baseUValue}
                         onChange={(e) => updateStructure('floor', 'baseUValue', Number(e.target.value))}
-                        className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                        className={`w-full px-1.5 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:14px] bg-[right_8px_center] ${isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
                       >
                         <option value={0.9}>Szigetelés nélküli beton (talajon) (U=0.9)</option>
                         <option value={1.1}>Fafödém pinceszint felett (U=1.1)</option>
@@ -848,7 +849,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                     </div>
 
                     <div>
-                      <span className="text-[9px] text-slate-400 block font-semibold mt-1">Aljazat alatti lépésálló / XPS (cm)</span>
+                      <span className="text-[10px] text-slate-400 block font-semibold mt-1">Aljazat alatti lépésálló / XPS (cm)</span>
                       <div className="mt-0.5">
                         <SegmentedControl
                           options={[0, 5, 8, 10, 15, 20].map(v => ({ value: v, label: String(v) }))}
@@ -864,16 +865,16 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* WINDOWS */}
-                <div className={`p-2 border rounded space-y-1.5 text-xs ${isDark ? 'bg-slate-950 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
                     <span className="font-bold text-slate-400">Nyílászárók (Ablakok)</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] text-slate-500">Felület:</span>
+                      <span className="text-[10px] text-slate-500">Felület:</span>
                       <input
                         type="number"
                         value={data.windows.area || 0}
                         onChange={(e) => updateStructure('windows', 'area', Number(e.target.value))}
-                        className={`w-14 px-1 py-0.2 border rounded text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
+                        className={`w-14 px-1 py-1.5 border rounded-lg text-right font-mono text-[10px] font-bold ${isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-100 border-slate-300'}`}
                       />
                       <span className="text-[9px] text-slate-500 font-bold">m²</span>
                     </div>
@@ -881,11 +882,14 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   
                   <div className="grid grid-cols-1 gap-1">
                     <div>
-                      <span className="text-[9px] text-slate-400 block font-semibold leading-none mb-0.5">Üvegezési tok- és rétegszerkezet (Uw)</span>
+                      <span className="text-[10px] text-slate-400 block font-semibold leading-none mb-0.5">Üvegezési tok- és rétegszerkezet (Uw)</span>
                       <select
                         value={data.windows.uValue}
                         onChange={(e) => updateStructure('windows', 'uValue', Number(e.target.value))}
-                        className={`w-full px-1.5 py-1 border rounded text-[10px] font-semibold ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                        className={`w-full px-1.5 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:14px] bg-[right_8px_center] ${
+                          isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'
+                        }`}
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
                       >
                         <option value={3.0}>Egyrétegű fém v. gerébtokos fa (U=3.0)</option>
                         <option value={2.8}>Kétrétegű régi termo üvegezés (U=2.8)</option>
@@ -903,15 +907,12 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* VENTILATION */}
-                <div className={`p-2 border rounded flex flex-wrap items-center justify-between gap-2 text-xs ${isDark ? 'bg-slate-950 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex items-center gap-1.5 font-bold text-slate-500">
-                    <Sparkles className="w-4 h-4 text-orange-500 shrink-0" />
-                    Szellőzési ráta légcsereszám (n):
-                  </div>
+                <div className={`p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-3 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <span className="font-bold text-slate-500">Légcsere szám</span>
                   <div>
                     <SegmentedControl
                       options={[
-                        { value: 0.3, label: '0.3/h (Erős szellőzés)' },
+                        { value: 0.3, label: '0.3/h (Hővisszanyerős szellőztetés)' },
                         { value: 0.5, label: '0.5/h (Normál üzem)' },
                         { value: 0.8, label: '0.8/h (Rosszul záró nyílászárók)' },
                       ]}
@@ -952,7 +953,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         updateField('certHeatDemandKw', val);
                       }}
-                      className={`w-full pl-2 pr-8 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                      className={`w-full pl-2 pr-8 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
                         isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                       }`}
                       placeholder="Pl. 8.4"
@@ -974,23 +975,24 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       value={data.certSpecificLossQ || ''}
                       disabled={data.certHeatDemandKw > 0}
                       onChange={(e) => updateField('certSpecificLossQ', Number(e.target.value))}
-                      className={`w-full pl-2 pr-12 py-1 border rounded text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono disabled:opacity-50 ${
+                      className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono disabled:opacity-50 ${
                         isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                       }`}
                       placeholder="Pl. 0.38"
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold font-mono">W/m³K</span>
                   </div>
-                  <p className="text-[9px] text-slate-500 font-medium">U_közép jellemző tényező (csak ha a fenti kW = 0).</p>
+                  <p className="text-[10px] text-slate-500 font-medium">U_közép jellemző tényező (csak ha a fenti kW = 0).</p>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+      </div>
 
       {/* 3. Hőigény összesítő & Mérnöki javaslat */}
-      <div className={`rounded-lg border p-4 transition-all ${
+      <div className={`rounded-lg border p-3 transition-all ${
         isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className="border-b pb-1.5">
@@ -998,6 +1000,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             Hőigény összesítő &amp; Mérnöki javaslat
           </h3>
         </div>
+        <div className="mt-3">
 
         <div className="flex items-center justify-between gap-2 mb-3">
           <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -1044,6 +1047,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             });
           })()}
         </div>
+      </div>
       </div>
     </div>
   );

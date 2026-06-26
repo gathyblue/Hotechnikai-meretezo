@@ -40,7 +40,7 @@ export function SegmentedControl<T extends string | number>({
             key={String(opt.value)}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`relative flex-1 flex items-center justify-center text-[10px] font-bold py-1.5 px-2.5 rounded-md transition-colors cursor-pointer select-none whitespace-nowrap focus:outline-none focus:ring-0 ${
+            className={`relative flex-1 flex items-center justify-center text-xs font-bold py-1 px-2.5 rounded-md transition-colors cursor-pointer select-none whitespace-nowrap focus:outline-none focus:ring-0 ${
               isActive
                 ? isDark
                   ? 'text-slate-100'
@@ -54,7 +54,7 @@ export function SegmentedControl<T extends string | number>({
               <motion.div
                 layoutId={`active-pill-${layoutId}`}
                 transition={{ type: 'spring', stiffness: 400, damping: 33 }}
-                className={`absolute inset-0 rounded-[5px] shadow-sm ${
+                className={`absolute inset-0 rounded-md shadow-sm ${
                   isDark ? 'bg-slate-850 border border-slate-700/50' : 'bg-white border border-slate-250'
                 }`}
               />

@@ -219,10 +219,10 @@ export function calculateBivalentCoverage(bivalentTemp: number, designTemp: numb
   const refPoints = [
     { temp: -15, pct: 100.0 },
     { temp: -10, pct: 99.8 },
-    { temp: -5, pct: 98.7 },
-    { temp: 0, pct: 93.5 },
-    { temp: 5, pct: 78.0 },
-    { temp: 10, pct: 45.0 },
+    { temp: -5, pct: 99.4 },
+    { temp: 0, pct: 97.0 },
+    { temp: 5, pct: 87.0 },
+    { temp: 10, pct: 55.0 },
     { temp: 15, pct: 0.0 }
   ];
 
@@ -247,6 +247,86 @@ export function calculateBivalentCoverage(bivalentTemp: number, designTemp: numb
     }
   }
   return 100.0;
+}
+
+/**
+ * Estimate the number of hours per year when outdoor temperature drops below
+ * the given bivalent threshold. Uses a Normal approximation fitted to
+ * Hungarian TMY heating-season data (mean 3.6°C, σ 5.03°C, season 4392 h).
+ */
+export function estimateBackupHours(bivalentTemp: number): number {
+  if (bivalentTemp <= -15) return 0;
+  if (bivalentTemp >= 15) return 4392;
+  const mean = 3.6;
+  const stdDev = 5.03;
+  const z = (bivalentTemp - mean) / stdDev;
+  const sign = z < 0 ? -1 : 1;
+  const x = Math.abs(z) / Math.sqrt(2);
+  const t = 1 / (1 + 0.3275911 * x);
+  const er = 1 - (((((1.061405429 * t + -1.453152027) * t) + 1.421413741) * t + -0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  const cdf = 0.5 * (1 + sign * er);
+  return Math.round(4392 * cdf);
+}
+
+const NORM_STDDEV = 5.03;
+const NORM_MEAN = 3.6;
+const SEASON_HOURS = 4392;
+
+function normalPdf(x: number, mean: number, stdDev: number): number {
+  const z = (x - mean) / stdDev;
+  return Math.exp(-0.5 * z * z) / (stdDev * Math.sqrt(2 * Math.PI));
+}
+
+/**
+ * Numerically integrate the area between the building heat-demand curve and
+ * the heat-pump capacity curve, weighted by the outdoor-temperature
+ * distribution, to obtain the annual thermal energy split.
+ *
+ * Returns the total thermal kWh delivered by the HP, the total thermal kWh
+ * required from backup, the number of hours with non-zero backup, and the
+ * total annual heat demand (all thermal, before COP).
+ */
+export function estimateAnnualEnergySplit(
+  peakLoadKw: number,
+  designTemp: number,
+  bivalentTemp: number,
+  hp: HeatPumpModel,
+  emitterType: 'floor' | 'radiator',
+): {
+  hpThermalKwh: number;
+  backupThermalKwh: number;
+  backupHours: number;
+  totalDemandKwh: number;
+} {
+  const step = 0.5;
+  let hpThermalKwh = 0;
+  let backupThermalKwh = 0;
+  let backupHours = 0;
+  let totalDemandKwh = 0;
+
+  for (let t = designTemp; t <= 15; t += step) {
+    const pdf = normalPdf(t + step / 2, NORM_MEAN, NORM_STDDEV);
+    const hoursAtT = pdf * step * SEASON_HOURS;
+
+    const demand = getBuildingHeatDemandAtTemp(peakLoadKw, designTemp, t);
+    const hpCap = getHpCapacityAtTemp(hp, emitterType, t);
+    const deficit = Math.max(0, demand - hpCap);
+
+    hpThermalKwh += Math.min(demand, hpCap) * hoursAtT;
+    backupThermalKwh += deficit * hoursAtT;
+    totalDemandKwh += demand * hoursAtT;
+
+    if (deficit > 0.01) {
+      backupHours += hoursAtT;
+    }
+  }
+
+  return {
+    hpThermalKwh: Math.round(hpThermalKwh),
+    backupThermalKwh: Math.round(backupThermalKwh),
+    backupHours: Math.round(backupHours),
+    totalDemandKwh: Math.round(totalDemandKwh),
+  };
 }
 
 /**

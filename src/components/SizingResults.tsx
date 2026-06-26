@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { BuildingData, CalculationResults, HeatPumpModel } from '../types';
 import { HEAT_PUMP_DATABASE } from '../heatPumpData';
-import { evaluateHeatPumpEconomics, getHpCapacityAtTemp, getBuildingHeatDemandAtTemp, calculateBivalentCoverage } from '../utils/calculations';
+import { evaluateHeatPumpEconomics, getHpCapacityAtTemp, getBuildingHeatDemandAtTemp, calculateBivalentCoverage, estimateBackupHours, estimateAnnualEnergySplit } from '../utils/calculations';
 import { CONSTRUCTION_YEAR_GROUPS } from './BuildingDataInput';
 import { Activity, Flame, Zap, Shield, CheckCircle2, ChevronRight, HelpCircle, Layers, Settings, BatteryCharging, Info } from 'lucide-react';
 import { SegmentedControl } from './SegmentedControl';
@@ -121,18 +121,42 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
     return filtered.length > 0 ? filtered : recommendedModels.slice(0, 3);
   }, [recommendedModels, filterNearby, calcResults.heatLossKw.total]);
 
-  // Handle selected model automatically if none chosen
+  // Auto-select best model when parameters change — but don't override user's choice
   React.useEffect(() => {
-    if (!selectedModel && displayedModels.length > 0) {
-      onSelectModel(displayedModels[0], selectedEmitter);
+    if (displayedModels.length > 0) {
+      // Keep current selection if it's still valid
+      const stillValid = selectedModel && displayedModels.some(m => m.id === selectedModel.id);
+      if (!stillValid) {
+        const best = displayedModels.reduce((prev, curr) => {
+          const prevRatio = prev.capacityAtBiv / (prev.demandAtBiv || 0.1);
+          const currRatio = curr.capacityAtBiv / (curr.demandAtBiv || 0.1);
+          const prevScore = prevRatio >= 1 ? prevRatio : prevRatio - 2;
+          const currScore = currRatio >= 1 ? currRatio : currRatio - 2;
+          return Math.abs(currScore - 1) < Math.abs(prevScore - 1) ? curr : prev;
+        });
+        if (best.id !== selectedModel?.id) {
+          onSelectModel(best, selectedEmitter);
+        }
+      }
     }
-  }, [displayedModels, selectedModel, onSelectModel, selectedEmitter]);
+  }, [displayedModels, onSelectModel, selectedEmitter]);
 
   // Read current selected unit details
   const activeHPResults = useMemo(() => {
     if (!selectedModel) return null;
     return recommendedModels.find(m => m.id === selectedModel.id) || null;
   }, [selectedModel, recommendedModels]);
+
+  const annualEnergy = useMemo(() => {
+    if (!selectedModel) return null;
+    return estimateAnnualEnergySplit(
+      calcResults.heatLossKw.total,
+      buildingData.designTemp,
+      bivalentTempManual,
+      selectedModel,
+      selectedEmitter,
+    );
+  }, [selectedModel, selectedEmitter, bivalentTempManual, calcResults.heatLossKw.total, buildingData.designTemp]);
 
   // Payback calculation
   const paybackYears = useMemo(() => {
@@ -202,37 +226,6 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         </div>
 
         <div className="space-y-4 mt-3">
-          
-          {/* Bivalencia hőmérséklet — Slider & indicator */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="space-y-1 max-w-sm flex-shrink-0">
-              <span className={`text-base font-light tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-                Bivalencia hőmérséklet: <strong>{bivalentTempManual} °C</strong>
-              </span>
-              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Rásegítési pont. Ajánlott: <strong className="font-medium">-5°C és -7°C</strong> között.
-              </p>
-            </div>
-            
-            {/* Custom Modernized Cleaner HTML5 Slider */}
-            <div className="w-full max-w-md pt-2 px-2 shrink">
-              <div className="flex justify-between items-center text-xs font-medium text-slate-400 mb-2">
-                <span>Min ({buildingData.designTemp}°C)</span>
-                <span>Max (+10°C)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min={buildingData.designTemp}
-                  max="10"
-                  step="1"
-                  value={Math.max(buildingData.designTemp, bivalentTempManual)}
-                  onChange={(e) => onChangeBivalentTemp(parseInt(e.target.value))}
-                  className={`flex-grow h-1.5 rounded-lg appearance-none cursor-pointer accent-emerald-500 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
-                />
-              </div>
-            </div>
-          </div>
 
           {/* Full Width High-Impact Responsive Visual SVG Graph */}
           <div className="flex flex-col space-y-2">
@@ -293,42 +286,6 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
                 return (
                   <div className="w-full space-y-3.5">
-                    {/* Live Munkaponti Értékek Alert Dashboard Card */}
-                    <div className={`p-4 rounded-md border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
-                      isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-                    }`}>
-                      <div className="space-y-1.5">
-                        <span className={`text-[11px] font-semibold block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Élő adatok ({bivalentTempManual} °C hőmérsékleten)</span>
-                        <div className={`flex flex-wrap gap-4 text-xs font-mono font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                          <div>
-                            Hőigény: <strong className={`font-normal text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{demandAtTempManual.toFixed(2)} kW</strong>
-                          </div>
-                          <div className={`font-sans hidden sm:block ${isDark ? 'text-slate-700' : 'text-slate-200'}`}>|</div>
-                          <div>
-                            Gép teljesítménye: <strong className={`font-normal text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtManual.toFixed(2)} kW</strong>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 shrink-0">
-                        {hpCapAtManual >= demandAtTempManual ? (
-                          <span className={`text-[11px] font-medium px-3 py-1.5 rounded flex items-center gap-1.5 ${
-                            isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-600'
-                          }`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                            Önálló fűtés (Nincs szükség rásegítésre)
-                          </span>
-                        ) : (
-                          <span className={`text-[11px] font-medium px-3 py-1.5 rounded flex items-center gap-1.5 ${
-                            isDark ? 'bg-rose-900/30 text-rose-400' : 'bg-rose-50 text-rose-700'
-                          }`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                            Rásegítéses fűtés (+{(demandAtTempManual - hpCapAtManual).toFixed(2)} kW)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
                     <svg width="100%" height={sH} viewBox={`0 0 ${sW} ${sH}`} className="select-none font-mono overflow-visible">
                       {/* Integrated 4 Climatic Zones in the Background */}
                       {/* Zone 1: Extrém fagy (< -7°C) */}
@@ -364,32 +321,14 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                         fill={isDark ? "rgba(59, 130, 246, 0.05)" : "rgba(59, 130, 246, 0.03)"}
                       />
 
-                      {/* Zone Top Headers and Percentages (Integrated Hungarian Climatic statistics) */}
+                      {/* Zone Top Headers */}
                       {(() => {
-                        const mean = 1.8;
-                        const stdDev = 6.2;
-                        const calcPct = (temp: number) => Math.exp(-Math.pow(temp - mean, 2) / (2 * Math.pow(stdDev, 2)));
-                        
-                        let sExt = 0, sZor = 0, sStd = 0, sEny = 0;
-                        for (let t = dTemp; t <= 15; t++) {
-                          const w = calcPct(t);
-                          if (t < -7) sExt += w;
-                          else if (t < 0) sZor += w;
-                          else if (t <= 5) sStd += w;
-                          else sEny += w;
-                        }
-                        const totalW = sExt + sZor + sStd + sEny || 1;
-                        const pExt = Math.round((sExt / totalW) * 100);
-                        const pZor = Math.round((sZor / totalW) * 100);
-                        const pStd = Math.round((sStd / totalW) * 100);
-                        const pEny = 100 - pExt - pZor - pStd; // ensure exactly 100%
-                        
                         return (
                           <>
-                            <text x={(gX(dTemp) + gX(-7)) / 2} y="27" fill={isDark ? "#fb7185" : "#e11d48"} fontSize="8.5" fontWeight="800" textAnchor="middle">EXTRÉM: {pExt}%</text>
-                            <text x={(gX(-7) + gX(0)) / 2} y="27" fill={isDark ? "#fbbf24" : "#d97706"} fontSize="8.5" fontWeight="800" textAnchor="middle">ZORD: {pZor}%</text>
-                            <text x={(gX(0) + gX(5)) / 2} y="27" fill={isDark ? "#2dd4bf" : "#0d9488"} fontSize="8.5" fontWeight="800" textAnchor="middle">STANDARD: {pStd}%</text>
-                            <text x={(gX(5) + gX(15)) / 2} y="27" fill={isDark ? "#60a5fa" : "#2563eb"} fontSize="8.5" fontWeight="800" textAnchor="middle">ENYHE: {pEny}%</text>
+                            <text x={(gX(-7) + gX(dTemp)) / 2} y="27" fill={isDark ? "#fb7185" : "#e11d48"} fontSize="8" fontWeight="700" textAnchor="middle">EXTRÉM</text>
+                            <text x={(gX(-7) + gX(0)) / 2} y="27" fill={isDark ? "#fbbf24" : "#d97706"} fontSize="8" fontWeight="700" textAnchor="middle">ZORD</text>
+                            <text x={(gX(0) + gX(5)) / 2} y="27" fill={isDark ? "#2dd4bf" : "#0d9488"} fontSize="8" fontWeight="700" textAnchor="middle">STANDARD</text>
+                            <text x={(gX(5) + gX(15)) / 2} y="27" fill={isDark ? "#60a5fa" : "#2563eb"} fontSize="8" fontWeight="700" textAnchor="middle">ENYHE</text>
                           </>
                         );
                       })()}
@@ -464,12 +403,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       <line x1={gX(0)} y1="15" x2={gX(0)} y2={sH - 25} stroke={gridStroke} strokeWidth="1" strokeDasharray="4" />
                       <line x1={gX(15)} y1="15" x2={gX(15)} y2={sH - 25} stroke={gridStroke} strokeWidth="1" />
 
-                      {/* Tick Labels */}
-                      <text x={gX(dTemp)} y={sH - 8} fill={tickColor} fontSize="8" textAnchor="middle">{dTemp}°C</text>
-                      <text x={gX(-7)} y={sH - 8} fill={tickColor} fontSize="8" textAnchor="middle" className="font-bold">-7°C</text>
-                      <text x={gX(0)} y={sH - 8} fill={tickColor} fontSize="8" textAnchor="middle" className="font-bold">0°C</text>
-                      <text x={gX(5)} y={sH - 8} fill={tickColor} fontSize="8" textAnchor="middle" className="font-bold">+5°C</text>
-                      <text x={gX(15)} y={sH - 8} fill={tickColor} fontSize="8" textAnchor="middle">+15°C</text>
+                      {/* Remaining static tick labels (non-selectable) */}
+                      <text x={gX(15)} y={sH - 10} fill={tickColor} fontSize="7" textAnchor="middle" opacity="0.6">+15°C</text>
 
                       {/* KW vertical indicators */}
                       <text x="5" y={gY(mKw) + 6} fill={tickColor} fontSize="8" textAnchor="start">{Math.round(mKw)} kW</text>
@@ -556,10 +491,33 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
  
                       {/* Bivalent point mark circle */}
                       <circle cx={gX(actBivTemp)} cy={gY(dMin15 * (1 - (actBivTemp - dTemp) / tRange))} r="5" fill="#10b981" stroke="#ffffff" strokeWidth="1" />
+
+                      {/* Clickable bivalence temperature markers on the X-axis */}
+                      {[buildingData.designTemp, -7, 0, 5].map((t) => {
+                        const isActive = t === bivalentTempManual;
+                        return (
+                          <g key={`biv-marker-${t}`} onClick={() => onChangeBivalentTemp(t)} style={{ cursor: 'pointer' }}>
+                            {isActive ? (
+                              <circle cx={gX(t)} cy={sH - 28} r="5" fill="#10b981" stroke="#fff" strokeWidth="1.5" />
+                            ) : (
+                              <circle cx={gX(t)} cy={sH - 28} r="4" fill={isDark ? '#334155' : '#e2e8f0'} stroke={isDark ? '#64748b' : '#94a3b8'} strokeWidth="1" />
+                            )}
+                            <text
+                              x={gX(t)} y={sH - 10}
+                              fill={isActive ? '#10b981' : tickColor}
+                              fontSize="8"
+                              textAnchor="middle"
+                              fontWeight={isActive ? '800' : '400'}
+                            >
+                              {t > 0 ? `+${t}°C` : `${t}°C`}
+                            </text>
+                          </g>
+                        );
+                      })}
                     </svg>
 
-                    {/* Compact legend under chart */}
-                    <div className={`flex flex-wrap justify-center gap-3 text-[8px] font-bold uppercase tracking-wide text-slate-400 border-t pt-1.5 mt-1.5 ${isDark ? 'border-slate-850' : 'border-slate-100'}`}>
+                    {/* Compact legend directly under chart */}
+                    <div className={`flex flex-wrap justify-center gap-3 text-[8px] font-bold uppercase tracking-wide text-slate-400`}>
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-1 bg-orange-500 rounded-sm"></span> Hőigény
                       </div>
@@ -567,17 +525,88 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                         <span className="w-2.5 h-1 bg-blue-500 rounded-sm"></span> Max Gépkapacitás
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-2 bg-blue-500/15 border border-blue-500/30 rounded-sm"></span> Klímahőmérséklet gyakoriság (%)
+                        <span className="w-3 h-2 bg-blue-500/15 border border-blue-500/30 rounded-sm"></span> Klímahőmérséklet gyakoriság
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-3 h-2 bg-red-500/20 border border-red-500/40 rounded-sm"></span> Külső hőforrás igény (hiány)
                       </div>
                     </div>
 
-                    {/* Highly descriptive summary of integrated metrics below graph */}
-                    <div className={`text-[10px] border-t pt-2.5 mt-2 text-center leading-relaxed ${isDark ? 'text-slate-400 border-slate-850' : 'text-slate-500 border-slate-100'}`}>
-                      A beállított bivalens pont <strong>{bivalentTempManual}°C</strong> alapján a hőszivattyús kompresszor az éves fűtési hőszükséglet <strong className="font-mono">{calculateBivalentCoverage(bivalentTempManual, buildingData.designTemp).toFixed(1)}%</strong>-át teljesen önállóan lefedi. Az ez alatti {bivalentTempManual}°C és {dTemp}°C közötti fagyos időszakokban <strong className="text-rose-500">külső kisegítő fűtés (kazán vagy fűtőpatron)</strong> rásegítése szükséges ({calcResults.bivalentElectricHeaterKw.toFixed(1)} kW fűtési teljesítményigénnyel) a fűtési hőszükséglet biztonságos ellátásához.
+                    {/* Live Munkaponti Értékek Alert Dashboard Card */}
+                    <div className={`p-3 rounded-md border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className={`text-[10px] font-semibold uppercase tracking-wider mb-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Munkapont elemzés ({bivalentTempManual} °C, {selectedEmitter === 'radiator' ? 'W55' : 'W35'})</div>
+
+                      {/* Section 1: Power */}
+                      <div className="space-y-1.5 text-xs font-mono">
+                        <span className={`block text-[9px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Teljesítmény × hőmérséklet</span>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Csúcsteher ({dTemp}°C)</span>
+                          <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{calcResults.heatLossKw.total.toFixed(2)} kW</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőigény ({bivalentTempManual}°C)</span>
+                          <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{demandAtTempManual.toFixed(2)} kW</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú kap. ({dTemp}°C)</span>
+                          <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtT(dTemp).toFixed(2)} kW</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú kap. ({bivalentTempManual}°C)</span>
+                          <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtManual.toFixed(2)} kW</span>
+                        </div>
+                        <div className={`pt-2 mt-1.5 border-t flex justify-between items-center font-semibold ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                          <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>Max kiegészítő fűtés igény</span>
+                          <span className={`font-bold text-sm ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>+{Math.max(0, calcResults.heatLossKw.total - hpCapAtT(dTemp)).toFixed(2)} kW</span>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Energy */}
+                      <div className={`mt-3 pt-2.5 border-t space-y-1.5 text-xs font-mono ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <span className={`block text-[9px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Éves energia (kWh)</span>
+                        {annualEnergy ? (() => {
+                          const scop = selectedEmitter === 'radiator' ? (selectedModel?.scopW55 ?? 3) : (selectedModel?.scopW35 ?? 3.5);
+                          const hpElek = Math.round(annualEnergy.hpThermalKwh / scop);
+                          const backupElek = annualEnergy.backupThermalKwh;
+                          return (<>
+                            <div className="flex justify-between items-center py-0.5">
+                              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú termikus</span>
+                              <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{annualEnergy.hpThermalKwh.toLocaleString('hu-HU')} kWh</span>
+                            </div>
+                            <div className="flex justify-between items-center py-0.5">
+                              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő termikus</span>
+                              <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{annualEnergy.backupThermalKwh.toLocaleString('hu-HU')} kWh</span>
+                            </div>
+                            <div className={`mt-2 pt-2 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú elektromos (SCOP {scop.toFixed(2)})</span>
+                                <span className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{hpElek.toLocaleString('hu-HU')} kWh</span>
+                              </div>
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő elektromos</span>
+                                <span className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{backupElek.toLocaleString('hu-HU')} kWh</span>
+                              </div>
+                            </div>
+                          </>);
+                        })() : (
+                          <span className={`text-xs ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Válasszon hőszivattyút</span>
+                        )}
+                      </div>
+
+                      {/* Section 3: Hours */}
+                      <div className={`mt-3 pt-2.5 border-t space-y-1.5 text-xs font-mono ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <span className={`block text-[9px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Üzemórák (h/év)</span>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú</span>
+                          <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>~{Math.max(0, 4392 - estimateBackupHours(bivalentTempManual)).toLocaleString('hu-HU')} h</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő fűtés</span>
+                          <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>~{estimateBackupHours(bivalentTempManual).toLocaleString('hu-HU')} h</span>
+                        </div>
+                      </div>
                     </div>
+
                   </div>
                 );
               })()}
@@ -585,41 +614,61 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
           </div>
         </div>
 
-        {/* Emitter selector integrated in this section */}
-        <div>
-            <div className="flex items-center gap-2 mb-2">
-              <h2 className={`font-medium text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Tervezési téli előremenő vízhőmérséklet
-              </h2>
-            </div>
-
+        {/* Bivalencia + Kiegészítő fűtés + Emitter — 50/50 same-height row */}
+        <div className={`flex flex-col md:flex-row gap-3 pt-3 ${isDark ? '' : ''}`}>
+          {/* Left 50% — Bivalence temperature selector */}
+          <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bivalencia hőmérséklet</span>
             <SegmentedControl
               options={[
-                {
-                  value: 'floor',
-                  label: (
-                    <div className="text-center py-0.5">
-                      <span className="text-xs font-bold block tracking-tight">+35 °C</span>
-                      <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Padlófűtés</span>
-                    </div>
-                  ),
-                },
-                {
-                  value: 'radiator',
-                  label: (
-                    <div className="text-center py-0.5">
-                      <span className="text-xs font-bold block tracking-tight">+55 °C</span>
-                      <span className="text-[8.5px] font-semibold block text-slate-450 dark:text-slate-400">Radiátoros</span>
-                    </div>
-                  ),
-                },
+                { value: buildingData.designTemp, label: `${buildingData.designTemp}°C` },
+                { value: -7, label: '-7°C' },
+                { value: 0, label: '0°C' },
+                { value: 5, label: '+5°C' },
               ]}
-              value={selectedEmitter}
-              onChange={onChangeEmitter}
-              layoutId="emitter-select"
+              value={bivalentTempManual}
+              onChange={(val) => onChangeBivalentTemp(val)}
+              layoutId="bivalent-temp"
               theme={theme as 'light' | 'dark'}
+              className="text-[9px]"
             />
           </div>
+
+          {/* Right 50% — Emitter selection only */}
+          <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőleadó (előremenő hőmérséklet választás)</span>
+            {activeHPResults ? (() => {
+              return (
+                <>
+                  <SegmentedControl
+                    options={[
+                      { value: 'floor', label: '+35 °C  Padlófűtés' },
+                      { value: 'radiator', label: '+55 °C  Radiátor' },
+                    ]}
+                    value={selectedEmitter}
+                    onChange={onChangeEmitter}
+                    layoutId="emitter-select"
+                    theme={theme as 'light' | 'dark'}
+                  />
+                </>
+              );
+            })() : (
+              <div className="flex flex-col items-center justify-center gap-2 h-full">
+                <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Válasszon hőszivattyút</span>
+                <SegmentedControl
+                  options={[
+                    { value: 'floor', label: '+35 °C  Padlófűtés' },
+                    { value: 'radiator', label: '+55 °C  Radiátor' },
+                  ]}
+                  value={selectedEmitter}
+                  onChange={onChangeEmitter}
+                  layoutId="emitter-select"
+                  theme={theme as 'light' | 'dark'}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
 
@@ -966,7 +1015,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                             onChangeBuildingData({ ...buildingData, subsidyValue: v });
                           }
                         }}
-                        className={`w-28 px-1.5 py-0.5 text-sm font-mono rounded border text-right focus:outline-none focus:ring-1 focus:ring-slate-400 ${
+                        className={`w-28 px-1.5 py-0.5 text-sm font-mono rounded-lg border text-right focus:outline-none focus:ring-1 focus:ring-slate-400 ${
                           isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'
                         }`}
                       />
@@ -1052,7 +1101,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedInfoModel(null)}
-                className={`px-2 py-1 text-[10px] font-bold rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200`}
+                className={`px-2 py-1 text-[10px] font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200`}
               >
                 Bezár
               </button>
@@ -1122,7 +1171,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   onSelectModel(selectedInfoModel, selectedEmitter);
                   setSelectedInfoModel(null);
                 }}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-extrabold text-[10px] uppercase tracking-wide rounded shadow-md transition-all cursor-pointer"
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-extrabold text-[10px] uppercase tracking-wide rounded-lg shadow-md transition-all cursor-pointer"
               >
                 Gép kiválasztása tervezési alapnak
               </button>
