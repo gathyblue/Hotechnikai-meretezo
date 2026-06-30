@@ -14,7 +14,7 @@ export interface BuildingData {
   heatedArea: number; // m2
   ceilingHeight: number; // m
   indoorTemp: number; // °C, usually 20 or 22
-  method: 'gas' | 'fabric' | 'certificate';
+  method: 'consumption' | 'fabric' | 'certificate';
   levels?: number; // épület szintek száma (1, 2, 3...)
   // Gas-based
   gasCalculationSource?: 'm3' | 'annual_huf' | 'monthly_huf';
@@ -24,6 +24,15 @@ export interface BuildingData {
   gasIncludeDhwCorrection?: boolean;
   gasBoilerType?: 'old_atmospheric' | 'new_atmospheric' | 'condensing';
   boilerEfficiency: number; // %
+  // Wood-based
+  woodEnabled?: boolean;
+  woodCubicMeters?: number; // erdei m³/év
+  woodPricePerM3?: number; // Ft/erdei m³, default 38000
+  woodEnergyKwhPerM3?: number; // kWh/erdei m³, default 3000
+  woodEfficiency?: number; // %, default 70
+  // Electric boiler
+  electricBoilerEnabled?: boolean;
+  electricBoilerKwh?: number; // kWh/év
   // Certificate-based
   certHeatDemandKw: number;
   certSpecificLossQ: number; // W/m3K
@@ -92,12 +101,15 @@ export interface CalculationResults {
   gasMarketM3: number;
   gasSubsidizedCost: number;
   gasMarketCost: number;
+  woodCostHuf: number; // Fatüzelés éves költsége
+  electricBoilerCostHuf: number; // Elektromos kazán éves költsége
+  totalHeatingCostHuf: number; // gáz + fa + elektromos összesen
   hpCostHuf: number;
   yearlySavingsHuf: number;
   bivalentTemp: number; // °C
   bivalentElectricHeaterKw: number;
   comparison?: {
-    gasKw: number;
+    consumptionKw: number;
     fabricKw: number;
     certKw: number;
   };

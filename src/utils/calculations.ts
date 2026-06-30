@@ -66,9 +66,24 @@ export function calculateGasM3FromHuf(huf: number): number {
   }
 }
 
+export function getWoodCost(m3: number, pricePerM3: number): number {
+  if (m3 <= 0 || pricePerM3 <= 0) return 0;
+  return m3 * pricePerM3;
+}
+
+export function getWoodThermalKwh(m3: number, kwhPerM3: number, efficiency: number): number {
+  if (m3 <= 0 || kwhPerM3 <= 0) return 0;
+  return m3 * kwhPerM3 * (efficiency / 100);
+}
+
+export function getElectricBoilerCost(kwh: number, tariffHuf: number = 70): number {
+  if (kwh <= 0) return 0;
+  return kwh * tariffHuf;
+}
+
 export function getHeatingGasM3(data: BuildingData): number {
   let activeM3 = data.gasAnnualM3;
-  if (data.method === 'gas' && data.gasIncludeDhwCorrection && activeM3 > 0) {
+  if (data.method === 'consumption' && data.gasIncludeDhwCorrection && activeM3 > 0) {
      if (activeM3 < 1700) {
        activeM3 = activeM3 * 0.70; // 30% DHW
      } else if (activeM3 <= 3000) {
@@ -119,10 +134,21 @@ export function performHeatLossCalculation(data: BuildingData, params?: Engineer
     calculatedCertKw = (data.certSpecificLossQ * volume * tempDifference) / 1000;
   }
 
-  // Active method selection mapping - default to the selected method or fallback to max if undefined
+  // Wood & electric boiler contributions
+  const woodKwh = getWoodThermalKwh(
+    data.woodEnabled ? (data.woodCubicMeters || 0) : 0,
+    data.woodEnergyKwhPerM3 || 3000,
+    data.woodEfficiency || 70
+  );
+  const electricBoilerKwh = data.electricBoilerEnabled ? (data.electricBoilerKwh || 0) : 0;
+
+  // Total yearly energy from all consumption sources
+  const totalConsumptionKwh = gasEnergyKwh + woodKwh + electricBoilerKwh;
+
+  // Active method selection
   let selectedMethodKw = calculatedFabricKw;
-  if (data.method === 'gas') {
-    selectedMethodKw = calculatedGasKw;
+  if (data.method === 'consumption' && totalConsumptionKwh > 0) {
+    selectedMethodKw = totalConsumptionKwh / 2000;
   } else if (data.method === 'certificate') {
     selectedMethodKw = calculatedCertKw;
   }
@@ -131,10 +157,7 @@ export function performHeatLossCalculation(data: BuildingData, params?: Engineer
   let transmissionKw = calculatedFabricTransmissionKw;
   let ventilationKw = calculatedFabricVentilationKw;
 
-  if (data.method === 'gas') {
-    ventilationKw = selectedMethodKw * 0.15;
-    transmissionKw = selectedMethodKw * 0.85;
-  } else if (data.method === 'certificate') {
+  if (data.method !== 'fabric') {
     ventilationKw = selectedMethodKw * 0.15;
     transmissionKw = selectedMethodKw * 0.85;
   }
@@ -151,19 +174,30 @@ export function performHeatLossCalculation(data: BuildingData, params?: Engineer
 
   // Yearly heating energy demand (kWh/year)
   let yearlyEnergyKwh = 0;
-  if (data.method === 'gas' && data.gasAnnualM3 > 0) {
-    yearlyEnergyKwh = heatingGasM3 * 9.44 * (data.boilerEfficiency / 100);
+  if (data.method === 'consumption' && totalConsumptionKwh > 0) {
+    yearlyEnergyKwh = totalConsumptionKwh;
   } else {
     yearlyEnergyKwh = peakLoadKw * 1900;
   }
 
-  // Back-calculate equivalent gas block if active method is not gas
-  let calculatedGasM3 = data.gasAnnualM3;
-  if (data.method !== 'gas') {
-    calculatedGasM3 = yearlyEnergyKwh / (9.44 * 0.80); // old 80% boiler baseline
-  }
+  // Gas-only cost breakdown (existing gas input always used for cost calc)
+  const gasM3ForCost = data.gasAnnualM3 > 0 ? data.gasAnnualM3 : 0;
+  const gasBreakdown = getGasBreakdown(gasM3ForCost);
 
-  const gasBreakdown = getGasBreakdown(calculatedGasM3);
+  // Wood cost
+  const woodCost = getWoodCost(
+    data.woodEnabled ? (data.woodCubicMeters || 0) : 0,
+    data.woodPricePerM3 || 38000
+  );
+
+  // Electric boiler cost
+  const electricCost = getElectricBoilerCost(
+    data.electricBoilerEnabled ? (data.electricBoilerKwh || 0) : 0,
+    70
+  );
+
+  // Total heating cost
+  const totalCost = Math.round(gasBreakdown.total) + woodCost + electricCost;
 
   return {
     heatLossKw: {
@@ -177,12 +211,15 @@ export function performHeatLossCalculation(data: BuildingData, params?: Engineer
     gasMarketM3: gasBreakdown.marketM3,
     gasSubsidizedCost: Math.round(gasBreakdown.subsidizedCost),
     gasMarketCost: Math.round(gasBreakdown.marketCost),
+    woodCostHuf: Math.round(woodCost),
+    electricBoilerCostHuf: Math.round(electricCost),
+    totalHeatingCostHuf: totalCost,
     hpCostHuf: 0, 
     yearlySavingsHuf: 0, 
     bivalentTemp: -5, 
     bivalentElectricHeaterKw: 0,
     comparison: {
-      gasKw: Number(Math.max(1, calculatedGasKw).toFixed(2)),
+      consumptionKw: Number(Math.max(1, data.method === 'consumption' ? peakLoadKw : calculatedGasKw).toFixed(2)),
       fabricKw: Number(Math.max(1, calculatedFabricKw).toFixed(2)),
       certKw: Number(Math.max(1, calculatedCertKw).toFixed(2)),
     }
@@ -364,7 +401,7 @@ export function estimateAnnualEnergySplit(
 export function evaluateHeatPumpEconomics(
   peakLoadKw: number,
   yearlyEnergyKwh: number,
-  gasCostHuf: number,
+  heatingCostHuf: number,
   hp: HeatPumpModel,
   emitterType: 'floor' | 'radiator',
   electricityTariffHuf: number = 23,
@@ -397,7 +434,7 @@ export function evaluateHeatPumpEconomics(
 
   // Cost with custom electricity tariff
   const hpCostHuf = electricityKwh * electricityTariffHuf;
-  const yearlySavingsHuf = gasCostHuf - hpCostHuf;
+  const yearlySavingsHuf = heatingCostHuf - hpCostHuf;
 
   // Severe winter heating capacity at -15°C
   const capacityAtMin15 = emitterType === 'radiator' ? hp.capacityAm15W55 : hp.capacityAm15W35;

@@ -212,7 +212,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
   // Compute live comparison values across all methods
   const calcResults = performHeatLossCalculation(data);
-  const { gasKw = 0, fabricKw = 0, certKw = 0 } = calcResults.comparison || {};
+  const { consumptionKw = 0, fabricKw = 0, certKw = 0 } = calcResults.comparison || {};
 
   return (
     <div className="space-y-4" id="building-data-form">
@@ -520,11 +520,11 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           <SegmentedControl
             options={[
               {
-                value: 'gas',
+                value: 'consumption',
                 label: (
                   <span className="flex items-center justify-center gap-1.5">
                     <Flame className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                    Gáz
+                    Fogyasztás
                   </span>
                 ),
               },
@@ -553,8 +553,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             theme={theme as 'light' | 'dark'}
           />
 
-          {/* METHOD 1: GAS-BASED WITH BIDIRECTIONAL Live SYNC */}
-          {data.method === 'gas' && (
+          {/* METHOD 1: CONSUMPTION-BASED (gas + wood + electric) */}
+          {data.method === 'consumption' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="space-y-1">
@@ -707,6 +707,95 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   <option value="new_atmospheric">Zárt égésterű (turbós) kazán – kb. 82% hatásfok</option>
                   <option value="condensing">Kondenzációs kazán – kb. 95% hatásfok</option>
                 </select>
+              </div>
+
+              {/* WOOD */}
+              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={!!data.woodEnabled}
+                    onChange={(e) => updateField('woodEnabled', e.target.checked)}
+                    className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
+                  />
+                  <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Fatüzelés</span>
+                </div>
+                {data.woodEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="relative">
+                      <input
+                        type="number" min="0" step="0.1"
+                        value={data.woodCubicMeters || ''}
+                        onChange={(e) => updateField('woodCubicMeters', Number(e.target.value))}
+                        placeholder="pl. 5"
+                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                        }`}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">erdei m³</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number" min="0"
+                        value={data.woodPricePerM3 || 38000}
+                        onChange={(e) => updateField('woodPricePerM3', Number(e.target.value))}
+                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                        }`}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">Ft/m³</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number" min="0"
+                        value={data.woodEnergyKwhPerM3 || 3000}
+                        onChange={(e) => updateField('woodEnergyKwhPerM3', Number(e.target.value))}
+                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                        }`}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">kWh/m³</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number" min="0" max="100"
+                        value={data.woodEfficiency || 70}
+                        onChange={(e) => updateField('woodEfficiency', Number(e.target.value))}
+                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                        }`}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">hatásfok%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ELECTRIC BOILER */}
+              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={!!data.electricBoilerEnabled}
+                    onChange={(e) => updateField('electricBoilerEnabled', e.target.checked)}
+                    className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
+                  />
+                  <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Elektromos kazán</span>
+                </div>
+                {data.electricBoilerEnabled && (
+                  <div className="relative">
+                    <input
+                      type="number" min="0"
+                      value={data.electricBoilerKwh || ''}
+                      onChange={(e) => updateField('electricBoilerKwh', Number(e.target.value))}
+                      placeholder="pl. 8000"
+                      className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">kWh/év (A1 70 Ft)</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1012,7 +1101,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
         <div className="grid grid-cols-3 gap-2">
           {(() => {
             const methods = [
-              { key: 'gas' as const, label: 'Gázfogyasztás', kw: gasKw, note: `${data.gasAnnualM3 || 0} m³/év` },
+              { key: 'consumption' as const, label: 'Fogyasztás', kw: consumptionKw, note: `${data.gasAnnualM3} m³ gáz${data.woodEnabled ? ` + ${data.woodCubicMeters} m³ fa` : ''}${data.electricBoilerEnabled ? ` + ${data.electricBoilerKwh} kWh elektromos` : ''}` },
               { key: 'fabric' as const, label: 'Szerkezeti U', kw: fabricKw, note: `${data.heatedArea} m² alapján` },
               { key: 'certificate' as const, label: 'Tanúsítvány', kw: certKw, note: data.certHeatDemandKw > 0 ? 'Beírt érték' : `q=${data.certSpecificLossQ.toFixed(2)}` },
             ];
