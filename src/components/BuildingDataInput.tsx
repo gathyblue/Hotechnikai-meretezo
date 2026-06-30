@@ -558,8 +558,14 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* COLUMN 1: GÁZ */}
               <div className={`rounded-lg border flex flex-col ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="px-2.5 pt-2.5 pb-2 border-b border-dashed text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Gáz
+                <div className="px-2.5 pt-2.5 pb-2 border-b border-dashed flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={data.gasEnabled !== false}
+                    onChange={(e) => updateField('gasEnabled', e.target.checked)}
+                    className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gáz</span>
                 </div>
                 <div className="p-2.5 space-y-2 flex-1">
                   <div className="relative">
@@ -569,12 +575,15 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       onChange={(e) => {
                         onChange({ ...data, gasCalculationSource: 'm3', gasAnnualM3: Number(e.target.value) });
                       }}
+                      disabled={data.gasEnabled === false}
                       className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        data.gasEnabled === false ? 'opacity-40' : ''
+                      } ${
                         isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                       }`}
                       placeholder="m³/év"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">m³</span>
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold ${data.gasEnabled !== false ? 'text-slate-500' : 'text-slate-600'}`}>m³</span>
                   </div>
 
                   <div className="relative">
@@ -591,12 +600,15 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         onChange({ ...data, gasCalculationSource: 'annual_huf', gasAnnualHuf: Number(val), gasAnnualM3: Number(computedM3.toFixed(1)) });
                       }}
                       onBlur={() => updateField('gasCalculationSource', 'm3')}
+                      disabled={data.gasEnabled === false}
                       className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        data.gasEnabled === false ? 'opacity-40' : ''
+                      } ${
                         isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                       }`}
                       placeholder="Ft/év"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/év</span>
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold ${data.gasEnabled !== false ? 'text-slate-500' : 'text-slate-600'}`}>Ft/év</span>
                   </div>
 
                   <div className="relative">
@@ -613,12 +625,15 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                         onChange({ ...data, gasCalculationSource: 'monthly_huf', gasMonthlyHuf: Number(val), gasAnnualM3: Number(computedM3.toFixed(1)) });
                       }}
                       onBlur={() => updateField('gasCalculationSource', 'm3')}
+                      disabled={data.gasEnabled === false}
                       className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        data.gasEnabled === false ? 'opacity-40' : ''
+                      } ${
                         isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                       }`}
                       placeholder="Ft/hó"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/hó</span>
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold ${data.gasEnabled !== false ? 'text-slate-500' : 'text-slate-600'}`}>Ft/hó</span>
                   </div>
 
                   <label className="flex items-start gap-1.5 cursor-pointer pt-1">
@@ -626,9 +641,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       type="checkbox"
                       checked={!!data.gasIncludeDhwCorrection}
                       onChange={(e) => updateField('gasIncludeDhwCorrection', e.target.checked)}
+                      disabled={data.gasEnabled === false}
                       className="w-3.5 h-3.5 text-blue-500 rounded focus:ring-blue-500 mt-0.5 shrink-0"
                     />
-                    <span className={`text-[9px] leading-tight ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-[9px] leading-tight ${data.gasEnabled !== false ? (isDark ? 'text-slate-400' : 'text-slate-500') : 'text-slate-600'}`}>
                       HMV korrekció
                     </span>
                   </label>
@@ -643,7 +659,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       if (val === 'condensing') eff = 95;
                       onChange({ ...data, gasBoilerType: val as any, boilerEfficiency: eff });
                     }}
+                    disabled={data.gasEnabled === false}
                     className={`w-full px-2 py-1.5 border rounded-lg text-[9px] focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:12px] bg-[right_6px_center] ${
+                      data.gasEnabled === false ? 'opacity-40' : ''
+                    } ${
                       isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                     }`}
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
@@ -1064,7 +1083,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
         <div className="grid grid-cols-3 gap-2">
           {(() => {
             const methods = [
-              { key: 'consumption' as const, label: 'Fogyasztás', kw: consumptionKw, note: `${data.gasAnnualM3} m³ gáz${data.woodEnabled ? ` + ${data.woodCubicMeters} m³ fa` : ''}${data.electricBoilerEnabled ? ` + ${data.electricBoilerKwh} kWh elektromos` : ''}` },
+              { key: 'consumption' as const, label: 'Fogyasztás', kw: consumptionKw, note: `${data.gasEnabled !== false ? `${data.gasAnnualM3} m³ gáz` : ''}${data.woodEnabled ? `${data.gasEnabled !== false ? ' + ' : ''}${data.woodCubicMeters} m³ fa` : ''}${data.electricBoilerEnabled ? `${data.gasEnabled !== false || data.woodEnabled ? ' + ' : ''}${data.electricBoilerKwh} kWh elektromos` : ''}` || 'nincs adat' },
               { key: 'fabric' as const, label: 'Szerkezeti U', kw: fabricKw, note: `${data.heatedArea} m² alapján` },
               { key: 'certificate' as const, label: 'Tanúsítvány', kw: certKw, note: data.certHeatDemandKw > 0 ? 'Beírt érték' : `q=${data.certSpecificLossQ.toFixed(2)}` },
             ];

@@ -21,6 +21,7 @@ export interface BuildingData {
   gasAnnualHuf?: number;
   gasMonthlyHuf?: number;
   gasAnnualM3: number;
+  gasEnabled?: boolean;
   gasIncludeDhwCorrection?: boolean;
   gasBoilerType?: 'old_atmospheric' | 'new_atmospheric' | 'condensing';
   boilerEfficiency: number; // %

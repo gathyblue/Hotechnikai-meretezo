@@ -82,6 +82,7 @@ export function getElectricBoilerCost(kwh: number, tariffHuf: number = 70): numb
 }
 
 export function getHeatingGasM3(data: BuildingData): number {
+  if (data.gasEnabled === false) return 0;
   let activeM3 = data.gasAnnualM3;
   if (data.method === 'consumption' && data.gasIncludeDhwCorrection && activeM3 > 0) {
      if (activeM3 < 1700) {
@@ -180,8 +181,8 @@ export function performHeatLossCalculation(data: BuildingData, params?: Engineer
     yearlyEnergyKwh = peakLoadKw * 1900;
   }
 
-  // Gas-only cost breakdown (existing gas input always used for cost calc)
-  const gasM3ForCost = data.gasAnnualM3 > 0 ? data.gasAnnualM3 : 0;
+  // Gas-only cost breakdown
+  const gasM3ForCost = data.gasEnabled !== false && data.gasAnnualM3 > 0 ? data.gasAnnualM3 : 0;
   const gasBreakdown = getGasBreakdown(gasM3ForCost);
 
   // Wood cost

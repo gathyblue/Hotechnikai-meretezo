@@ -27,6 +27,7 @@ export default function App() {
     levels: 1, // default levels
     method: 'fabric',
     gasAnnualM3: 1600,
+    gasEnabled: true,
     boilerEfficiency: 80,
     woodEnabled: false,
     woodCubicMeters: 0,
