@@ -86,6 +86,10 @@ export interface CalculationResults {
   };
   yearlyEnergyKwh: number;
   gasCostHuf: number;
+  gasSubsidizedM3: number;
+  gasMarketM3: number;
+  gasSubsidizedCost: number;
+  gasMarketCost: number;
   hpCostHuf: number;
   yearlySavingsHuf: number;
   bivalentTemp: number; // °C

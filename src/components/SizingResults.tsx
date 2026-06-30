@@ -493,7 +493,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       <circle cx={gX(actBivTemp)} cy={gY(dMin15 * (1 - (actBivTemp - dTemp) / tRange))} r="5" fill="#10b981" stroke="#ffffff" strokeWidth="1" />
 
                       {/* Clickable bivalence temperature markers on the X-axis */}
-                      {[buildingData.designTemp, -7, 0, 5].map((t) => {
+                      {[buildingData.designTemp, -7, -5, -2, 0].map((t) => {
                         const isActive = t === bivalentTempManual;
                         return (
                           <g key={`biv-marker-${t}`} onClick={() => onChangeBivalentTemp(t)} style={{ cursor: 'pointer' }}>
@@ -532,52 +532,56 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       </div>
                     </div>
 
-                    {/* Live Munkaponti Értékek Alert Dashboard Card */}
-                    <div className={`p-3 rounded-md border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className={`text-[10px] font-semibold uppercase tracking-wider mb-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Munkapont elemzés ({bivalentTempManual} °C, {selectedEmitter === 'radiator' ? 'W55' : 'W35'})</div>
-
-                      {/* Section 1: Power */}
-                      <div className="space-y-1.5 text-xs font-mono">
-                        <span className={`block text-[9px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Teljesítmény × hőmérséklet</span>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Csúcsteher ({dTemp}°C)</span>
-                          <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{calcResults.heatLossKw.total.toFixed(2)} kW</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőigény ({bivalentTempManual}°C)</span>
-                          <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{demandAtTempManual.toFixed(2)} kW</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú kap. ({dTemp}°C)</span>
-                          <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtT(dTemp).toFixed(2)} kW</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú kap. ({bivalentTempManual}°C)</span>
-                          <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtManual.toFixed(2)} kW</span>
-                        </div>
-                        <div className={`pt-2 mt-1.5 border-t flex justify-between items-center font-semibold ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                          <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>Max kiegészítő fűtés igény</span>
-                          <span className={`font-bold text-sm ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>+{Math.max(0, calcResults.heatLossKw.total - hpCapAtT(dTemp)).toFixed(2)} kW</span>
+                    {/* Munkapont elemzés — Two side-by-side panels */}
+                    <div className={`flex flex-col md:flex-row gap-3 pt-3`}>
+                      {/* Left panel: Heat demand side */}
+                      <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+                        <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőigény oldal ({bivalentTempManual} °C, {selectedEmitter === 'radiator' ? 'W55' : 'W35'})</span>
+                        <div className="space-y-1 text-xs font-mono">
+                          <div className="flex justify-between items-center py-0.5">
+                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Maximális hőszükséglet ({dTemp}°C)</span>
+                            <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{calcResults.heatLossKw.total.toFixed(2)} kW</span>
+                          </div>
+                          <div className="flex justify-between items-center py-0.5">
+                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszükséglet ({bivalentTempManual}°C)</span>
+                            <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{demandAtTempManual.toFixed(2)} kW</span>
+                          </div>
+                          <div className="flex justify-between items-center py-0.5">
+                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú teljesítmény ({dTemp}°C)</span>
+                            <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtT(dTemp).toFixed(2)} kW</span>
+                          </div>
+                          <div className="flex justify-between items-center py-0.5">
+                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú teljesítmény ({bivalentTempManual}°C)</span>
+                            <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtManual.toFixed(2)} kW</span>
+                          </div>
+                          <div className="flex justify-between items-center py-0.5 font-semibold">
+                            <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>Max kiegészítő fűtés igény</span>
+                            <span className={`font-bold text-sm ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>+{Math.max(0, calcResults.heatLossKw.total - hpCapAtT(dTemp)).toFixed(2)} kW</span>
+                          </div>
+                          <div className={`pt-1.5 mt-1 border-t flex justify-between items-center py-0.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Készülék</span>
+                            <span className={`font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{selectedModel?.name ?? 'Nincs kiválasztva'}</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Section 2: Energy */}
-                      <div className={`mt-3 pt-2.5 border-t space-y-1.5 text-xs font-mono ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                        <span className={`block text-[9px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Éves energia (kWh)</span>
+                      {/* Right panel: Electric / Energy side */}
+                      <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+                        <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Elektromos oldal</span>
                         {annualEnergy ? (() => {
                           const scop = selectedEmitter === 'radiator' ? (selectedModel?.scopW55 ?? 3) : (selectedModel?.scopW35 ?? 3.5);
                           const hpElek = Math.round(annualEnergy.hpThermalKwh / scop);
                           const backupElek = annualEnergy.backupThermalKwh;
-                          return (<>
-                            <div className="flex justify-between items-center py-0.5">
-                              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú termikus</span>
-                              <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{annualEnergy.hpThermalKwh.toLocaleString('hu-HU')} kWh</span>
-                            </div>
-                            <div className="flex justify-between items-center py-0.5">
-                              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő termikus</span>
-                              <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{annualEnergy.backupThermalKwh.toLocaleString('hu-HU')} kWh</span>
-                            </div>
-                            <div className={`mt-2 pt-2 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                          return (
+                            <div className="space-y-1 text-xs font-mono">
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú termikus</span>
+                                <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{annualEnergy.hpThermalKwh.toLocaleString('hu-HU')} kWh</span>
+                              </div>
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő termikus</span>
+                                <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{annualEnergy.backupThermalKwh.toLocaleString('hu-HU')} kWh</span>
+                              </div>
                               <div className="flex justify-between items-center py-0.5">
                                 <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú elektromos (SCOP {scop.toFixed(2)})</span>
                                 <span className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{hpElek.toLocaleString('hu-HU')} kWh</span>
@@ -586,24 +590,19 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                                 <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő elektromos</span>
                                 <span className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{backupElek.toLocaleString('hu-HU')} kWh</span>
                               </div>
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú üzemóra</span>
+                                <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>~{Math.max(0, 4392 - estimateBackupHours(bivalentTempManual)).toLocaleString('hu-HU')} h/év</span>
+                              </div>
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő üzemóra</span>
+                                <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>~{estimateBackupHours(bivalentTempManual).toLocaleString('hu-HU')} h/év</span>
+                              </div>
                             </div>
-                          </>);
+                          );
                         })() : (
-                          <span className={`text-xs ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Válasszon hőszivattyút</span>
+                          <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Válasszon hőszivattyút</span>
                         )}
-                      </div>
-
-                      {/* Section 3: Hours */}
-                      <div className={`mt-3 pt-2.5 border-t space-y-1.5 text-xs font-mono ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                        <span className={`block text-[9px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Üzemórák (h/év)</span>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú</span>
-                          <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>~{Math.max(0, 4392 - estimateBackupHours(bivalentTempManual)).toLocaleString('hu-HU')} h</span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő fűtés</span>
-                          <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>~{estimateBackupHours(bivalentTempManual).toLocaleString('hu-HU')} h</span>
-                        </div>
                       </div>
                     </div>
 
@@ -623,8 +622,9 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               options={[
                 { value: buildingData.designTemp, label: `${buildingData.designTemp}°C` },
                 { value: -7, label: '-7°C' },
+                { value: -5, label: '-5°C' },
+                { value: -2, label: '-2°C' },
                 { value: 0, label: '0°C' },
-                { value: 5, label: '+5°C' },
               ]}
               value={bivalentTempManual}
               onChange={(val) => onChangeBivalentTemp(val)}
@@ -1052,17 +1052,65 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               </div>
             </div>
 
-            {/* Right card: only the four result numbers — 1/3 */}
+            {/* Right card: bivalence-based cost breakdown */}
             <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-slate-500">Gáz fűtés (éves)</span>
                   <span className={`text-sm font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(calcResults.gasCostHuf)}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">Hőszivattyú</span>
-                  <span className="text-sm font-mono font-medium text-blue-500">{formatHu(calcResults.hpCostHuf)}</span>
-                </div>
+                {calcResults.gasMarketM3 > 0 && (
+                  <>
+                    <div className="flex justify-between items-center pl-3">
+                      <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Rezsicsökkentett ({calcResults.gasSubsidizedM3} m³)</span>
+                      <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatHu(calcResults.gasSubsidizedCost)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pl-3">
+                      <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Piaci ({calcResults.gasMarketM3} m³)</span>
+                      <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatHu(calcResults.gasMarketCost)}</span>
+                    </div>
+                  </>
+                )}
+                {annualEnergy && selectedModel ? (() => {
+                  const scop = selectedEmitter === 'radiator' ? (selectedModel.scopW55 ?? 3) : (selectedModel.scopW35 ?? 3.5);
+                  const hpElekKwh = annualEnergy.hpThermalKwh / scop;
+                  const backupElekKwh = annualEnergy.backupThermalKwh;
+                  const hpCost = Math.round(hpElekKwh * tariffHuf);
+                  const backupCost = Math.round(backupElekKwh * tariffHuf);
+                  const totalCost = hpCost + backupCost;
+                  const savings = calcResults.gasCostHuf - totalCost;
+                  const payback = savings > 0 ? (netInvestmentCost / savings) : 99;
+                  if (backupCost > 0) {
+                    return (<>
+                      <div className="flex justify-between items-center">
+                        <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőszivattyú (SCOP {scop.toFixed(2)})</span>
+                        <span className={`text-sm font-mono font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{formatHu(hpCost)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Kiegészítő elektromos</span>
+                        <span className={`text-sm font-mono font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{formatHu(backupCost)}</span>
+                      </div>
+                      <div className={`pt-2 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Összesen</span>
+                        <span className={`text-sm font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{formatHu(totalCost)}</span>
+                      </div>
+                    </>);
+                  } else {
+                    // No backup needed
+                    return (<>
+                      <div className="flex justify-between items-center">
+                        <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőszivattyú (SCOP {scop.toFixed(2)})</span>
+
+                        <span className={`text-sm font-mono font-medium text-blue-500`}>{formatHu(hpCost)}</span>
+                      </div>
+                    </>);
+                  }
+                })() : (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-500">Hőszivattyú</span>
+                    <span className="text-sm font-mono font-medium text-blue-500">{formatHu(calcResults.hpCostHuf)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-slate-500">Éves megtakarítás</span>
                   <span className="text-sm font-mono font-medium text-emerald-500">+{formatHu(calcResults.yearlySavingsHuf)}</span>
@@ -1070,7 +1118,16 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 <div className={`pt-3 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
                   <span className="text-xs font-medium text-slate-500">Várt megtérülés</span>
                   <span className={`text-base font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    {paybackYears === 99 ? 'Nincs' : `${paybackYears} év`}
+                    {(() => {
+                      if (!annualEnergy || !selectedModel) return paybackYears === 99 ? 'Nincs' : `${paybackYears} év`;
+                      const scop = selectedEmitter === 'radiator' ? (selectedModel.scopW55 ?? 3) : (selectedModel.scopW35 ?? 3.5);
+                      const hpElekKwh = annualEnergy.hpThermalKwh / scop;
+                      const backupElekKwh = annualEnergy.backupThermalKwh;
+                      const totalCost = Math.round(hpElekKwh * tariffHuf) + Math.round(backupElekKwh * tariffHuf);
+                      const savings = calcResults.gasCostHuf - totalCost;
+                      const yrs = savings > 0 ? (netInvestmentCost / savings) : 99;
+                      return yrs === 99 ? 'Nincs' : `${yrs.toFixed(1)} év`;
+                    })()}
                   </span>
                 </div>
               </div>

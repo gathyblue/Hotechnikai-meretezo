@@ -16,15 +16,40 @@ export function calculateUValue(baseU: number, insulationThicknessCm: number, la
  * Residential discount up to 1729 m3/year: 101.5 HUF/m3.
  * Over quota: 747.0 HUF/m3.
  */
-export function calculateGasHufCost(m3: number): number {
-  if (m3 <= 0) return 0;
-  if (m3 <= 1729) {
-    return m3 * 101.5;
-  } else {
-    const discounted = 1729 * 101.5;
-    const over = (m3 - 1729) * 747.0;
-    return discounted + over;
+export function getGasBreakdown(m3: number): {
+  total: number;
+  subsidizedM3: number;
+  marketM3: number;
+  subsidizedCost: number;
+  marketCost: number;
+} {
+  if (m3 <= 0) {
+    return { total: 0, subsidizedM3: 0, marketM3: 0, subsidizedCost: 0, marketCost: 0 };
   }
+  if (m3 <= 1729) {
+    return {
+      total: m3 * 101.5,
+      subsidizedM3: m3,
+      marketM3: 0,
+      subsidizedCost: m3 * 101.5,
+      marketCost: 0,
+    };
+  }
+  const subsidizedM3 = 1729;
+  const marketM3 = m3 - 1729;
+  const subsidizedCost = subsidizedM3 * 101.5;
+  const marketCost = marketM3 * 747;
+  return {
+    total: subsidizedCost + marketCost,
+    subsidizedM3,
+    marketM3,
+    subsidizedCost,
+    marketCost,
+  };
+}
+
+export function calculateGasHufCost(m3: number): number {
+  return getGasBreakdown(m3).total;
 }
 
 /**
@@ -138,7 +163,7 @@ export function performHeatLossCalculation(data: BuildingData, params?: Engineer
     calculatedGasM3 = yearlyEnergyKwh / (9.44 * 0.80); // old 80% boiler baseline
   }
 
-  const gasCostHuf = calculateGasHufCost(calculatedGasM3);
+  const gasBreakdown = getGasBreakdown(calculatedGasM3);
 
   return {
     heatLossKw: {
@@ -147,7 +172,11 @@ export function performHeatLossCalculation(data: BuildingData, params?: Engineer
       total: Number(peakLoadKw.toFixed(2)),
     },
     yearlyEnergyKwh: Math.round(yearlyEnergyKwh),
-    gasCostHuf: Math.round(gasCostHuf),
+    gasCostHuf: Math.round(gasBreakdown.total),
+    gasSubsidizedM3: gasBreakdown.subsidizedM3,
+    gasMarketM3: gasBreakdown.marketM3,
+    gasSubsidizedCost: Math.round(gasBreakdown.subsidizedCost),
+    gasMarketCost: Math.round(gasBreakdown.marketCost),
     hpCostHuf: 0, 
     yearlySavingsHuf: 0, 
     bivalentTemp: -5, 
@@ -352,21 +381,19 @@ export function evaluateHeatPumpEconomics(
   // Determine SCOP for emitter
   let copUsed = emitterType === 'radiator' ? hp.scopW55 : hp.scopW35;
 
-  // Calculate bivalent energy coverage
-  const coveragePct = calculateBivalentCoverage(bivalentTempManual, designTemp);
-  const coverage = coveragePct / 100.0;
+  // Numerical integration for accurate HP/backup energy split
+  const split = estimateAnnualEnergySplit(
+    peakLoadKw, designTemp, bivalentTempManual, hp, emitterType
+  );
 
-  // Segment annual energy requirement:
-  // 1) Heat Pump supplies 'coverage' of total demand with high-efficiency COP
-  const hpEnergyPortion = yearlyEnergyKwh * coverage;
-  const electricityHpKwh = hpEnergyPortion / copUsed;
+  // 1) Heat Pump thermal energy, divided by SCOP → electrical kWh
+  const electricityHpKwh = split.hpThermalKwh / copUsed;
 
-  // 2) Auxiliary heating supplies remainder with COP = 1.0 (electric resistance)
-  const auxEnergyPortion = yearlyEnergyKwh * (1.0 - coverage);
-  const electricityAuxKwh = auxEnergyPortion / 1.0;
+  // 2) Backup heating (COP = 1.0, electric resistance)
+  const electricityBackupKwh = split.backupThermalKwh / 1.0;
 
   // Total annual electricity consumption (kWh/year)
-  const electricityKwh = electricityHpKwh + electricityAuxKwh;
+  const electricityKwh = electricityHpKwh + electricityBackupKwh;
 
   // Cost with custom electricity tariff
   const hpCostHuf = electricityKwh * electricityTariffHuf;
