@@ -556,246 +556,209 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           {/* METHOD 1: CONSUMPTION-BASED (gas + wood + electric) */}
           {data.method === 'consumption' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Éves gázfogyasztás
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    max="15000"
-                    value={data.gasAnnualM3 || ''}
-                    onChange={(e) => {
-                      onChange({
-                        ...data,
-                        gasCalculationSource: 'm3',
-                        gasAnnualM3: Number(e.target.value)
-                      });
-                    }}
-                    className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                      isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                    }`}
-                    placeholder="pl. 1600"
-                  />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">m³/év</span>
+              {/* COLUMN 1: GÁZ */}
+              <div className={`rounded-lg border flex flex-col ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="px-2.5 pt-2.5 pb-2 border-b border-dashed text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Gáz
                 </div>
-              </div>
-              </div>
-
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Éves gázköltség
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    value={(() => {
-                      if (data.gasCalculationSource === 'annual_huf' && data.gasAnnualHuf !== undefined) return data.gasAnnualHuf;
-                      return Math.round(calculateGasHufCost(data.gasAnnualM3)) || '';
-                    })()}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (!val) {
-                         updateField('gasAnnualM3', 0);
-                         return;
-                      }
-                      const huf = Number(val);
-                      const computedM3 = calculateGasM3FromHuf(huf);
-                      onChange({
-                        ...data,
-                        gasCalculationSource: 'annual_huf',
-                        gasAnnualHuf: huf,
-                        gasAnnualM3: Number(computedM3.toFixed(1))
-                      });
-                    }}
-                    onBlur={() => updateField('gasCalculationSource', 'm3')}
-                    className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                      isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                    }`}
-                    placeholder="pl. 175493"
-                  />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/év</span>
-                </div>
-              </div>
-              </div>
-
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Havi átalány
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    value={(() => {
-                      if (data.gasCalculationSource === 'monthly_huf' && data.gasMonthlyHuf !== undefined) return data.gasMonthlyHuf;
-                      return Math.round(calculateGasHufCost(data.gasAnnualM3) / 12) || '';
-                    })()}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (!val) {
-                         updateField('gasAnnualM3', 0);
-                         return;
-                      }
-                      const huf = Number(val) * 12;
-                      const computedM3 = calculateGasM3FromHuf(huf);
-                      onChange({
-                        ...data,
-                        gasCalculationSource: 'monthly_huf',
-                        gasMonthlyHuf: Number(val),
-                        gasAnnualM3: Number(computedM3.toFixed(1))
-                      });
-                    }}
-                    onBlur={() => updateField('gasCalculationSource', 'm3')}
-                    className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                      isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                    }`}
-                    placeholder="pl. 14600"
-                  />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/hó</span>
-                </div>
-              </div>
-              </div>
-              
-              <div className={`rounded-lg border p-2.5 md:col-span-3 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!data.gasIncludeDhwCorrection}
-                    onChange={(e) => updateField('gasIncludeDhwCorrection', e.target.checked)}
-                    className="w-4 h-4 text-blue-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex flex-col">
-                    <span className={`text-[12px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      A számla tartalmaz melegvíz-előállítást is (Korrekció a fűtési hőszükséglethez)
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-medium">A melegvíz levonásra kerül a becsült fűtési hőszükségletből (fogyasztástól függően 10-30%)</span>
+                <div className="p-2.5 space-y-2 flex-1">
+                  <div className="relative">
+                    <input
+                      type="number" min="0" max="15000"
+                      value={data.gasAnnualM3 || ''}
+                      onChange={(e) => {
+                        onChange({ ...data, gasCalculationSource: 'm3', gasAnnualM3: Number(e.target.value) });
+                      }}
+                      className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                      placeholder="m³/év"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">m³</span>
                   </div>
-                </label>
+
+                  <div className="relative">
+                    <input
+                      type="number" min="0"
+                      value={(() => {
+                        if (data.gasCalculationSource === 'annual_huf' && data.gasAnnualHuf !== undefined) return data.gasAnnualHuf;
+                        return Math.round(calculateGasHufCost(data.gasAnnualM3)) || '';
+                      })()}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) { updateField('gasAnnualM3', 0); return; }
+                        const computedM3 = calculateGasM3FromHuf(Number(val));
+                        onChange({ ...data, gasCalculationSource: 'annual_huf', gasAnnualHuf: Number(val), gasAnnualM3: Number(computedM3.toFixed(1)) });
+                      }}
+                      onBlur={() => updateField('gasCalculationSource', 'm3')}
+                      className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                      placeholder="Ft/év"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/év</span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="number" min="0"
+                      value={(() => {
+                        if (data.gasCalculationSource === 'monthly_huf' && data.gasMonthlyHuf !== undefined) return data.gasMonthlyHuf;
+                        return Math.round(calculateGasHufCost(data.gasAnnualM3) / 12) || '';
+                      })()}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) { updateField('gasAnnualM3', 0); return; }
+                        const computedM3 = calculateGasM3FromHuf(Number(val) * 12);
+                        onChange({ ...data, gasCalculationSource: 'monthly_huf', gasMonthlyHuf: Number(val), gasAnnualM3: Number(computedM3.toFixed(1)) });
+                      }}
+                      onBlur={() => updateField('gasCalculationSource', 'm3')}
+                      className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                      placeholder="Ft/hó"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">Ft/hó</span>
+                  </div>
+
+                  <label className="flex items-start gap-1.5 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={!!data.gasIncludeDhwCorrection}
+                      onChange={(e) => updateField('gasIncludeDhwCorrection', e.target.checked)}
+                      className="w-3.5 h-3.5 text-blue-500 rounded focus:ring-blue-500 mt-0.5 shrink-0"
+                    />
+                    <span className={`text-[9px] leading-tight ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      HMV korrekció
+                    </span>
+                  </label>
+
+                  <select
+                    value={data.gasBoilerType || 'old_atmospheric'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      let eff = 70;
+                      if (val === 'old_atmospheric') eff = 70;
+                      if (val === 'new_atmospheric') eff = 82;
+                      if (val === 'condensing') eff = 95;
+                      onChange({ ...data, gasBoilerType: val as any, boilerEfficiency: eff });
+                    }}
+                    className={`w-full px-2 py-1.5 border rounded-lg text-[9px] focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:12px] bg-[right_6px_center] ${
+                      isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                    }`}
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
+                  >
+                    <option value="old_atmospheric">Kéményes ~70%</option>
+                    <option value="new_atmospheric">Turbós ~82%</option>
+                    <option value="condensing">Kondenzációs ~95%</option>
+                  </select>
+                </div>
               </div>
 
-              <div className={`rounded-lg border p-2.5 md:col-span-3 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Lecserélésre kerülő meglévő gázkazán típusa
-                </label>
-                <select
-                  value={data.gasBoilerType || 'old_atmospheric'}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    let eff = 70;
-                    if (val === 'old_atmospheric') eff = 70;
-                    if (val === 'new_atmospheric') eff = 82;
-                    if (val === 'condensing') eff = 95;
-                    
-                    onChange({
-                      ...data,
-                      gasBoilerType: val as any,
-                      boilerEfficiency: eff
-                    });
-                  }}
-                  className={`w-full px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-semibold appearance-none pr-8 bg-no-repeat bg-[length:14px] bg-[right_8px_center] ${
-                    isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                  }`}
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")` }}
-                >
-                  <option value="old_atmospheric">Régi atmoszférikus (kéményes) kazán – kb. 70% hatásfok</option>
-                  <option value="new_atmospheric">Zárt égésterű (turbós) kazán – kb. 82% hatásfok</option>
-                  <option value="condensing">Kondenzációs kazán – kb. 95% hatásfok</option>
-                </select>
-              </div>
-
-              {/* WOOD */}
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="flex items-center gap-2 mb-2">
+              {/* COLUMN 2: FATÜZELÉS */}
+              <div className={`rounded-lg border flex flex-col ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="px-2.5 pt-2.5 pb-2 border-b border-dashed flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={!!data.woodEnabled}
                     onChange={(e) => updateField('woodEnabled', e.target.checked)}
                     className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
                   />
-                  <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Fatüzelés</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fatüzelés</span>
                 </div>
-                {data.woodEnabled && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="relative">
-                      <input
-                        type="number" min="0" step="0.1"
-                        value={data.woodCubicMeters || ''}
-                        onChange={(e) => updateField('woodCubicMeters', Number(e.target.value))}
-                        placeholder="pl. 5"
-                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                        }`}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">erdei m³</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number" min="0"
-                        value={data.woodPricePerM3 || 38000}
-                        onChange={(e) => updateField('woodPricePerM3', Number(e.target.value))}
-                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                        }`}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">Ft/m³</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number" min="0"
-                        value={data.woodEnergyKwhPerM3 || 3000}
-                        onChange={(e) => updateField('woodEnergyKwhPerM3', Number(e.target.value))}
-                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                        }`}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">kWh/m³</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number" min="0" max="100"
-                        value={data.woodEfficiency || 70}
-                        onChange={(e) => updateField('woodEfficiency', Number(e.target.value))}
-                        className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
-                          isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                        }`}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">hatásfok%</span>
-                    </div>
+                <div className="p-2.5 space-y-2 flex-1">
+                  <div className="relative">
+                    <input
+                      type="number" min="0" step="0.1"
+                      value={data.woodCubicMeters || ''}
+                      onChange={(e) => updateField('woodCubicMeters', Number(e.target.value))}
+                      placeholder="erdei m³/év"
+                      disabled={!data.woodEnabled}
+                      className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        !data.woodEnabled ? 'opacity-40' : ''
+                      } ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                    />
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold ${data.woodEnabled ? 'text-slate-500' : 'text-slate-600'}`}>erdei m³</span>
                   </div>
-                )}
+                  <div className="relative">
+                    <input
+                      type="number" min="0"
+                      value={data.woodPricePerM3 || 38000}
+                      onChange={(e) => updateField('woodPricePerM3', Number(e.target.value))}
+                      disabled={!data.woodEnabled}
+                      className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        !data.woodEnabled ? 'opacity-40' : ''
+                      } ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                    />
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold ${data.woodEnabled ? 'text-slate-500' : 'text-slate-600'}`}>Ft/m³</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number" min="0"
+                      value={data.woodEnergyKwhPerM3 || 3000}
+                      onChange={(e) => updateField('woodEnergyKwhPerM3', Number(e.target.value))}
+                      disabled={!data.woodEnabled}
+                      className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        !data.woodEnabled ? 'opacity-40' : ''
+                      } ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                    />
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold ${data.woodEnabled ? 'text-slate-500' : 'text-slate-600'}`}>kWh/m³</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number" min="0" max="100"
+                      value={data.woodEfficiency || 70}
+                      onChange={(e) => updateField('woodEfficiency', Number(e.target.value))}
+                      disabled={!data.woodEnabled}
+                      className={`w-full pl-2 pr-12 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        !data.woodEnabled ? 'opacity-40' : ''
+                      } ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
+                      }`}
+                    />
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold ${data.woodEnabled ? 'text-slate-500' : 'text-slate-600'}`}>hatásfok%</span>
+                  </div>
+                </div>
               </div>
 
-              {/* ELECTRIC BOILER */}
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="flex items-center gap-2 mb-2">
+              {/* COLUMN 3: ELEKTROMOS KAZÁN */}
+              <div className={`rounded-lg border flex flex-col ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="px-2.5 pt-2.5 pb-2 border-b border-dashed flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={!!data.electricBoilerEnabled}
                     onChange={(e) => updateField('electricBoilerEnabled', e.target.checked)}
                     className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
                   />
-                  <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Elektromos kazán</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Elektromos kazán</span>
                 </div>
-                {data.electricBoilerEnabled && (
+                <div className="p-2.5 space-y-2 flex-1">
                   <div className="relative">
                     <input
                       type="number" min="0"
                       value={data.electricBoilerKwh || ''}
                       onChange={(e) => updateField('electricBoilerKwh', Number(e.target.value))}
-                      placeholder="pl. 8000"
+                      placeholder="kWh/év"
+                      disabled={!data.electricBoilerEnabled}
                       className={`w-full pl-2 pr-14 py-1.5 border rounded-lg text-xs focus:outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        !data.electricBoilerEnabled ? 'opacity-40' : ''
+                      } ${
                         isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                       }`}
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[9px] font-bold">kWh/év (A1 70 Ft)</span>
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold ${data.electricBoilerEnabled ? 'text-slate-500' : 'text-slate-600'}`}>kWh/év</span>
                   </div>
-                )}
+                  <div className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'} leading-tight`}>
+                    Díjszabás: A1 Piaci ~70 Ft/kWh<br />
+                    (100% hatásfok)
+                  </div>
+                </div>
               </div>
             </div>
           )}
