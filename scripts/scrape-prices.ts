@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs';
 
-const BASE = 'C:\\Users\\gathy\\Projects\\Hotechnikai-meretezo';
+const BASE = process.cwd();
 
 // Panasonic EUR nettó árak a Klíma Centrum árlistából (2026.01.26) + MNB közép + 1,3% = vállalati deviza eladás
 const PANASONIC_EUR: Record<string, { eur: number; sku: string; components: string }> = {
@@ -62,8 +62,8 @@ async function fetchEurRate(): Promise<{ rate: number; date: string }> {
   const m = html.match(/EUR[\s\S]{0,200}?(\d[\d ]+,\d+)/);
   if (!m) throw new Error('Nem sikerült lekérni az MNB árfolyamot');
   const rate = parseFloat(m[1].replace(/ /g, '').replace(',', '.')) * 1.013;
-  const today = new Date().toISOString().slice(0, 10);
-  return { rate: Math.round(rate * 100) / 100, date: today };
+  const now = new Date().toISOString();
+  return { rate: Math.round(rate * 100) / 100, date: now };
 }
 
 async function fetchWebshopPrices(): Promise<PriceMap> {
@@ -185,7 +185,7 @@ async function main() {
   } catch (err) {
     console.error(`  HIBA: ${err} - használom a 359,00-es tartalék árfolyamot\n`);
     eurRate = 359.00;
-    rateDate = new Date().toISOString().slice(0, 10);
+    rateDate = new Date().toISOString();
   }
 
   // 2. Midea & Fisher árak

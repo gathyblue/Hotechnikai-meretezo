@@ -15,11 +15,9 @@ function scrapePlugin(): Plugin {
           return;
         }
         try {
-          const tsxPath = path.join(__dirname, 'node_modules', '.bin', 'tsx.cmd');
-          const out = execSync(`"${tsxPath}" scripts/scrape-prices.ts`, {
+          const out = execSync('npx --no-install tsx scripts/scrape-prices.ts', {
             cwd: __dirname,
             timeout: 120000,
-            shell: 'cmd.exe',
             encoding: 'utf-8'
           });
           res.setHeader('Content-Type', 'application/json');

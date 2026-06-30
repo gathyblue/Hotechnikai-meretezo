@@ -688,13 +688,13 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               {
                 value: 'recommended',
                 label: (
-                  <span className="text-xs font-medium px-2">Ajánlott ({displayedModels.length})</span>
+                  <span className="text-[10px] sm:text-xs font-medium px-1 sm:px-2">Ajánl. ({displayedModels.length})</span>
                 ),
               },
               {
                 value: 'all',
                 label: (
-                  <span className="text-xs font-medium px-2">Összes ({recommendedModels.length})</span>
+                  <span className="text-[10px] sm:text-xs font-medium px-1 sm:px-2">Összes ({recommendedModels.length})</span>
                 ),
               },
             ]}
@@ -702,6 +702,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             onChange={(v) => setFilterNearby(v === 'recommended')}
             layoutId="hp-filter"
             theme={theme as 'light' | 'dark'}
+            className="text-xs w-full"
           />
         </div>
 
@@ -1038,9 +1039,9 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   <span className="text-xs text-slate-500 font-medium block mb-1.5">Villamos tarifa</span>
                   <SegmentedControl
                     options={[
-                      { value: 23, label: 'H-Tarifa (23 Ft/kWh)' },
-                      { value: 36, label: 'A1 Limit (36 Ft/kWh)' },
-                      { value: 70, label: 'A1 Piaci (70 Ft/kWh)' }
+                      { value: 23, label: 'H-Tarifa 23' },
+                      { value: 36, label: 'A1 Limit 36' },
+                      { value: 70, label: 'A1 Piaci 70' },
                     ]}
                     value={tariffHuf}
                     onChange={onChangeTariff}

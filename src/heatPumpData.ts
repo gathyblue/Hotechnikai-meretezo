@@ -28,7 +28,7 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     dimensions: '980 × 1000 × 430 mm',
     estimatedPriceHuf: 2304916,
     eurPriceNetto: 5046,
-    lastPriceUpdate: '2026-06-30',
+    lastPriceUpdate: '2026-06-30T18:05:39.246Z',
     maxFlowTemp: 75,
     ampereRequired: '1 x 16A',
     pumpResidualHeadKpa: 60
@@ -60,7 +60,7 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     dimensions: '980 × 1000 × 430 mm',
     estimatedPriceHuf: 2568479,
     eurPriceNetto: 5623,
-    lastPriceUpdate: '2026-06-30',
+    lastPriceUpdate: '2026-06-30T18:05:39.246Z',
     maxFlowTemp: 75,
     ampereRequired: '1 x 16A',
     pumpResidualHeadKpa: 60
@@ -242,7 +242,7 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     dimensions: '980 × 1000 × 430 mm',
     estimatedPriceHuf: 2816511,
     eurPriceNetto: 6166,
-    lastPriceUpdate: '2026-06-30',
+    lastPriceUpdate: '2026-06-30T18:05:39.246Z',
     maxFlowTemp: 75,
     ampereRequired: '1 x 20A',
     pumpResidualHeadKpa: 60
@@ -364,7 +364,7 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     dimensions: '1283 × 932 × 320 mm',
     estimatedPriceHuf: 3151788,
     eurPriceNetto: 6900,
-    lastPriceUpdate: '2026-06-30',
+    lastPriceUpdate: '2026-06-30T18:05:39.246Z',
     maxFlowTemp: 75,
     ampereRequired: '3 x 16A',
     pumpResidualHeadKpa: 62
@@ -516,7 +516,7 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     dimensions: '1283 × 932 × 320 mm',
     estimatedPriceHuf: 3354142,
     eurPriceNetto: 7343,
-    lastPriceUpdate: '2026-06-30',
+    lastPriceUpdate: '2026-06-30T18:05:39.246Z',
     maxFlowTemp: 75,
     ampereRequired: '3 x 16A',
     pumpResidualHeadKpa: 60
@@ -638,7 +638,7 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     dimensions: '1283 × 932 × 320 mm',
     estimatedPriceHuf: 3598520,
     eurPriceNetto: 7878,
-    lastPriceUpdate: '2026-06-30',
+    lastPriceUpdate: '2026-06-30T18:05:39.246Z',
     maxFlowTemp: 75,
     ampereRequired: '3 x 16A',
     pumpResidualHeadKpa: 55

@@ -252,28 +252,28 @@ export default function App() {
         {/* Middle Section: macOS Segmented Control Tab Chooser */}
         <div className="flex items-center justify-center flex-grow">
           <div className={`relative p-[2px] rounded-md border flex gap-0.5 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
-            {['building', 'equipment', 'hydraulics', 'scheme', 'export'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`relative flex-1 flex items-center justify-center text-[10px] font-bold px-3 py-1.5 rounded-[3px] transition-colors cursor-pointer whitespace-nowrap min-w-0 ${
-                  activeTab === tab
-                    ? isDark ? 'text-slate-100' : 'text-slate-900'
-                    : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
-                }`}
-              >
-                {activeTab === tab && (
-                  <motion.div
-                    layoutId="activeTab"
-                    transition={{ type: 'spring', stiffness: 400, damping: 33 }}
-                    className={`absolute inset-0 rounded-[2px] shadow-sm ${isDark ? 'bg-slate-850 border border-slate-700/50' : 'bg-white'}`}
-                  />
-                )}
-                <span className="relative z-10 capitalize">
-                    {tab === 'building' ? 'Épület' : tab === 'equipment' ? 'Gép' : tab === 'hydraulics' ? 'Hidraulika' : tab === 'scheme' ? 'Séma' : 'Jegyzőkönyv'}
-                </span>
-              </button>
-            ))}
+              {['building', 'equipment', 'hydraulics', 'scheme', 'export'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`relative flex-1 flex items-center justify-center text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-3 py-1.5 rounded-[3px] transition-colors cursor-pointer whitespace-nowrap min-w-0 ${
+                    activeTab === tab
+                      ? isDark ? 'text-slate-100' : 'text-slate-900'
+                      : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
+                  }`}
+                >
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="activeTab"
+                      transition={{ type: 'spring', stiffness: 400, damping: 33 }}
+                      className={`absolute inset-0 rounded-[2px] shadow-sm ${isDark ? 'bg-slate-850 border border-slate-700/50' : 'bg-white'}`}
+                    />
+                  )}
+                  <span className="relative z-10 capitalize">
+                    {tab === 'building' ? 'Épület' : tab === 'equipment' ? 'Gép' : tab === 'hydraulics' ? 'Hidraulika' : tab === 'scheme' ? 'Séma' : 'Jkv.'}
+                  </span>
+                </button>
+              ))}
           </div>
         </div>
 
