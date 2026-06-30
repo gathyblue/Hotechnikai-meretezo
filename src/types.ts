@@ -73,6 +73,8 @@ export interface HeatPumpModel {
   weightKg: number;
   dimensions?: string; // Kültéri egység méretei pl: "1100×445×850 mm"
   estimatedPriceHuf: number;
+  eurPriceNetto?: number; // Nettó EUR listaár (Panasonic)
+  lastPriceUpdate?: string; // ISO dátum, pl "2026-01-26"
   maxFlowTemp: number; // °C
   ampereRequired: string; // e.g. "1x16A" or "3x16A"
   pumpResidualHeadKpa: number; // Maradék szivattyúnyomás kPa

@@ -8,8 +8,9 @@ import { SizingResults } from './components/SizingResults';
 import { HydraulicExpansionCalc } from './components/HydraulicExpansionCalc';
 import { SystemDiagram } from './components/SystemDiagram';
 import { ReportExport } from './components/ReportExport';
+import { PriceRefreshPanel } from './components/PriceRefreshPanel';
 import { HEAT_PUMP_DATABASE } from './heatPumpData';
-import { Home, Gauge, Activity, FileText, Flame, Zap, Sun, Moon, Settings, X, BookOpen, Layers, CheckCircle, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Home, Gauge, Activity, FileText, Flame, Zap, Sun, Moon, Settings, X, BookOpen, Layers, CheckCircle, ChevronDown, ChevronUp, Info, RefreshCw } from 'lucide-react';
 
 export default function App() {
   // 1. Core State Hooks
@@ -66,6 +67,7 @@ export default function App() {
     waterSpecificHeat: 1.163
   });
   const [isOpenEngineeringModal, setIsOpenEngineeringModal] = useState<boolean>(false);
+  const [isOpenPricePanel, setIsOpenPricePanel] = useState(false);
 
   const [hydraulicState, setHydraulicState] = useState<HydraulicInput>({
     pipeMaterial: 'copper',
@@ -275,8 +277,15 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Section: Settings and Theme Toggle */}
+        {/* Right Section: Price, Settings and Theme Toggle */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsOpenPricePanel(true)}
+            className={`p-1.5 rounded-md border flex items-center justify-center cursor-pointer transition-all ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-900' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'}`}
+            title="Árak ellenőrzése a webshopokban"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-green-500" />
+          </button>
           <button
             onClick={() => setIsOpenEngineeringModal(true)}
             className={`p-1.5 rounded-md border flex items-center justify-center cursor-pointer transition-all ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-900' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'}`}
@@ -422,6 +431,10 @@ export default function App() {
       </div>
 
       {/* 🛠️ SLIDEOVER MODAL FOR FORMULAS AND ENGINEERING PARAMETERS */}
+      {isOpenPricePanel && (
+        <PriceRefreshPanel isDark={isDark} onClose={() => setIsOpenPricePanel(false)} />
+      )}
+
       {isOpenEngineeringModal && (
         <div className="fixed inset-0 z-50 flex justify-end animate-fadeIn">
           {/* Backdrop */}
