@@ -1053,52 +1053,59 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               </div>
             </div>
 
-            {/* Right card: bivalence-based cost breakdown */}
+            {/* Right card: 2-col — heating cost + HP payback */}
             <div className={`p-4 rounded-lg border lg:col-span-2 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-              <div className="space-y-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Fűtési költség</div>
+              <div className="grid grid-cols-2 gap-3">
 
-                {calcResults.gasCostHuf > 0 && (
-                  <>
+                {/* LEFT COL: Fűtési költség */}
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Fűtési költség</div>
+
+                  {calcResults.gasCostHuf > 0 && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-500">Gáz</span>
+                        <span className={`text-sm font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(calcResults.gasCostHuf)}</span>
+                      </div>
+                      {calcResults.gasMarketM3 > 0 && (
+                        <>
+                          <div className="flex justify-between items-center pl-3">
+                            <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Rezsicsökkentett ({calcResults.gasSubsidizedM3} m³)</span>
+                            <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatHu(calcResults.gasSubsidizedCost)}</span>
+                          </div>
+                          <div className="flex justify-between items-center pl-3">
+                            <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Piaci ({calcResults.gasMarketM3} m³)</span>
+                            <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatHu(calcResults.gasMarketCost)}</span>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {calcResults.woodCostHuf > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-500">Gáz</span>
-                      <span className={`text-sm font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(calcResults.gasCostHuf)}</span>
+                      <span className="text-xs text-slate-500">Fatüzelés</span>
+                      <span className={`text-sm font-mono font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{formatHu(calcResults.woodCostHuf)}</span>
                     </div>
-                    {calcResults.gasMarketM3 > 0 && (
-                      <>
-                        <div className="flex justify-between items-center pl-3">
-                          <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Rezsicsökkentett ({calcResults.gasSubsidizedM3} m³)</span>
-                          <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatHu(calcResults.gasSubsidizedCost)}</span>
-                        </div>
-                        <div className="flex justify-between items-center pl-3">
-                          <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Piaci ({calcResults.gasMarketM3} m³)</span>
-                          <span className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{formatHu(calcResults.gasMarketCost)}</span>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
+                  )}
 
-                {calcResults.woodCostHuf > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-500">Fatüzelés</span>
-                    <span className={`text-sm font-mono font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{formatHu(calcResults.woodCostHuf)}</span>
+                  {calcResults.electricBoilerCostHuf > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-slate-500">Elektromos kazán (A1 70 Ft)</span>
+                      <span className={`text-sm font-mono font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{formatHu(calcResults.electricBoilerCostHuf)}</span>
+                    </div>
+                  )}
+
+                  <div className={`pt-2 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                    <span className="text-xs font-medium text-slate-500">Összes fűtési költség</span>
+                    <span className={`text-sm font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{formatHu(calcResults.totalHeatingCostHuf)}</span>
                   </div>
-                )}
-
-                {calcResults.electricBoilerCostHuf > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-500">Elektromos kazán (A1 70 Ft)</span>
-                    <span className={`text-sm font-mono font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{formatHu(calcResults.electricBoilerCostHuf)}</span>
-                  </div>
-                )}
-
-                <div className={`pt-2 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                  <span className="text-xs font-medium text-slate-500">Összes fűtési költség</span>
-                  <span className={`text-sm font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{formatHu(calcResults.totalHeatingCostHuf)}</span>
                 </div>
 
-                <div className={`pt-2 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                {/* RIGHT COL: HP + megtérülés */}
+                <div className={`space-y-1.5 pl-3 border-l ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Hőszivattyú</div>
+
                   {annualEnergy && selectedModel ? (() => {
                     const scop = selectedEmitter === 'radiator' ? (selectedModel.scopW55 ?? 3) : (selectedModel.scopW35 ?? 3.5);
                     const hpElekKwh = annualEnergy.hpThermalKwh / scop;
@@ -1110,24 +1117,24 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     const payback = savings > 0 ? (netInvestmentCost / savings) : 99;
                     return (<>
                       <div className="flex justify-between items-center">
-                        <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőszivattyú (SCOP {scop.toFixed(2)})</span>
+                        <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>HP (SCOP {scop.toFixed(2)})</span>
                         <span className={`text-sm font-mono font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{formatHu(hpCost)}</span>
                       </div>
                       {backupCost > 0 && (
-                        <div className="flex justify-between items-center mt-1">
-                          <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Kiegészítő elektromos</span>
+                        <div className="flex justify-between items-center">
+                          <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Kiegészítő</span>
                           <span className={`text-sm font-mono font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{formatHu(backupCost)}</span>
                         </div>
                       )}
-                      <div className={`pt-2 mt-2 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className={`pt-2 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
                         <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>HP összesen</span>
                         <span className={`text-sm font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{formatHu(totalCost)}</span>
                       </div>
-                      <div className="flex justify-between items-center mt-2">
+                      <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">Éves megtakarítás</span>
                         <span className={`text-sm font-mono font-bold ${savings > 0 ? 'text-emerald-500' : 'text-red-500'}`}>{savings > 0 ? '+' : ''}{formatHu(savings)}</span>
                       </div>
-                      <div className={`pt-3 border-t flex justify-between items-center mt-2 ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
+                      <div className={`pt-3 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
                         <span className="text-xs font-medium text-slate-500">Várt megtérülés</span>
                         <span className={`text-base font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                           {payback === 99 ? 'Nincs' : `${payback.toFixed(1)} év`}
@@ -1137,14 +1144,14 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   })() : (
                     <>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">Hőszivattyú</span>
+                        <span className="text-xs text-slate-500">HP</span>
                         <span className="text-sm font-mono font-medium text-blue-500">{formatHu(calcResults.hpCostHuf)}</span>
                       </div>
-                      <div className="flex justify-between items-center mt-1">
+                      <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">Éves megtakarítás</span>
                         <span className={`text-sm font-mono font-medium text-emerald-500`}>+{formatHu(calcResults.yearlySavingsHuf)}</span>
                       </div>
-                      <div className={`pt-3 border-t flex justify-between items-center mt-2 ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
+                      <div className={`pt-3 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
                         <span className="text-xs font-medium text-slate-500">Várt megtérülés</span>
                         <span className={`text-base font-mono font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                           {paybackYears === 99 ? 'Nincs' : `${paybackYears} év`}
@@ -1153,6 +1160,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     </>
                   )}
                 </div>
+
               </div>
             </div>
 
