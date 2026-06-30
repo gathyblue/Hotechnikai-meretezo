@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Hőtechnikai Méretező</title>
+    <script>
+      (function() {
+        var redirect = sessionStorage.getItem('spa-redirect');
+        if (redirect && redirect !== '/' && redirect !== window.location.pathname) {
+          sessionStorage.removeItem('spa-redirect');
+          var base = window.location.pathname.replace(/\/+$/, '');
+          var target = base + '/' + redirect.replace(/^\//, '');
+          if (target !== window.location.href.replace(window.location.origin, '')) {
+            history.replaceState(null, '', target);
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

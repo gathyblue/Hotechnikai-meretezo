@@ -4,9 +4,12 @@
   <meta charset="utf-8">
   <title>Hotechnikai méretező</title>
   <script>
-    sessionStorage.redirect = location.pathname + location.search + location.hash;
+    (function() {
+      var path = window.location.pathname.replace(/^\/Hotechnikai-meretezo\//, '');
+      sessionStorage.setItem('spa-redirect', path || '/');
+      window.location.replace('/Hotechnikai-meretezo/');
+    })();
   </script>
-  <meta http-equiv="refresh" content="0;URL='/Hotechnikai-meretezo/'">
 </head>
 <body></body>
 </html>
