@@ -977,8 +977,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
 
-            {/* Left card: Bemenő adatok — 2/3 */}
-            <div className={`p-4 rounded-lg border lg:col-span-2 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            {/* Left card: Bemenő adatok */}
+            <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
               <span className="text-xs font-medium text-slate-500 block mb-4">Bemenő adatok</span>
 
               <div className="space-y-3">
@@ -1054,7 +1054,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             </div>
 
             {/* Right card: bivalence-based cost breakdown */}
-            <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`p-4 rounded-lg border lg:col-span-2 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
               <div className="space-y-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Fűtési költség</div>
 
