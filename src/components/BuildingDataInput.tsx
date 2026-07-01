@@ -983,16 +983,21 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                   <div className="w-full sm:w-auto">
                     <SegmentedControl
                       options={[
-                        { value: 0.3, label: '0.3/h Hővisszanyerős' },
-                        { value: 0.5, label: '0.5/h Normál' },
-                        { value: 0.8, label: '0.8/h Rosszul záró' },
+                        { value: 0.3, label: '0.3' },
+                        { value: 0.5, label: '0.5' },
+                        { value: 0.8, label: '0.8' },
                       ]}
                       value={data.ventilationRate}
                       onChange={(val) => updateField('ventilationRate', val)}
                       layoutId="ventilation-rate"
                       theme={theme as 'light' | 'dark'}
-                      className="text-[9px]"
+                      className="text-[10px]"
                     />
+                    <span className={`text-[9px] mt-1 block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {data.ventilationRate === 0.3 && 'Hővisszanyerős szellőztetés'}
+                      {data.ventilationRate === 0.5 && 'Normál üzem'}
+                      {data.ventilationRate === 0.8 && 'Rosszul záró nyílászárók'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1081,7 +1086,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
         </div>
 
         {/* 3-method comparison grid */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {(() => {
             const methods = [
               { key: 'consumption' as const, label: 'Fogyasztás', kw: consumptionKw, note: `${data.gasEnabled !== false ? `${data.gasAnnualM3} m³ gáz` : ''}${data.woodEnabled ? `${data.gasEnabled !== false ? ' + ' : ''}${data.woodCubicMeters} m³ fa` : ''}${data.electricBoilerEnabled ? `${data.gasEnabled !== false || data.woodEnabled ? ' + ' : ''}${data.electricBoilerKwh} kWh elektromos` : ''}` || 'nincs adat' },
@@ -1110,7 +1115,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       <span className={`text-[10px] font-medium mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{m.note}</span>
                     </div>
                     <div className="flex items-baseline gap-1 shrink-0">
-                      <span className={`font-light text-2xl md:text-3xl tracking-tight leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{m.kw.toFixed(1)}</span>
+                      <span className={`font-light text-xl md:text-3xl tracking-tight leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{m.kw.toFixed(1)}</span>
                       <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>kW</span>
                     </div>
                   </div>
