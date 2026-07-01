@@ -978,19 +978,20 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* VENTILATION */}
-                <div className={`p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-3 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <span className="font-bold text-slate-500">Légcsere szám</span>
-                  <div>
+                <div className={`p-2.5 rounded-lg border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <span className="font-bold text-slate-500 shrink-0">Légcsere szám</span>
+                  <div className="w-full sm:w-auto">
                     <SegmentedControl
                       options={[
-                        { value: 0.3, label: '0.3/h (Hővisszanyerős szellőztetés)' },
-                        { value: 0.5, label: '0.5/h (Normál üzem)' },
-                        { value: 0.8, label: '0.8/h (Rosszul záró nyílászárók)' },
+                        { value: 0.3, label: '0.3/h Hővisszanyerős' },
+                        { value: 0.5, label: '0.5/h Normál' },
+                        { value: 0.8, label: '0.8/h Rosszul záró' },
                       ]}
                       value={data.ventilationRate}
                       onChange={(val) => updateField('ventilationRate', val)}
                       layoutId="ventilation-rate"
                       theme={theme as 'light' | 'dark'}
+                      className="text-[9px]"
                     />
                   </div>
                 </div>
@@ -1062,13 +1063,13 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
       </div>
       </div>
 
-      {/* 3. Hőigény összesítő & Mérnöki javaslat */}
+      {/* 3. Hőigény összesítő */}
       <div className={`rounded-lg border p-3 transition-all ${
         isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className="border-b pb-1.5">
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-            Hőigény összesítő &amp; Mérnöki javaslat
+            Hőigény összesítő
           </h3>
         </div>
         <div className="mt-3">
