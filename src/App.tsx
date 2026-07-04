@@ -86,6 +86,8 @@ export default function App() {
     secondaryLoops: 'radiators',
     includeHeatExchanger: false,
     includeDhwTank: true,
+    couplingType: '4-port-buffer',
+    bufferVolumeL: 60,
     primaryPipeSize: 'Auto',
     secondaryPipeSize: 'Auto',
     secondaryPumpOverride: 'Auto',
@@ -381,6 +383,7 @@ export default function App() {
                   heatedArea={buildingData.heatedArea}
                   engineeringParams={engineeringParams}
                   theme={theme}
+                  selectedModel={selectedModel}
                 />
                 
                 <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>

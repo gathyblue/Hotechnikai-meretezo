@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { BuildingData, CalculationResults, HeatPumpModel } from '../types';
 import { HEAT_PUMP_DATABASE } from '../heatPumpData';
 import { evaluateHeatPumpEconomics, getHpCapacityAtTemp, getBuildingHeatDemandAtTemp, calculateBivalentCoverage, estimateBackupHours, estimateAnnualEnergySplit } from '../utils/calculations';
-import { CONSTRUCTION_YEAR_GROUPS } from './BuildingDataInput';
 import { Activity, Flame, Zap, Shield, CheckCircle2, ChevronRight, HelpCircle, Layers, Settings, BatteryCharging, Info } from 'lucide-react';
 import { SegmentedControl } from './SegmentedControl';
 
@@ -170,16 +169,6 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
   const formatHu = (val: number) => {
     return new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF', maximumFractionDigits: 0 }).format(val);
   };
-
-  const boilerTypeLabels: Record<string, string> = {
-    old_atmospheric: 'Régi atmoszférikus',
-    new_atmospheric: 'Új atmoszférikus',
-    condensing: 'Kondenzációs'
-  };
-
-  const yearPreset = CONSTRUCTION_YEAR_GROUPS.find(g => g.id === buildingData.constructionYearGroup);
-  const estimatedGasM3 = buildingData.method === 'consumption' ? buildingData.gasAnnualM3 : Math.round(calcResults.yearlyEnergyKwh / (9.44 * 0.80));
-  const boilerLabel = buildingData.gasBoilerType ? (boilerTypeLabels[buildingData.gasBoilerType] ?? buildingData.gasBoilerType) : 'Ismeretlen';
 
   // SVG Chart calculation parameters
   const svgWidth = 300;
@@ -1026,13 +1015,6 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       </span>
                     </>
                   )}
-                </div>
-
-                <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-slate-500">
-                  <span>Év: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{yearPreset?.label ?? buildingData.constructionYearGroup ?? '—'}</strong></span>
-                  <span>Kazán: <strong>{boilerLabel} ({buildingData.boilerEfficiency}%)</strong></span>
-                  <span>Gáz: <strong>{estimatedGasM3.toLocaleString('hu-HU')} m³</strong></span>
-                  <span>Hőigény: <strong>{calcResults.heatLossKw.total.toFixed(1)} kW</strong></span>
                 </div>
 
                 <div>

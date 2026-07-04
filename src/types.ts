@@ -123,8 +123,10 @@ export interface HydraulicInput {
   safetyValvePressure: number; // bar, typically 3
   additionalWaterVolumeL: number; // L (optional buffer tank, etc.)
   secondaryLoops: 'radiators' | 'floor' | 'fan_coil' | 'mixed';
-  includeHeatExchanger: boolean; // heat exchanger selection checkbox
-  includeDhwTank: boolean;       // indirect DHW (HMV always primary)
+  includeHeatExchanger: boolean; // heat exchanger selection
+  includeDhwTank: boolean; // indirect DHW
+  couplingType: '4-port-buffer' | 'buffer-or-hydro' | 'heat-exchanger';
+  bufferVolumeL: number; // 60 | 100 | 200
   manualPipeSizeOverride?: string; // "Auto" or chosen pipe size
   primaryPipeSize?: string;       // separate primary diameter
   secondaryPipeSize?: string;     // separate secondary diameter

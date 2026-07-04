@@ -537,7 +537,7 @@ export function calculateHydraulicsAndVessel(
   const deltaT = input.deltaT;
 
   // --- Glycol properties ---
-  const glycolPct = params?.glycolPercentage ?? 30;
+  const glycolPct = params?.glycolPercentage ?? 0;
   const glycol = getGlycolProperties(glycolPct, flowTemp);
   const specHeatWhLk = params ? params.waterSpecificHeat : 1.163;
 
