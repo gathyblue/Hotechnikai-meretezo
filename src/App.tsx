@@ -79,6 +79,7 @@ export default function App() {
 
   const [hydraulicState, setHydraulicState] = useState<HydraulicInput>({
     pipeMaterial: 'copper',
+    secondaryPipeMaterial: 'pex',
     deltaT: 5,
     staticHeight: 4,
     safetyValvePressure: 3.0,
@@ -92,7 +93,7 @@ export default function App() {
     secondaryPipeSize: 'Auto',
     secondaryPumpOverride: 'Auto',
     targetVelocityMs: 0.6,
-    pipeLengthEstimate: 15,
+    pipeLengthEstimate: 5,
     fittingsCount: 8,
   });
 
@@ -384,6 +385,10 @@ export default function App() {
                   engineeringParams={engineeringParams}
                   theme={theme}
                   selectedModel={selectedModel}
+                  onSecondaryLoopsChange={(loops) => {
+                    if (loops === 'floor') handleEmitterChange('floor');
+                    else handleEmitterChange('radiator');
+                  }}
                 />
                 
                 <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
@@ -530,9 +535,9 @@ export default function App() {
                   <div className={`p-3 rounded border flex flex-col justify-between ${
                     isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">Levegő hőkapacitás szorzó</label>
-                      <span className="text-[9px] text-slate-500 mt-0.5 block leading-tight">Alapértelmezett: 0.34 W/m³K. Méretezési fűtőlevegő fajhő.</span>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">Levegő hőkapacitás szorzó</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Alapértelmezett: 0.34 W/m³K. Méretezési fűtőlevegő fajhő.</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <input 
@@ -555,9 +560,9 @@ export default function App() {
                   <div className={`p-3 rounded border flex flex-col justify-between ${
                     isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">Víz fajlagos hőkapacitás constante</label>
-                      <span className="text-[9px] text-slate-500 mt-0.5 block leading-tight">Alap: 1.163 Wh/L·K (Méretezi a fojtási és térfogatáramokat).</span>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">Víz fajlagos hőkapacitás constante</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Alap: 1.163 Wh/L·K (Méretezi a fojtási és térfogatáramokat).</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <input 
@@ -580,9 +585,9 @@ export default function App() {
                   <div className={`p-3 rounded border flex flex-col justify-between ${
                     isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">Tágulási biztonsági szorzó</label>
-                      <span className="text-[9px] text-slate-500 mt-0.5 block leading-tight">Biztonsági tartalék tényező a tágulási térfogathoz (Standard: 1.10).</span>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">Tágulási biztonsági szorzó</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Biztonsági tartalék tényező a tágulási térfogathoz (Standard: 1.10).</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <input 
@@ -605,9 +610,9 @@ export default function App() {
                   <div className={`p-3 rounded border flex flex-col justify-between ${
                     isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">5-rétegű cső ellenállás többlet</label>
-                      <span className="text-[9px] text-slate-500 mt-0.5 block leading-tight">PEX csövezés belső érdességi dP szorzója (Standard: 1.35).</span>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">5-rétegű cső ellenállás többlet</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">PEX csövezés belső érdességi dP szorzója (Standard: 1.35).</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <input 
@@ -630,9 +635,9 @@ export default function App() {
                   <div className={`p-3 rounded border flex flex-col justify-between ${
                     isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">Padlófűtés fajlagos térfogat</label>
-                      <span className="text-[9px] text-slate-500 mt-0.5 block leading-tight">Fűtővíz tartalom kW fűtési csúcsteljesítményenként (Alap: 15 L/kW).</span>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">Padlófűtés fajlagos térfogat</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Fűtővíz tartalom kW fűtési csúcsteljesítményenként (Alap: 15 L/kW).</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <input 
@@ -654,9 +659,9 @@ export default function App() {
                   <div className={`p-3 rounded border flex flex-col justify-between ${
                     isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">Radiátor fűtés fajlagos térfogat</label>
-                      <span className="text-[9px] text-slate-500 mt-0.5 block leading-tight">Fűtővíz tartalom kW fűtési csúcsteljesítményenként (Alap: 12 L/kW).</span>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">Radiátor fűtés fajlagos térfogat</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Fűtővíz tartalom kW fűtési csúcsteljesítményenként (Alap: 12 L/kW).</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <input 
@@ -678,9 +683,9 @@ export default function App() {
                   <div className={`p-3 rounded border flex flex-col justify-between ${
                     isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
                   }`}>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 block">Mono primer fagyálló koncentráció</label>
-                      <span className="text-[9px] text-slate-500 mt-0.5 block leading-tight">Propilén-glikol térfogatszázalék a kültéri primer hurokban (Alap: 30%).</span>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">Mono primer fagyálló koncentráció</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Propilén-glikol térfogatszázalék a kültéri primer hurokban (Alap: 30%).</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <input 

@@ -978,27 +978,20 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* VENTILATION */}
-                <div className={`p-2.5 rounded-lg border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <span className="font-bold text-slate-500 shrink-0">Légcsere szám</span>
-                  <div className="w-full sm:w-auto">
-                    <SegmentedControl
-                      options={[
-                        { value: 0.3, label: '0.3' },
-                        { value: 0.5, label: '0.5' },
-                        { value: 0.8, label: '0.8' },
-                      ]}
-                      value={data.ventilationRate}
-                      onChange={(val) => updateField('ventilationRate', val)}
-                      layoutId="ventilation-rate"
-                      theme={theme as 'light' | 'dark'}
-                      className="text-[10px]"
-                    />
-                    <span className={`text-[9px] mt-1 block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {data.ventilationRate === 0.3 && 'Hővisszanyerős szellőztetés'}
-                      {data.ventilationRate === 0.5 && 'Normál üzem'}
-                      {data.ventilationRate === 0.8 && 'Rosszul záró nyílászárók'}
-                    </span>
-                  </div>
+                <div className={`md:col-span-2 p-2.5 rounded-lg border flex items-center gap-2 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <span className="font-bold text-slate-500 shrink-0 text-nowrap">Légcsere szám</span>
+                  <SegmentedControl
+                    options={[
+                      { value: 0.3, label: '0.3 Hővisszanyerős' },
+                      { value: 0.5, label: '0.5 Normál üzem' },
+                      { value: 0.8, label: '0.8 Rosszul záró' },
+                    ]}
+                    value={data.ventilationRate}
+                    onChange={(val) => updateField('ventilationRate', val)}
+                    layoutId="ventilation-rate"
+                    theme={theme as 'light' | 'dark'}
+                    className="text-[10px] w-full"
+                  />
                 </div>
               </div>
             </div>
@@ -1025,7 +1018,7 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                       step="0.1"
                       min="0"
                       max="50"
-                      value={data.certHeatDemandKw === 0 ? '0' : (data.certHeatDemandKw || '')}
+                      value={data.certHeatDemandKw || ''}
                       onChange={(e) => {
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
                         updateField('certHeatDemandKw', val);

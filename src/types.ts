@@ -127,6 +127,7 @@ export interface HydraulicInput {
   includeDhwTank: boolean; // indirect DHW
   couplingType: '4-port-buffer' | 'buffer-or-hydro' | 'heat-exchanger';
   bufferVolumeL: number; // 60 | 100 | 200
+  secondaryPipeMaterial?: 'copper' | 'pex' | 'steel';
   manualPipeSizeOverride?: string; // "Auto" or chosen pipe size
   primaryPipeSize?: string;       // separate primary diameter
   secondaryPipeSize?: string;     // separate secondary diameter

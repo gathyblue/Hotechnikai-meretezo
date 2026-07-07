@@ -511,16 +511,16 @@ function getPipeInnerDiameter(pipeSize: string, material: 'copper' | 'pex' | 'st
 function getAutoRecommendedPipeSize(requiredDiameterMm: number, material: 'copper' | 'pex' | 'steel'): string {
   const isPEX = material === 'pex';
   const isSteel = material === 'steel';
-  if (requiredDiameterMm <= 13) {
-    return isPEX ? 'PEX 26mm' : isSteel ? 'Szénacél DN20' : 'Rézcső 18mm';
-  } else if (requiredDiameterMm <= 20) {
-    return isPEX ? 'PEX 32mm' : isSteel ? 'Szénacél DN25' : 'Rézcső 22mm';
-  } else if (requiredDiameterMm <= 25) {
-    return isPEX ? 'PEX 40mm' : isSteel ? 'Szénacél DN32' : 'Rézcső 28mm';
+  if (requiredDiameterMm <= 14) {
+    return isPEX ? 'PEX 20mm' : isSteel ? 'Szénacél 18mm' : 'Rézcső 18mm';
+  } else if (requiredDiameterMm <= 22) {
+    return isPEX ? 'PEX 26mm' : isSteel ? 'Szénacél 22mm' : 'Rézcső 22mm';
   } else if (requiredDiameterMm <= 32) {
-    return isPEX ? 'PEX 50mm' : isSteel ? 'Szénacél DN40' : 'Rézcső 35mm';
+    return isPEX ? 'PEX 32mm' : isSteel ? 'Szénacél 28mm' : 'Rézcső 28mm';
+  } else if (requiredDiameterMm <= 40) {
+    return isPEX ? 'PEX 40mm' : isSteel ? 'Szénacél 35mm' : 'Rézcső 35mm';
   } else {
-    return isPEX ? 'PEX 50mm' : isSteel ? 'Szénacél DN50' : 'Rézcső 42mm';
+    return isPEX ? 'PEX 50mm' : isSteel ? 'Szénacél 35mm' : 'Rézcső 42mm';
   }
 }
 
@@ -532,9 +532,11 @@ export function calculateHydraulicsAndVessel(
   flowTemp: number,
   input: HydraulicInput,
   heatedArea: number,
-  params?: EngineeringParams
+  params?: EngineeringParams,
+  pumpResidualHeadKpa?: number
 ): HydraulicResults {
   const deltaT = input.deltaT;
+  const pumpHead = pumpResidualHeadKpa ?? 60;
 
   // --- Glycol properties ---
   const glycolPct = params?.glycolPercentage ?? 0;
@@ -557,10 +559,14 @@ export function calculateHydraulicsAndVessel(
   const requiredAreaM2 = flowRateM3s / targetVelocityMs;
   const requiredDiameterMm = Math.sqrt((4 * requiredAreaM2) / Math.PI) * 1000;
 
+  // Pipe length estimate (default 10m if not set)
+  const pipeLengthM = (input.pipeLengthEstimate ?? 5) * 2; // oda-vissza
+
   // --- Primary pipe decision ---
   let primaryPipe = input.primaryPipeSize || 'Auto';
   if (primaryPipe === 'Auto') {
-    primaryPipe = getAutoRecommendedPipeSize(requiredDiameterMm, input.pipeMaterial);
+    const lengthFactor = Math.pow(Math.max(pipeLengthM, 5) / 10, 0.2);
+    primaryPipe = getAutoRecommendedPipeSize(requiredDiameterMm * lengthFactor, input.pipeMaterial);
   }
 
   // --- Secondary pipe decision ---
@@ -670,9 +676,8 @@ export function calculateHydraulicsAndVessel(
   // --- Pressure drop calculations with pipe length + local losses ---
   const frictionMult = params ? params.pexFrictionMultiplier : 1.35;
   const pexMultiplier = input.pipeMaterial === 'pex' ? frictionMult : 1.0;
+  const secondaryPexMultiplier = (input.secondaryPipeMaterial ?? input.pipeMaterial) === 'pex' ? frictionMult : 1.0;
 
-  // Pipe length estimate (default 10m if not set)
-  const pipeLengthM = input.pipeLengthEstimate ?? 10;
   const fittingsCount = input.fittingsCount ?? 6;
 
   // Darcy-Weisbach: dP = f * (L/D) * (rho * v^2 / 2)
@@ -689,7 +694,7 @@ export function calculateHydraulicsAndVessel(
   const secondaryRe = 1000 * secondaryEstimatedVelocityMs * secondaryInnerDiaM / secondaryViscosity;
   const secondaryFFactor = secondaryRe > 2000 ? 0.3164 / Math.pow(secondaryRe, 0.25) : 64 / Math.max(secondaryRe, 1);
   const secondaryPipeLossKpa = Number((
-    secondaryFFactor * (pipeLengthM / secondaryInnerDiaM) * (1000 * secondaryEstimatedVelocityMs * secondaryEstimatedVelocityMs / 2000) * pexMultiplier
+    secondaryFFactor * (pipeLengthM / secondaryInnerDiaM) * (1000 * secondaryEstimatedVelocityMs * secondaryEstimatedVelocityMs / 2000) * secondaryPexMultiplier
   ).toFixed(1));
 
   // Local losses: zeta * v^2 / (200 * g) -- simplified to kPa per fitting
@@ -705,7 +710,7 @@ export function calculateHydraulicsAndVessel(
     ? Number((secondaryPipeLossKpa + secondaryExchangerLoss + secondaryLocalLossKpa + 2.2).toFixed(1))
     : Number((secondaryPipeLossKpa + secondaryLocalLossKpa + 1.2).toFixed(1));
 
-  const remainingPumpHeadKpa = Number((60.0 - primaryPressureDropKpa).toFixed(1));
+  const remainingPumpHeadKpa = Number((pumpHead - primaryPressureDropKpa).toFixed(1));
 
   // --- DAB Pump Selection ---
   let dabPumpModel = '';
@@ -764,8 +769,8 @@ export function calculateHydraulicsAndVessel(
     estimatedVelocityMs: Number(primaryEstimatedVelocityMs.toFixed(2)),
     primaryEstimatedVelocityMs: Number(primaryEstimatedVelocityMs.toFixed(2)),
     secondaryEstimatedVelocityMs: Number(secondaryEstimatedVelocityMs.toFixed(2)),
-    recommendedPipeSize: `${primaryPipe} (${input.pipeMaterial === 'copper' ? 'Réz' : input.pipeMaterial === 'pex' ? 'PEX' : 'Szénacél'})`,
-    recommendedSecondaryPipeSize: `${secondaryPipe} (${input.pipeMaterial === 'copper' ? 'Réz' : input.pipeMaterial === 'pex' ? 'PEX' : 'Szénacél'})`,
+    recommendedPipeSize: primaryPipe,
+    recommendedSecondaryPipeSize: secondaryPipe,
     vesselSizeL: roundedVesselSizeL,
     vesselPrechargeBar: prechargeBar,
     vesselFinalBar: finalBar,

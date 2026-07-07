@@ -709,6 +709,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 <th className="py-2 px-3 text-center hidden md:table-cell">Zaj</th>
                 <th className="py-2 px-3 text-center hidden md:table-cell">Táp(V)</th>
                 <th className="py-2 px-3 text-center hidden md:table-cell">Megszakító</th>
+                <th className="py-2 px-3 text-center hidden md:table-cell">Szivattyú</th>
                 <th className="py-2 px-3 text-right">Bruttó ár</th>
               </tr>
             </thead>
@@ -809,6 +810,10 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
                     <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {item.ampereRequired}
+                    </td>
+
+                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {item.pumpResidualHeadKpa} kPa
                     </td>
 
                     <td className={`py-1.5 px-2 text-right font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
