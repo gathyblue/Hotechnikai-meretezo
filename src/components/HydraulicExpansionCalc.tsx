@@ -19,7 +19,7 @@ interface HydraulicExpansionCalcProps {
 
 function SectionLabel({ label, isDark }: { label: string; isDark: boolean }) {
   return (
-    <p className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+    <p className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
       {label}
     </p>
   );
@@ -27,10 +27,10 @@ function SectionLabel({ label, isDark }: { label: string; isDark: boolean }) {
 
 function ResultRow({ label, value, sub, isDark }: { label: string; value: React.ReactNode; sub?: string; isDark: boolean }) {
   return (
-    <div className={`flex items-center justify-between py-1.5 border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-      <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</span>
-      <span className={`font-mono font-bold text-[11px] text-right ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-        {value}{sub && <span className={`font-normal text-[9px] ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{sub}</span>}
+    <div className={`flex items-center justify-between py-1 border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+      <span className={`text-[9px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</span>
+      <span className={`font-mono font-bold text-[10px] text-right ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+        {value}{sub && <span className={`font-normal text-[8px] ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{sub}</span>}
       </span>
     </div>
   );
@@ -151,7 +151,7 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
 
   const activeCfg = couplingConfigs[hydraulicState.couplingType];
 
-  const innerCard = `p-4 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`;
+  const innerCard = `p-2.5 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`;
 
   return (
     <div className={`rounded-lg border p-3 transition-all ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -161,13 +161,13 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
         </h3>
       </div>
 
-      <div className="space-y-5 mt-3">
+      <div className="space-y-3 mt-2">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
         {/* Rendszerkapcsolás */}
         <div className={innerCard}>
-          <label className={`text-[10px] font-bold uppercase tracking-wider block mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             Rendszerkapcsolás
           </label>
           <SegmentedControl
@@ -178,14 +178,14 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
             theme={isDark ? 'dark' : 'light'}
             className="text-xs w-full"
           />
-          <p className={`mt-1.5 text-[10px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`mt-1 text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             {activeCfg?.desc}
           </p>
         </div>
 
         {/* Puffer méret */}
         <div className={innerCard}>
-          <label className={`text-[10px] font-bold uppercase tracking-wider block mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             Pufferméret
           </label>
           <SegmentedControl
@@ -200,22 +200,17 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
             theme={isDark ? 'dark' : 'light'}
             className="text-xs w-full"
           />
-          <p className={`mt-1.5 text-[10px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`mt-1 text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             Alapesetben 60 L elegendő. Nagyobb méret növeli a rendszertérfogatot és a tágulási tartály méretét.
           </p>
         </div>
 
         </div>
 
-        {/* Méretezési paraméterek */}
-        <div>
-          <SectionLabel label="Méretezési paraméterek" isDark={isDark} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
           {/* Primer oldal */}
-          <div className={`space-y-3 ${innerCard}`}>
+          <div className={`space-y-2 ${innerCard}`}>
             <p className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Primer oldal (Hőszivattyú felől)
             </p>
@@ -279,7 +274,7 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
           </div>
 
           {/* Szekunder oldal */}
-          <div className={`space-y-3 ${innerCard}`}>
+          <div className={`space-y-2 ${innerCard}`}>
             <p className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Szekunder oldal (Hőleadók felől)
             </p>
@@ -353,11 +348,11 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
           <SectionLabel label="Eredmények" isDark={isDark} />
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {hydraulicState.includeHeatExchanger ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>I. Primer oldal (Hőszivattyú)</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className={`p-2.5 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>I. Primer oldal (Hőszivattyú)</p>
                 <ResultRow label="Tágulási tartály" value={`${results.primaryVesselSizeL} L`} sub={`p₀=${results.prechargeCalculated} bar | pₑ=${results.finalCalculated} bar`} isDark={isDark} />
                 <ResultRow label="Tömegáram" value={`${results.primaryMassFlowKgh} kg/h`} sub={`${results.flowRateLh} L/h`} isDark={isDark} />
                 <ResultRow label="Ajánlott csőméret" value={results.recommendedPipeSize} isDark={isDark} />
@@ -372,8 +367,8 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                   <ResultRow label="Fagyálló (glikol)" value={`${results.glycolPercentageUsed}%`} sub={`ρ=${results.glycolDensityKgm3} kg/m³, cp=${results.glycolSpecificHeatWhKgK} Wh/kgK`} isDark={isDark} />
                 )}
               </div>
-              <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>II. Szekunder oldal (Hőleadók)</p>
+              <div className={`p-2.5 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>II. Szekunder oldal (Hőleadók)</p>
                 <ResultRow label="Tágulási tartály" value={`${results.secondaryVesselSizeL} L`} sub={`p₀=${results.prechargeCalculated} bar | pₑ=${results.finalCalculated} bar`} isDark={isDark} />
                 <ResultRow label="Tömegáram" value={`${results.secondaryMassFlowKgh} kg/h`} sub={`${results.secondaryFlowRateLh} L/h`} isDark={isDark} />
                 <ResultRow label="Csőméret (Gerinc)" value={results.recommendedSecondaryPipeSize ?? '—'} isDark={isDark} />
@@ -387,17 +382,17 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                 <ResultRow label="Javasolt segédszivattyú" value={results.dabPumpModel} isDark={isDark} />
                 {results.dabPumpSetting && <ResultRow label="Beállítás / Fokozat" value={`${results.dabPumpSetting} • ${results.dabPumpStage}`} isDark={isDark} />}
               </div>
-              <div className={`p-3 rounded border md:col-span-2 ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Lemezes Hőcserélő</p>
+              <div className={`p-2.5 rounded border md:col-span-2 ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-blue-50 border-blue-200'}`}>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Lemezes Hőcserélő</p>
                 <ResultRow label="Ajánlott modell" value={results.recommendedExchangerModel} isDark={isDark} />
                 <ResultRow label="Hőátadó felület" value={`${results.heatExchangerAreaM2} m²`} isDark={isDark} />
                 <ResultRow label="Vízáram a HX-en" value={`${results.heatExchangerWaterFlowLh} L/h`} isDark={isDark} />
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>Primer oldal (Hőszivattyú)</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className={`p-2.5 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>Primer oldal (Hőszivattyú)</p>
                 <ResultRow label="Tágulási tartály" value={`${results.vesselSizeL} L`} sub={`p₀=${results.prechargeCalculated} bar | pₑ=${results.finalCalculated} bar`} isDark={isDark} />
                 <ResultRow label="Tömegáram" value={`${results.primaryMassFlowKgh} kg/h`} sub={`${results.flowRateLh} L/h`} isDark={isDark} />
                 <ResultRow label="Ajánlott csőméret" value={results.recommendedPipeSize} isDark={isDark} />
@@ -408,8 +403,8 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                 <ResultRow label="Maradék szivattyúnyomás" value={`${results.remainingPumpHeadKpa} kPa`} isDark={isDark} />
                 <ResultRow label="Keringtetés" value="Hőszivattyú saját szivattyúja" isDark={isDark} />
               </div>
-              <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>Szekunder oldal (Hőleadók)</p>
+              <div className={`p-2.5 rounded border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>Szekunder oldal (Hőleadók)</p>
                 <ResultRow label="Csőméret (Gerinc)" value={results.recommendedSecondaryPipeSize ?? '—'} isDark={isDark} />
                 {results.secondaryEstimatedVelocityMs !== undefined && <ResultRow label="Sebesség (gerinc)" value={`${results.secondaryEstimatedVelocityMs} m/s`} isDark={isDark} />}
                 <ResultRow label="Térfogatáram" value={`${results.secondaryFlowRateLh} L/h`}
@@ -423,10 +418,10 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
             </div>
           )}
 
-          <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Puffer Ellenőrzés</p>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${results.isBufferAdequate ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30' : 'text-amber-600 bg-amber-500/10 border-amber-500/30'}`}>
+          <div className={`p-2.5 rounded border ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Puffer Ellenőrzés</p>
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${results.isBufferAdequate ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/30' : 'text-amber-600 bg-amber-500/10 border-amber-500/30'}`}>
                 {results.isBufferAdequate ? '✓ Megfelelő' : '⚠ Kiegészítés javasolt'}
               </span>
             </div>
@@ -434,15 +429,15 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
             <ResultRow label="Rendszertérfogat összesen" value={`${estSystemVol} L`} isDark={isDark} />
           </div>
 
-          <div className={`p-3 rounded border ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-            <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Javasolt Keringtető Szivattyú</p>
+          <div className={`p-2.5 rounded border ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+            <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Javasolt Keringtető Szivattyú</p>
             <ResultRow label="Modell" value={recommendedPump.model} isDark={isDark} />
             <ResultRow label="Névleges áramlás" value={recommendedPump.flow} isDark={isDark} />
             <ResultRow label="Szállítómagasság" value={recommendedPump.head} isDark={isDark} />
-            <p className={`text-[9px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{recommendedPump.note}</p>
+            <p className={`text-[8px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{recommendedPump.note}</p>
           </div>
 
-          <div className={`flex gap-1.5 p-2 rounded border text-[9px] leading-snug ${isDark ? 'bg-slate-950/20 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+          <div className={`flex gap-1.5 p-2 rounded border text-[8px] leading-snug ${isDark ? 'bg-slate-950/20 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
             <Info className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
             <span>
               <strong>FAGYVÉDELMI KÖVETELMÉNY:</strong> Monoblokkos kivitelnél a kültéri ágon fagyvédelmi lefúvató szelep (pl. Caleffi iFrost) beépítése kötelező! Glikol fagyálló nem kerül alkalmazásra.
