@@ -200,21 +200,21 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
   const hpCapPlus15 = hpCapA7 * 1.25;
 
   return (
-    <div className="space-y-4" id="sizing-and-heatpump">
+    <div className="space-y-3" id="sizing-and-heatpump">
       
       {/* (Heat loss cards removed per user request — section starts with bivalence graph) */}
 
       {/* 1. Munkapont meghatározás — unified card with graph + emitter */}
-      <div className={`rounded-lg border p-3 transition-all ${
+      <div className={`rounded-lg border p-2.5 transition-all ${
         isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
-        <div className="border-b pb-1.5">
+        <div className="border-b pb-1">
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Munkapont meghatározás
           </h3>
         </div>
 
-        <div className="space-y-4 mt-3">
+        <div className="space-y-3 mt-2">
 
           {/* Full Width High-Impact Responsive Visual SVG Graph */}
           <div className="flex flex-col space-y-2">
@@ -506,7 +506,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     </svg>
 
                     {/* Compact legend directly under chart */}
-                    <div className={`flex flex-wrap justify-center gap-3 text-[8px] font-bold uppercase tracking-wide text-slate-400`}>
+                    <div className={`flex flex-wrap justify-center gap-2 text-[7px] font-bold uppercase tracking-wide text-slate-400`}>
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-1 bg-orange-500 rounded-sm"></span> Hőigény
                       </div>
@@ -522,75 +522,74 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     </div>
 
                     {/* Munkapont elemzés — Two side-by-side panels */}
-                    <div className={`flex flex-col md:flex-row gap-3 pt-3`}>
+                    <div className={`flex flex-col md:flex-row gap-2 pt-2`}>
                       {/* Left panel: Heat demand side */}
-                      <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                        <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőigény oldal ({bivalentTempManual} °C, {selectedEmitter === 'radiator' ? 'W55' : 'W35'})</span>
-                        <div className="space-y-1 text-xs font-mono">
-                          <div className="flex justify-between items-center py-0.5">
+                      <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+                        <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőigény oldal ({bivalentTempManual} °C, {selectedEmitter === 'radiator' ? 'W55' : 'W35'})</span>
+                        <div className="space-y-0.5 text-[10px] font-mono">
+                          <div className="flex justify-between items-center">
                             <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Maximális hőszükséglet ({dTemp}°C)</span>
-                            <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{calcResults.heatLossKw.total.toFixed(2)} kW</span>
+                            <span className={`font-bold text-xs ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{calcResults.heatLossKw.total.toFixed(2)} kW</span>
                           </div>
-                          <div className="flex justify-between items-center py-0.5">
+                          <div className="flex justify-between items-center">
                             <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszükséglet ({bivalentTempManual}°C)</span>
-                            <span className={`font-bold text-sm ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{demandAtTempManual.toFixed(2)} kW</span>
+                            <span className={`font-bold text-xs ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{demandAtTempManual.toFixed(2)} kW</span>
                           </div>
-                          <div className="flex justify-between items-center py-0.5">
-                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú teljesítmény ({dTemp}°C)</span>
-                            <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtT(dTemp).toFixed(2)} kW</span>
+                          <div className="flex justify-between items-center">
+                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>HP teljesítmény ({dTemp}°C)</span>
+                            <span className={`font-bold text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtT(dTemp).toFixed(2)} kW</span>
                           </div>
-                          <div className="flex justify-between items-center py-0.5">
-                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú teljesítmény ({bivalentTempManual}°C)</span>
-                            <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtManual.toFixed(2)} kW</span>
+                          <div className="flex justify-between items-center">
+                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>HP teljesítmény ({bivalentTempManual}°C)</span>
+                            <span className={`font-bold text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{hpCapAtManual.toFixed(2)} kW</span>
                           </div>
-                          <div className="flex justify-between items-center py-0.5 font-semibold">
+                          <div className="flex justify-between items-center font-semibold">
                             <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>Max kiegészítő fűtés igény</span>
-                            <span className={`font-bold text-sm ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>+{Math.max(0, calcResults.heatLossKw.total - hpCapAtT(dTemp)).toFixed(2)} kW</span>
+                            <span className={`font-bold text-xs ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>+{Math.max(0, calcResults.heatLossKw.total - hpCapAtT(dTemp)).toFixed(2)} kW</span>
                           </div>
-                          <div className={`pt-1.5 mt-1 border-t flex justify-between items-center py-0.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Készülék</span>
-                            <span className={`font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{selectedModel?.name ?? 'Nincs kiválasztva'}</span>
+                          <div className={`pt-1 mt-1 border-t flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                            <span className={`text-[10px] font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{selectedModel?.name ?? ''}</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Right panel: Electric / Energy side */}
-                      <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-                        <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Elektromos oldal</span>
+                      <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+                        <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Elektromos oldal</span>
                         {annualEnergy ? (() => {
                           const scop = selectedEmitter === 'radiator' ? (selectedModel?.scopW55 ?? 3) : (selectedModel?.scopW35 ?? 3.5);
                           const hpElek = Math.round(annualEnergy.hpThermalKwh / scop);
                           const backupElek = annualEnergy.backupThermalKwh;
                           return (
-                            <div className="space-y-1 text-xs font-mono">
-                              <div className="flex justify-between items-center py-0.5">
+                            <div className="space-y-0.5 text-[10px] font-mono">
+                              <div className="flex justify-between items-center">
                                 <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú termikus</span>
-                                <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{annualEnergy.hpThermalKwh.toLocaleString('hu-HU')} kWh</span>
+                                <span className={`font-bold text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{annualEnergy.hpThermalKwh.toLocaleString('hu-HU')} kWh</span>
                               </div>
-                              <div className="flex justify-between items-center py-0.5">
+                              <div className="flex justify-between items-center">
                                 <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő termikus</span>
-                                <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{annualEnergy.backupThermalKwh.toLocaleString('hu-HU')} kWh</span>
+                                <span className={`font-bold text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{annualEnergy.backupThermalKwh.toLocaleString('hu-HU')} kWh</span>
                               </div>
-                              <div className="flex justify-between items-center py-0.5">
-                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú elektromos (SCOP {scop.toFixed(2)})</span>
-                                <span className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{hpElek.toLocaleString('hu-HU')} kWh</span>
+                              <div className="flex justify-between items-center">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>HP elektromos (SCOP {scop.toFixed(2)})</span>
+                                <span className={`font-bold text-xs ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{hpElek.toLocaleString('hu-HU')} kWh</span>
                               </div>
-                              <div className="flex justify-between items-center py-0.5">
+                              <div className="flex justify-between items-center">
                                 <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő elektromos</span>
-                                <span className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{backupElek.toLocaleString('hu-HU')} kWh</span>
+                                <span className={`font-bold text-xs ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{backupElek.toLocaleString('hu-HU')} kWh</span>
                               </div>
-                              <div className="flex justify-between items-center py-0.5">
-                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Hőszivattyú üzemóra</span>
-                                <span className={`font-bold text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>~{Math.max(0, 4392 - estimateBackupHours(bivalentTempManual)).toLocaleString('hu-HU')} h/év</span>
+                              <div className="flex justify-between items-center">
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>HP üzemóra</span>
+                                <span className={`font-bold text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>~{Math.max(0, 4392 - estimateBackupHours(bivalentTempManual)).toLocaleString('hu-HU')} h/év</span>
                               </div>
-                              <div className="flex justify-between items-center py-0.5">
+                              <div className="flex justify-between items-center">
                                 <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Kiegészítő üzemóra</span>
-                                <span className={`font-bold text-sm ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>~{estimateBackupHours(bivalentTempManual).toLocaleString('hu-HU')} h/év</span>
+                                <span className={`font-bold text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>~{estimateBackupHours(bivalentTempManual).toLocaleString('hu-HU')} h/év</span>
                               </div>
                             </div>
                           );
                         })() : (
-                          <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Válasszon hőszivattyút</span>
+                          <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Válasszon hőszivattyút</span>
                         )}
                       </div>
                     </div>
@@ -603,10 +602,10 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         </div>
 
         {/* Bivalencia + Kiegészítő fűtés + Emitter — 50/50 same-height row */}
-        <div className={`flex flex-col md:flex-row gap-3 pt-3 ${isDark ? '' : ''}`}>
+        <div className={`flex flex-col md:flex-row gap-2 pt-2 ${isDark ? '' : ''}`}>
           {/* Left 50% — Bivalence temperature selector */}
-          <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-            <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bivalencia hőmérséklet</span>
+          <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bivalencia hőmérséklet</span>
             <SegmentedControl
               options={[
                 { value: buildingData.designTemp, label: `${buildingData.designTemp}°C` },
@@ -624,8 +623,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
           </div>
 
           {/* Right 50% — Emitter selection only */}
-          <div className={`w-full md:w-1/2 p-2.5 rounded-lg border flex flex-col gap-1.5 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-            <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőleadó (előremenő hőmérséklet választás)</span>
+          <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőleadó (előremenő hőmérséklet választás)</span>
             {activeHPResults ? (() => {
               return (
                 <>
@@ -662,16 +661,16 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
 
       {/* 2. Ajánlott hőszivattyús berendezések */}
-      <div className={`rounded-lg border p-3 transition-all ${
+      <div className={`rounded-lg border p-2.5 transition-all ${
         isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
       }`}>
-        <div className="border-b pb-1.5">
+        <div className="border-b pb-1">
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Ajánlott hőszivattyús berendezések
           </h3>
         </div>
 
-        <div className="mt-3 mb-3">
+        <div className="mt-2 mb-2">
           <SegmentedControl
             options={[
               {
@@ -698,19 +697,19 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         <div className={`overflow-hidden rounded-lg border transition-all ${
           isDark ? 'border-slate-800' : 'border-slate-200'
         }`} id="hp-selection-table">
-          <table className={`w-full text-left border-collapse text-[10px] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+          <table className={`w-full text-left border-collapse text-[9px] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
             <thead>
-              <tr className={`border-b font-medium transition-all text-slate-500 text-[10px] ${
+              <tr className={`border-b font-medium transition-all text-slate-500 text-[9px] ${
                 isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
               }`}>
-                <th className="py-2 px-3">Típus</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">W35</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">W55</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">Zaj</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">Táp(V)</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">Megszakító</th>
-                <th className="py-2 px-3 text-center hidden md:table-cell">Szivattyú</th>
-                <th className="py-2 px-3 text-right">Bruttó ár</th>
+                <th className="py-1.5 px-2">Típus</th>
+                <th className="py-1 px-1.5 text-center hidden md:table-cell">W35</th>
+                <th className="py-1 px-1.5 text-center hidden md:table-cell">W55</th>
+                <th className="py-1 px-1.5 text-center hidden md:table-cell">Zaj</th>
+                <th className="py-1 px-1.5 text-center hidden md:table-cell">Táp(V)</th>
+                <th className="py-1 px-1.5 text-center hidden md:table-cell">Megszakító</th>
+                <th className="py-1 px-1.5 text-center hidden md:table-cell">Szivattyú</th>
+                <th className="py-1.5 px-2 text-right">Bruttó ár</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-200'}`}>
@@ -725,7 +724,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 if (bivalentRatio >= 0.90 && bivalentRatio <= 1.10) {
                   statusPill = "Optimum";
                   statusBadge = (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400 shrink-0">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400 shrink-0">
                       Optimum
                     </span>
                   );
@@ -735,7 +734,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 } else if ((bivalentRatio >= 0.85 && bivalentRatio < 0.90) || (bivalentRatio > 1.10 && bivalentRatio <= 1.15)) {
                   statusPill = "Elfogadható";
                   statusBadge = (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400 shrink-0">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400 shrink-0">
                       Elfogadható
                     </span>
                   );
@@ -745,7 +744,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 } else {
                   statusPill = "Nem javasolt";
                   statusBadge = (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-400 shrink-0">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-400 shrink-0">
                       Nem javasolt
                     </span>
                   );
@@ -769,13 +768,13 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                 };
 
                 return (
-                  <tr
+                    <tr
                     key={item.id}
                     onClick={() => onSelectModel(item, selectedEmitter)}
-                    className={`cursor-pointer text-xs ${rowBgClass}`}
+                    className={`cursor-pointer text-[10px] ${rowBgClass}`}
                   >
                     {/* Megnevezés Column (Name only as requested) */}
-                    <td className="py-1.5 px-2">
+                    <td className="py-1 px-1.5">
                       <div className="flex items-center gap-2">
                         {/* Selected Radio Indicator */}
                         <span className={`w-3 h-3 rounded-full border shrink-0 inline-block ${
@@ -792,31 +791,31 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       </div>
                     </td>
 
-                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <td className={`py-1 px-1.5 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       {item.capacityAm15W35.toFixed(1)} kW
                     </td>
 
-                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <td className={`py-1 px-1.5 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       {item.capacityAm15W55.toFixed(1)} kW
                     </td>
 
-                    <td className={`py-1.5 px-2 text-center hidden md:table-cell ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <td className={`py-1 px-1.5 text-center hidden md:table-cell ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {item.soundDba} dB(A)
                     </td>
 
-                    <td className="py-1.5 px-2 text-center hidden md:table-cell font-mono">
+                    <td className="py-1 px-1.5 text-center hidden md:table-cell font-mono">
                       {item.phases === 1 ? '230V' : '400V'}
                     </td>
 
-                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <td className={`py-1 px-1.5 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {item.ampereRequired}
                     </td>
 
-                    <td className={`py-1.5 px-2 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <td className={`py-1 px-1.5 text-center hidden md:table-cell font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       {item.pumpResidualHeadKpa} kPa
                     </td>
 
-                    <td className={`py-1.5 px-2 text-right font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                    <td className={`py-1 px-1.5 text-right font-mono font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                       {formatHu(item.estimatedPriceHuf)}
                     </td>
                   </tr>
@@ -829,30 +828,30 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
       {/* 3. Árajánlat — 3-card row layout */}
       {activeHPResults && (
-        <div className={`rounded-lg border p-3 transition-all ${
+        <div className={`rounded-lg border p-2.5 transition-all ${
           isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
         }`} id="hp-quotation-panel">
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             
-            <div className="border-b pb-1.5">
+            <div className="border-b pb-1">
               <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
                 Árajánlat
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                
               {/* Card 1: Base Price + Discount + Tech Params */}
-              <div className={`p-2.5 rounded-lg border flex flex-col ${
+              <div className={`p-2 rounded-lg border flex flex-col ${
                 isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
               }`}>
-                <div className="flex items-start justify-between gap-2 mb-2 min-h-[2rem]">
-                  <span className="text-slate-500 text-[10px] font-medium">Hőszivattyú alapgép {discountPct === 0 && '(Listaár)'}</span>
+                <div className="flex items-start justify-between gap-2 mb-1.5 min-h-[1.5rem]">
+                  <span className="text-slate-500 text-[9px] font-medium">Hőszivattyú alapgép {discountPct === 0 && '(Listaár)'}</span>
                   <div className="flex items-center gap-1.5 text-right shrink-0 flex-wrap justify-end">
                     <span className={`text-sm font-mono ${discountPct > 0 ? (isDark ? 'text-slate-500 line-through' : 'text-slate-400 line-through') : (isDark ? 'text-slate-200' : 'text-slate-800')}`}>{formatHu(baseDevicePrice)}</span>
                     {discountPct > 0 && (
-                      <span className="text-sm font-mono text-emerald-500">{formatHu(discountedDevicePrice)}</span>
+                        <span className={`text-xs font-mono font-bold text-emerald-500 ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`}>{formatHu(discountedDevicePrice)}</span>
                     )}
                   </div>
                 </div>
@@ -869,7 +868,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   className="text-[9px] w-full"
                 />
                 {selectedModel && (
-                  <div className="mt-auto pt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-slate-500 leading-relaxed">
+                  <div className="mt-auto pt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] text-slate-500 leading-relaxed">
                     <span className={`w-full font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{selectedModel.name}</span>
                     <span>SCOP ({selectedEmitter === 'radiator' ? 'W55' : 'W35'}): <strong className={isDark ? 'text-slate-300' : 'text-slate-700'}>{selectedEmitter === 'radiator' ? selectedModel.scopW55 : selectedModel.scopW35}</strong></span>
                     <span>|</span>
@@ -883,11 +882,11 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               </div>
 
               {/* Card 2: Install with segmented control + buffer tank */}
-              <div className={`p-2.5 rounded-lg border flex flex-col ${
+              <div className={`p-2 rounded-lg border flex flex-col ${
                 isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
               }`}>
-                <div className="flex items-start justify-between gap-2 mb-2 min-h-[2rem]">
-                  <span className="text-slate-500 text-[10px] font-medium">Gépészeti szerelés és telepítés</span>
+                <div className="flex items-start justify-between gap-2 mb-1.5 min-h-[1.5rem]">
+                  <span className="text-slate-500 text-[9px] font-medium">Gépészeti szerelés és telepítés</span>
                   <span className={`text-sm font-mono text-right shrink-0 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{formatHu(installationSurcharge)}</span>
                 </div>
                 <SegmentedControl
@@ -906,7 +905,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   theme={isDark ? 'dark' : 'light'}
                   className="text-[9px] w-full"
                 />
-                <div className="mt-auto pt-2 text-[9px] text-slate-500 leading-relaxed">
+                <div className="mt-auto pt-1.5 text-[8px] text-slate-500 leading-relaxed">
                   <span className="block">
                     {installationSurcharge === 2000000 && 'Kisebb készülék, rövid csövezés, egyszerű kialakítás.'}
                     {installationSurcharge === 2500000 && 'Sztenderd telepítés, normál nyomvonal, átlagos megoldások.'}
@@ -917,11 +916,11 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
               </div>
 
               {/* Card 3: DHW with 3-way segmented control */}
-              <div className={`p-2.5 rounded-lg border flex flex-col ${
+              <div className={`p-2 rounded-lg border flex flex-col ${
                 isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
               }`}>
-                <div className="flex items-start justify-between gap-2 mb-2 min-h-[2rem]">
-                  <span className="text-slate-500 text-[10px] font-medium">HMV tároló</span>
+                <div className="flex items-start justify-between gap-2 mb-1.5 min-h-[1.5rem]">
+                  <span className="text-slate-500 text-[9px] font-medium">HMV tároló</span>
                   <span className={`text-sm font-mono text-right shrink-0 ${dhwVolume > 0 ? (isDark ? 'text-slate-200' : 'text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
                     {dhwVolume > 0 ? formatHu(dhwSurcharge) : 'Nincs'}
                   </span>
@@ -943,14 +942,14 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                   className="text-[9px] w-full"
                 />
                 {dhwVolume > 0 && (
-                  <div className="mt-auto pt-2 space-y-0.5 text-[9px] text-slate-500 leading-relaxed">
+                  <div className="mt-auto pt-1.5 space-y-0.5 text-[8px] text-slate-500 leading-relaxed">
                     <span className="block">• {dhwVolume}L indirekt HMV-tároló fűtőpatronnal</span>
                     <span className="block">• 3-járatú fűtés-HMV váltószelep</span>
                     <span className="block">• Extra víz és elektromos kiegészítők</span>
                   </div>
                 )}
                 {dhwVolume === 0 && (
-                  <div className="mt-auto pt-2 text-[9px] text-slate-500 italic">Nincs melegvíztároló kiválasztva.</div>
+                  <div className="mt-auto pt-1.5 text-[8px] text-slate-500 italic">Nincs melegvíztároló kiválasztva.</div>
                 )}
               </div>
 
@@ -961,21 +960,21 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
       {/* 4. Megtérülés — outer card wrapping two inner cards */}
       {activeHPResults && (
-        <div className={`rounded-lg border p-3 transition-all ${
+        <div className={`rounded-lg border p-2.5 transition-all ${
           isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
         }`}>
 
-          <div className="border-b pb-1.5">
+          <div className="border-b pb-1">
             <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>Megtérülés</h3>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mt-2">
 
             {/* Left card: Bemenő adatok */}
-            <div className={`p-4 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-              <span className="text-xs font-medium text-slate-500 block mb-4">Bemenő adatok</span>
+            <div className={`p-3 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+              <span className="text-[9px] font-medium text-slate-500 block mb-2">Bemenő adatok</span>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap text-sm">
                   <SegmentedControl
                     options={[
@@ -1041,12 +1040,12 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             </div>
 
             {/* Right card: 2-col — heating cost + HP payback */}
-            <div className={`p-4 rounded-lg border lg:col-span-2 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
-              <div className="grid grid-cols-2 gap-3">
+            <div className={`p-3 rounded-lg border lg:col-span-2 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="grid grid-cols-2 gap-2">
 
                 {/* LEFT COL: Fűtési költség */}
-                <div className="space-y-1.5">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Fűtési költség</div>
+                <div className="space-y-1">
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Fűtési költség</div>
 
                   {calcResults.gasCostHuf > 0 && (
                     <>
@@ -1091,7 +1090,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
                 {/* RIGHT COL: HP + megtérülés */}
                 <div className={`space-y-1.5 pl-3 border-l ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Hőszivattyú</div>
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Hőszivattyú</div>
 
                   {annualEnergy && selectedModel ? (() => {
                     const scop = selectedEmitter === 'radiator' ? (selectedModel.scopW55 ?? 3) : (selectedModel.scopW35 ?? 3.5);
@@ -1166,7 +1165,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between border-b pb-2 mb-3">
               <div>
-                <h3 className="font-extrabold text-[#3b82f6] text-[10px] uppercase tracking-wider leading-none">
+                <h3 className="font-extrabold text-[#3b82f6] text-[9px] uppercase tracking-wider leading-none">
                   Készülék részletes adatai
                 </h3>
                 <span className={`text-[12px] font-black font-sans block mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
