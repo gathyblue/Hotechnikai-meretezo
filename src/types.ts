@@ -118,7 +118,8 @@ export interface CalculationResults {
 
 export interface HydraulicInput {
   pipeMaterial: 'copper' | 'pex' | 'steel';
-  deltaT: number; // °C
+  primaryDeltaT: number; // °C
+  secondaryDeltaT: number; // °C
   staticHeight: number; // m (static water head)
   safetyValvePressure: number; // bar, typically 3
   additionalWaterVolumeL: number; // L (optional buffer tank, etc.)
@@ -168,6 +169,7 @@ export interface HydraulicResults {
   primaryPressureDropKpa: number;
   secondaryPressureDropKpa: number;
   remainingPumpHeadKpa: number;  // remaining delivery pressure after primary loss
+  secondaryRemainingHeadKpa: number;
   dabPumpModel: string;           // DAB pump model recommended
   dabPumpSetting?: string;        // DAB pump suggested setting
   dabPumpStage?: string;          // DAB pump suggested stage

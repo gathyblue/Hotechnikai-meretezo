@@ -80,7 +80,8 @@ export default function App() {
   const [hydraulicState, setHydraulicState] = useState<HydraulicInput>({
     pipeMaterial: 'copper',
     secondaryPipeMaterial: 'pex',
-    deltaT: 5,
+    primaryDeltaT: 5,
+    secondaryDeltaT: 5,
     staticHeight: 4,
     safetyValvePressure: 3.0,
     additionalWaterVolumeL: 100,

@@ -427,7 +427,7 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
           <div className="space-y-2 text-[9.5px]">
             <div className="flex justify-between">
               <span className={isDark ? "text-slate-400" : "text-slate-500"}>Csúcshőigény:</span>
-              <span className="font-bold">{r.primaryFlowRateLh ? (r.primaryFlowRateLh * 1.163 * Number(hydraulicState.deltaT || 5) / 1000).toFixed(1) : "—"} kW</span>
+              <span className="font-bold">{r.primaryFlowRateLh ? (r.primaryFlowRateLh * 1.163 * Number(hydraulicState.primaryDeltaT || 5) / 1000).toFixed(1) : "—"} kW</span>
             </div>
             <div className="flex justify-between">
               <span className={isDark ? "text-slate-400" : "text-slate-500"}>Primer tömegáram:</span>
@@ -435,7 +435,7 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
             </div>
             <div className="flex justify-between">
               <span className={isDark ? "text-slate-400" : "text-slate-500"}>Primer ΔT:</span>
-              <span className="font-mono font-bold">{hydraulicState.deltaT} °C</span>
+              <span className="font-mono font-bold">{hydraulicState.primaryDeltaT} °C</span>
             </div>
             <div className="flex justify-between">
               <span className={isDark ? "text-slate-400" : "text-slate-500"}>Csőméret (primer):</span>

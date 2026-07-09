@@ -578,7 +578,7 @@ export const ReportExport: React.FC<ReportExportProps> = ({
       <tbody>
         <tr>
           <td class="text-bold">Hőteljesítmény</td>
-          <td class="text-right text-mono text-bold">${hydraulicResults.primaryFlowRateLh > 0 ? (hydraulicResults.primaryFlowRateLh * 1.163 * Number(hydraulicState.deltaT || 5) / 1000).toFixed(2) : "—"} kW</td>
+          <td class="text-right text-mono text-bold">${hydraulicResults.primaryFlowRateLh > 0 ? (hydraulicResults.primaryFlowRateLh * 1.163 * Number(hydraulicState.primaryDeltaT || 5) / 1000).toFixed(2) : "—"} kW</td>
           <td>Számított a ΔT és térfogatáram alapján</td>
         </tr>
         <tr>
@@ -593,7 +593,7 @@ export const ReportExport: React.FC<ReportExportProps> = ({
         </tr>
         <tr>
           <td class="text-bold">ΔT hőlépcső</td>
-          <td class="text-right text-mono">${hydraulicState.deltaT} °C</td>
+          <td class="text-right text-mono">${hydraulicState.primaryDeltaT} °C</td>
           <td>Tervezési paraméter</td>
         </tr>
         <tr>

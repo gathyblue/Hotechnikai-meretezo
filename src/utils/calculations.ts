@@ -535,7 +535,8 @@ export function calculateHydraulicsAndVessel(
   params?: EngineeringParams,
   pumpResidualHeadKpa?: number
 ): HydraulicResults {
-  const deltaT = input.deltaT;
+  const primaryDeltaT = input.primaryDeltaT || input.deltaT || 5;
+  const secondaryDeltaT = input.secondaryDeltaT || (input.includeHeatExchanger ? 5 : primaryDeltaT);
   const pumpHead = pumpResidualHeadKpa ?? 60;
 
   // --- Glycol properties ---
@@ -549,7 +550,7 @@ export function calculateHydraulicsAndVessel(
     ? Math.min(specHeatWhLk, glycol.specificHeatWhKgK * glycol.density / 1000)
     : specHeatWhLk;
 
-  const flowRateM3h = peakLoadKw / (effectiveSpecHeat * deltaT);
+  const flowRateM3h = peakLoadKw / (effectiveSpecHeat * primaryDeltaT);
   const flowRateLh = flowRateM3h * 1000;
   const flowRateLmin = flowRateLh / 60;
 
@@ -570,16 +571,13 @@ export function calculateHydraulicsAndVessel(
   }
 
   // --- Secondary pipe decision ---
-  const secondaryDeltaT = input.includeHeatExchanger ? 5 : deltaT;
-  const secondaryFlowRateLh = input.includeHeatExchanger
-    ? Math.round((peakLoadKw / (specHeatWhLk * secondaryDeltaT)) * 1000)
-    : Math.round(flowRateLh);
+  const secondaryFlowRateLh = Math.round((peakLoadKw / (specHeatWhLk * secondaryDeltaT)) * 1000);
   const secondaryFlowM3h = secondaryFlowRateLh / 1000;
   const secondaryRequiredDiameterMm = Math.sqrt((4 * (secondaryFlowM3h / 3600) / targetVelocityMs) / Math.PI) * 1000;
 
   let secondaryPipe = input.secondaryPipeSize || 'Auto';
   if (secondaryPipe === 'Auto') {
-    secondaryPipe = getAutoRecommendedPipeSize(secondaryRequiredDiameterMm, input.pipeMaterial);
+    secondaryPipe = getAutoRecommendedPipeSize(secondaryRequiredDiameterMm, input.secondaryPipeMaterial || input.pipeMaterial);
   }
 
   // --- Get exact diameters ---
@@ -753,13 +751,20 @@ export function calculateHydraulicsAndVessel(
     dabPumpStage = 'III-as fokozat (Maximális vízszállításra állítva)';
   }
 
+  // --- Secondary pump remaining head ---
+  const secondaryPumpMaxHeadKpa = 70; // DAB Evosta 2 40-70/180 ~7m
+  const secondaryPumpMaxFlowLh = 4200;
+  const flowRatio = Math.min(secondaryFlowRateLh / secondaryPumpMaxFlowLh, 1);
+  const secondaryPumpAvailableKpa = secondaryPumpMaxHeadKpa * (1 - Math.pow(flowRatio, 1.5));
+  const secondaryRemainingHeadKpa = Number((secondaryPumpAvailableKpa - secondaryPressureDropKpa).toFixed(1));
+
   const recommendedBufferL = Math.round(peakLoadKw * 20);
   const isBufferAdequate = Number(input.additionalWaterVolumeL || 0) >= recommendedBufferL;
 
   const primaryFlowRateLh = Math.round(flowRateLh);
 
   // --- Temperature labels ---
-  const primaryReturnTempC = flowTemp - deltaT;
+  const primaryReturnTempC = flowTemp - primaryDeltaT;
   const secondaryFlowTempC = input.includeHeatExchanger ? flowTemp - 5 : flowTemp;
   const secondaryReturnTempC = secondaryFlowTempC - secondaryDeltaT;
 
@@ -789,6 +794,7 @@ export function calculateHydraulicsAndVessel(
     primaryPressureDropKpa,
     secondaryPressureDropKpa,
     remainingPumpHeadKpa,
+    secondaryRemainingHeadKpa,
     // NEW FIELDS
     primaryMassFlowKgh,
     secondaryMassFlowKgh,
