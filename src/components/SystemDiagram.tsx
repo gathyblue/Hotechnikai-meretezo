@@ -1,5 +1,5 @@
 import React from "react";
-import { HeatPumpModel, HydraulicInput, HydraulicResults } from "../types";
+import { HeatPumpModel, HydraulicInput, HydraulicResults, SecondaryCircuit } from "../types";
 
 export interface SystemDiagramProps {
   title?: string;
@@ -32,6 +32,63 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
   const retLabelS = r.secondaryFlowRateLh > 0 ? `${r.secondaryReturnTempC}°C | ${r.secondaryFlowRateLh} L/h | ${r.secondaryMassFlowKgh} kg/h` : "";
 
   const isHX = hydraulicState.includeHeatExchanger;
+
+  function renderEmitterGroup(circuits: SecondaryCircuit[], fg: string, subFg: string) {
+    const types = [...new Set(circuits.map(c => c.type))];
+    const count = types.length;
+    if (count === 0) return null;
+    const slotH = Math.floor(190 / Math.max(count, 1));
+
+    return (
+      <>
+        {types.map((type, idx) => {
+          const yOff = idx * slotH;
+          const midY = yOff + slotH / 2;
+          if (type === 'floor') {
+            return (
+              <g key="floor" transform={`translate(0, ${yOff})`}>
+                <rect x="0" y="4" width="14" height={slotH - 8} rx="2" fill="none" stroke={fg} strokeWidth="1.5" />
+                <path d={`M 14,${slotH * 0.15} H 100 Q 110,${slotH * 0.15} 110,${slotH * 0.25} V ${slotH * 0.75} Q 110,${slotH * 0.85} 100,${slotH * 0.85} H 14`} fill="none" stroke={fg} strokeWidth="2" />
+                <path d={`M 14,${slotH * 0.25} H 85 Q 95,${slotH * 0.25} 95,${slotH * 0.35} V ${slotH * 0.65} Q 95,${slotH * 0.75} 85,${slotH * 0.75} H 14`} fill="none" stroke={fg} strokeWidth="2" />
+                <text x="60" y={slotH * 0.55} fill={fg} fontSize="7" fontWeight="bold" textAnchor="middle">PADLÓFŰTÉS</text>
+                <text x="60" y={slotH * 0.65} fill={subFg} fontSize="5" textAnchor="middle">{circuits.filter(c => c.type === 'floor')[0]?.flowTempC ?? 35}°C</text>
+              </g>
+            );
+          }
+          if (type === 'radiators') {
+            return (
+              <g key="radiators" transform={`translate(0, ${yOff})`}>
+                <line x1="0" y1={slotH * 0.15} x2="30" y2={slotH * 0.15} stroke={fg} strokeWidth="2" />
+                <line x1="0" y1={slotH * 0.85} x2="30" y2={slotH * 0.85} stroke={fg} strokeWidth="2" />
+                <rect x="30" y={slotH * 0.05} width="100" height={slotH * 0.9} rx="4" fill="none" stroke={fg} strokeWidth="2" />
+                {Array.from({ length: Math.min(6, Math.max(3, slotH > 60 ? 6 : 4)) }).map((_, i) => (
+                  <line key={i} x1={42 + i * 14} y1={slotH * 0.12} x2={42 + i * 14} y2={slotH * 0.88} stroke={fg} strokeWidth="5" strokeLinecap="round" />
+                ))}
+                <text x="80" y={slotH * 0.45} fill={fg} fontSize="7" fontWeight="bold" textAnchor="middle">RADIÁTOROK</text>
+                <text x="80" y={slotH * 0.58} fill={subFg} fontSize="5" textAnchor="middle">{circuits.filter(c => c.type === 'radiators')[0]?.flowTempC ?? 55}°C</text>
+              </g>
+            );
+          }
+          if (type === 'fan_coil') {
+            return (
+              <g key="fan_coil" transform={`translate(0, ${yOff})`}>
+                <line x1="0" y1={slotH * 0.15} x2="30" y2={slotH * 0.15} stroke={fg} strokeWidth="2" />
+                <line x1="0" y1={slotH * 0.85} x2="30" y2={slotH * 0.85} stroke={fg} strokeWidth="2" />
+                <rect x="30" y={slotH * 0.05} width="110" height={slotH * 0.9} rx="6" fill="none" stroke={fg} strokeWidth="2" />
+                <rect x="45" y={slotH * 0.1} width="80" height={slotH * 0.18} rx="2" fill="none" stroke={fg} strokeWidth="1" />
+                <circle cx="80" cy={midY - yOff} r={slotH * 0.12} fill="none" stroke={fg} strokeWidth="1" />
+                <line x1="80" y1={midY - yOff - slotH * 0.1} x2="80" y2={midY - yOff + slotH * 0.1} stroke={fg} strokeWidth="2" />
+                <line x1={80 - slotH * 0.1} y1={midY - yOff} x2={80 + slotH * 0.1} y2={midY - yOff} stroke={fg} strokeWidth="2" />
+                <text x="80" y={slotH * 0.7} fill={fg} fontSize="7" fontWeight="bold" textAnchor="middle">FAN-COIL</text>
+                <text x="80" y={slotH * 0.82} fill={subFg} fontSize="5" textAnchor="middle">{circuits.filter(c => c.type === 'fan_coil')[0]?.flowTempC ?? 45}°C</text>
+              </g>
+            );
+          }
+          return null;
+        })}
+      </>
+    );
+  }
 
   return (
     <section className={`rounded-xl border shadow-md p-4 transition-all duration-300 flex flex-col ${
@@ -343,68 +400,10 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
 
             {/* ───── EMITTERS ───── */}
             <g transform="translate(890, 180)">
-              {hydraulicState.secondaryLoops === "floor" || hydraulicState.secondaryLoops === "mixed" ? (
-                <>
-                  {/* Manifold */}
-                  <rect x="0" y="30" width="14" height="60" rx="2" fill="none" stroke={fg} strokeWidth="1.5" />
-                  <rect x="0" y="130" width="14" height="60" rx="2" fill="none" stroke={fg} strokeWidth="1.5" />
-                  {/* Floor loops */}
-                  <path d="M 14,40 H 100 Q 110,40 110,50 V 150 Q 110,160 100,160 H 14" fill="none" stroke={fg} strokeWidth="2" />
-                  <path d="M 14,55 H 85 Q 95,55 95,65 V 135 Q 95,145 85,145 H 14" fill="none" stroke={fg} strokeWidth="2" />
-                  <path d="M 14,70 H 70 Q 80,70 80,80 V 120 Q 80,130 70,130 H 14" fill="none" stroke={fg} strokeWidth="2" />
-                  <text x="60" y="108" fill={fg} fontSize="8" fontWeight="bold" textAnchor="middle">PADLÓFŰTÉS</text>
-                  <text x="60" y="118" fill={subFg} fontSize="6" textAnchor="middle">35°C</text>
-                </>
-              ) : null}
-
-              {hydraulicState.secondaryLoops === "radiators" ? (
-                <>
-                  <line x1="0" y1="50" x2="30" y2="50" stroke={fg} strokeWidth="2" />
-                  <line x1="0" y1="170" x2="30" y2="170" stroke={fg} strokeWidth="2" />
-                  <rect x="30" y="10" width="100" height="180" rx="4" fill="none" stroke={fg} strokeWidth="2" />
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <line key={i} x1={42 + i * 14} y1="25" x2={42 + i * 14} y2="175" stroke={fg} strokeWidth="6" strokeLinecap="round" />
-                  ))}
-                  <text x="80" y="0" fill={fg} fontSize="8" fontWeight="bold" textAnchor="middle">RADIÁTOROK</text>
-                  <text x="80" y="200" fill={subFg} fontSize="6" textAnchor="middle">55°C</text>
-                </>
-              ) : null}
-
-              {hydraulicState.secondaryLoops === "fan_coil" ? (
-                <>
-                  <line x1="0" y1="50" x2="30" y2="50" stroke={fg} strokeWidth="2" />
-                  <line x1="0" y1="170" x2="30" y2="170" stroke={fg} strokeWidth="2" />
-                  <rect x="30" y="10" width="110" height="180" rx="6" fill="none" stroke={fg} strokeWidth="2" />
-                  <rect x="45" y="20" width="80" height="30" rx="2" fill="none" stroke={fg} strokeWidth="1" />
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <line key={i} x1={50 + i * 12} y1="23" x2={50 + i * 12} y2="47" stroke={fg} strokeWidth="1" />
-                  ))}
-                  <circle cx="80" cy="100" r="20" fill="none" stroke={fg} strokeWidth="1" />
-                  <line x1="80" y1="85" x2="80" y2="115" stroke={fg} strokeWidth="2" />
-                  <line x1="65" y1="100" x2="95" y2="100" stroke={fg} strokeWidth="2" />
-                  <text x="80" y="155" fill={fg} fontSize="8" fontWeight="bold" textAnchor="middle">FAN-COIL</text>
-                  <text x="80" y="200" fill={subFg} fontSize="6" textAnchor="middle">45°C</text>
-                </>
-              ) : null}
-
-              {hydraulicState.secondaryLoops === "mixed" && (
-                <>
-                  <line x1="0" y1="50" x2="30" y2="50" stroke={fg} strokeWidth="1.5" />
-                  <line x1="0" y1="170" x2="30" y2="170" stroke={fg} strokeWidth="1.5" />
-                  {/* Mini radiator */}
-                  <rect x="40" y="100" width="60" height="80" rx="3" fill="none" stroke={fg} strokeWidth="1.5" />
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <line key={i} x1={47 + i * 18} y1="110" x2={47 + i * 18} y2="170" stroke={fg} strokeWidth="4" strokeLinecap="round" />
-                  ))}
-                  <text x="70" y="195" fill={subFg} fontSize="5.5" textAnchor="middle">Radiátor</text>
-                  {/* Manifold */}
-                  <rect x="40" y="10" width="10" height="45" rx="1.5" fill="none" stroke={fg} strokeWidth="1" />
-                  <rect x="40" y="55" width="10" height="45" rx="1.5" fill="none" stroke={fg} strokeWidth="1" />
-                  <path d="M 50,20 H 70 A 5,5 0 0 1 75,25 V 65" fill="none" stroke={fg} strokeWidth="1.5" />
-                  <path d="M 50,60 H 70 A 5,5 0 0 0 75,55 V 45" fill="none" stroke={fg} strokeWidth="1.5" />
-                  <text x="60" y="90" fill={fg} fontSize="6" textAnchor="middle">Padló</text>
-                </>
+              {(hydraulicState.secondaryCircuits ?? []).length === 0 && (
+                <text x="60" y="100" fill={subFg} fontSize="7" textAnchor="middle">Nincs szekunder kör</text>
               )}
+              {renderEmitterGroup(hydraulicState.secondaryCircuits ?? [], fg, subFg)}
             </g>
 
             {/* ───── LEGEND ───── */}

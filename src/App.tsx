@@ -72,7 +72,9 @@ export default function App() {
     pexFrictionMultiplier: 1.35,
     systemWaterVolumeFloorFactor: 15,
     systemWaterVolumeRadiatorFactor: 12,
-    waterSpecificHeat: 1.163
+    waterSpecificHeat: 1.163,
+    kwPerFloorLoop: 1.2,
+    kwPerRadiator: 1.0
   });
   const [isOpenEngineeringModal, setIsOpenEngineeringModal] = useState<boolean>(false);
   const [isOpenPricePanel, setIsOpenPricePanel] = useState(false);
@@ -81,11 +83,21 @@ export default function App() {
     pipeMaterial: 'copper',
     secondaryPipeMaterial: 'pex',
     primaryDeltaT: 5,
-    secondaryDeltaT: 5,
     staticHeight: 4,
     safetyValvePressure: 3.0,
     additionalWaterVolumeL: 100,
-    secondaryLoops: 'radiators',
+    secondaryCircuits: [
+      {
+        id: 'circuit-1',
+        type: 'radiators',
+        label: '1. kör',
+        flowTempC: 55,
+        isMixed: false,
+        floorCircuits: 8,
+        longestCircuitM: 100,
+        radiatorCount: 8,
+      },
+    ],
     includeHeatExchanger: false,
     includeDhwTank: true,
     couplingType: '4-port-buffer',
@@ -231,19 +243,25 @@ export default function App() {
     setSelectedModel(model);
     setSelectedEmitter(emitterType);
     
-    // update secondary loop in hydraulic settings automatically
     setHydraulicState(prev => ({
       ...prev,
-      secondaryLoops: emitterType === 'radiator' ? 'radiators' : 'floor'
+      secondaryCircuits: (prev.secondaryCircuits ?? []).length === 0
+        ? [{
+            id: 'circuit-1',
+            type: emitterType === 'radiator' ? 'radiators' : 'floor',
+            label: '1. kör',
+            flowTempC: emitterType === 'radiator' ? 55 : 35,
+            isMixed: false,
+            floorCircuits: 8,
+            longestCircuitM: 100,
+            radiatorCount: 8,
+          }]
+        : prev.secondaryCircuits,
     }));
   }, []);
 
   const handleEmitterChange = (emitter: 'floor' | 'radiator') => {
     setSelectedEmitter(emitter);
-    setHydraulicState(prev => ({
-      ...prev,
-      secondaryLoops: emitter === 'radiator' ? 'radiators' : 'floor'
-    }));
   };
 
   const flowTempForEmitters: Record<string, number> = {
@@ -704,6 +722,56 @@ export default function App() {
                       <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.glycolPercentage} %</span>
                     </div>
                   </div>
+
+                  {/* Parameter 8: kW per floor loop */}
+                  <div className={`p-3 rounded border flex flex-col justify-between ${
+                    isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">kW / padlófűtési kör</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Egy padlófűtési osztó kör teljesítménye (Alap: 1.2 kW).</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input 
+                        type="range" 
+                        min="0.5" 
+                        max="3.0" 
+                        step="0.1"
+                        value={engineeringParams.kwPerFloorLoop}
+                        onChange={(e) => setEngineeringParams({
+                          ...engineeringParams,
+                          kwPerFloorLoop: parseFloat(e.target.value)
+                        })}
+                        className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
+                      />
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.kwPerFloorLoop.toFixed(1)} kW</span>
+                    </div>
+                  </div>
+
+                  {/* Parameter 9: kW per radiator */}
+                  <div className={`p-3 rounded border flex flex-col justify-between ${
+                    isDark ? 'bg-slate-950/30 border-slate-850' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div className="flex items-start gap-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 shrink-0">kW / radiátor</label>
+                      <span className="text-[9px] text-slate-500 leading-tight">Egy lapradiátor teljesítménye (Alap: 1.0 kW).</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input 
+                        type="range" 
+                        min="0.3" 
+                        max="2.5" 
+                        step="0.1"
+                        value={engineeringParams.kwPerRadiator}
+                        onChange={(e) => setEngineeringParams({
+                          ...engineeringParams,
+                          kwPerRadiator: parseFloat(e.target.value)
+                        })}
+                        className="flex-grow accent-blue-500 cursor-pointer h-1 bg-slate-800 rounded-lg"
+                      />
+                      <span className="font-mono font-bold text-xs bg-slate-900 border border-slate-800 text-blue-400 px-1.5 py-0.5 rounded shrink-0">{engineeringParams.kwPerRadiator.toFixed(1)} kW</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -722,7 +790,9 @@ export default function App() {
                     pexFrictionMultiplier: 1.35,
                     systemWaterVolumeFloorFactor: 15,
                     systemWaterVolumeRadiatorFactor: 12,
-                    waterSpecificHeat: 1.163
+                    waterSpecificHeat: 1.163,
+                    kwPerFloorLoop: 1.2,
+                    kwPerRadiator: 1.0
                   });
                 }}
                 className={`px-3 py-1.5 rounded text-[10px] font-bold border hover:opacity-80 transition-all cursor-pointer ${

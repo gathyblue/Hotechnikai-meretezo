@@ -1,4 +1,4 @@
-import { BuildingData, CalculationResults, HeatPumpModel, HydraulicInput, HydraulicResults, EngineeringParams } from '../types';
+import { BuildingData, CalculationResults, HeatPumpModel, HydraulicInput, HydraulicResults, EngineeringParams, CircuitHydraulicResult } from '../types';
 
 /**
  * Calculates building structures' U-values with insulation
@@ -535,8 +535,8 @@ export function calculateHydraulicsAndVessel(
   params?: EngineeringParams,
   pumpResidualHeadKpa?: number
 ): HydraulicResults {
-  const primaryDeltaT = input.primaryDeltaT || input.deltaT || 5;
-  const secondaryDeltaT = input.secondaryDeltaT || (input.includeHeatExchanger ? 5 : primaryDeltaT);
+  const primaryDeltaT = input.primaryDeltaT || 5;
+  const secondaryCircuits = input.secondaryCircuits || [];
   const pumpHead = pumpResidualHeadKpa ?? 60;
 
   // --- Glycol properties ---
@@ -545,7 +545,6 @@ export function calculateHydraulicsAndVessel(
   const specHeatWhLk = params ? params.waterSpecificHeat : 1.163;
 
   // Use glycol-adjusted specific heat for primary (if HX), water-based for secondary
-  // For direct system, use user's waterSpecificHeat
   const effectiveSpecHeat = input.includeHeatExchanger
     ? Math.min(specHeatWhLk, glycol.specificHeatWhKgK * glycol.density / 1000)
     : specHeatWhLk;
@@ -570,44 +569,180 @@ export function calculateHydraulicsAndVessel(
     primaryPipe = getAutoRecommendedPipeSize(requiredDiameterMm * lengthFactor, input.pipeMaterial);
   }
 
-  // --- Secondary pipe decision ---
-  const secondaryFlowRateLh = Math.round((peakLoadKw / (specHeatWhLk * secondaryDeltaT)) * 1000);
-  const secondaryFlowM3h = secondaryFlowRateLh / 1000;
-  const secondaryRequiredDiameterMm = Math.sqrt((4 * (secondaryFlowM3h / 3600) / targetVelocityMs) / Math.PI) * 1000;
-
-  let secondaryPipe = input.secondaryPipeSize || 'Auto';
-  if (secondaryPipe === 'Auto') {
-    secondaryPipe = getAutoRecommendedPipeSize(secondaryRequiredDiameterMm, input.secondaryPipeMaterial || input.pipeMaterial);
-  }
-
-  // --- Get exact diameters ---
+  // --- Get exact diameters for primary ---
   const primaryInnerDiaMm = getPipeInnerDiameter(primaryPipe, input.pipeMaterial);
-  const secondaryInnerDiaMm = getPipeInnerDiameter(secondaryPipe, input.pipeMaterial);
-
-  // --- Math for velocity with selected dimensions ---
   const primaryInnerDiaM = primaryInnerDiaMm / 1000;
   const primaryActualAreaM2 = (Math.PI * Math.pow(primaryInnerDiaM, 2)) / 4;
   const primaryEstimatedVelocityMs = (flowRateM3h / 3600) / primaryActualAreaM2;
 
-  const secondaryInnerDiaM = secondaryInnerDiaMm / 1000;
-  const secondaryActualAreaM2 = (Math.PI * Math.pow(secondaryInnerDiaM, 2)) / 4;
-  const secondaryEstimatedVelocityMs = (secondaryFlowM3h / 3600) / secondaryActualAreaM2;
-
-  // --- Mass flow rates ---
-  const glycolDensity = glycol.density;
-  const primaryDensity = input.includeHeatExchanger ? glycolDensity : 1000;
+  // --- Primary mass flow ---
+  const primaryDensity = input.includeHeatExchanger ? glycol.density : 1000;
   const primaryMassFlowKgh = Math.round(flowRateLh * primaryDensity / 1000);
-  const secondaryMassFlowKgh = Math.round(secondaryFlowRateLh * 1000 / 1000);
+
+  // --- Distribute peak load among secondary circuits ---
+  const kwPerFloorLoop = params?.kwPerFloorLoop ?? 1.2;
+  const kwPerRadiator = params?.kwPerRadiator ?? 1.0;
+
+  const circuitWeights = secondaryCircuits.map(c => ({
+    id: c.id,
+    weight: c.type === 'floor' ? c.floorCircuits * kwPerFloorLoop
+          : c.type === 'radiators' ? c.radiatorCount * kwPerRadiator
+          : 1,
+  }));
+  const totalWeight = circuitWeights.reduce((s, w) => s + w.weight, 0);
+
+  const secondaryPipeMaterial = input.secondaryPipeMaterial || input.pipeMaterial;
+  const pexFrictionMult = params?.pexFrictionMultiplier ?? 1.35;
+
+  // --- Calculate each circuit's hydraulics ---
+  function selectDabPump(type: string, flowLh: number): { pumpModel: string; pumpSetting: string; pumpStage: string } {
+    const model = input.secondaryPumpOverride && input.secondaryPumpOverride !== 'Auto'
+      ? input.secondaryPumpOverride
+      : 'DAB Evosta 2 40-70/180 (A-osztályú, nagyhatékonyságú)';
+    if (type === 'floor') {
+      const setting = 'Állandó differenciálnyomás (Padlófűtési osztógyűjtőhöz)';
+      let stage: string;
+      if (flowLh <= 1100) stage = 'CP1 (I. alacsony állandó nyomás)';
+      else if (flowLh <= 1900) stage = 'CP2 (II. közepes, javasolt fűtési fokozat)';
+      else stage = 'CP3 (III. nagyüzemi padlófűtési kör)';
+      return { pumpModel: model, pumpSetting: setting, pumpStage: stage };
+    }
+    if (type === 'radiators') {
+      const setting = 'Arányos differenciálnyomás (Termosztatikus radiátor szelepekhez)';
+      let stage: string;
+      if (flowLh <= 1100) stage = 'PP1 (I. alacsony arányos nyomás)';
+      else if (flowLh <= 1900) stage = 'PP2 (II. közepes, optimális fokozat)';
+      else stage = 'PP3 (III. magas arányos nyomás)';
+      return { pumpModel: model, pumpSetting: setting, pumpStage: stage };
+    }
+    return {
+      pumpModel: model,
+      pumpSetting: 'Állandó fordulatszámú görbe (Constant Speed / III. fokozat)',
+      pumpStage: 'III-as fokozat (Maximális vízszállításra állítva)',
+    };
+  }
+
+  const circuitResults: CircuitHydraulicResult[] = secondaryCircuits.map((c) => {
+    const weight = circuitWeights.find(w => w.id === c.id)?.weight ?? 1;
+    const circuitLoad = totalWeight > 0 ? (weight / totalWeight) * peakLoadKw : 0;
+    const deltaT = c.type === 'floor' ? 5 : c.type === 'radiators' ? 10 : 7;
+    const flowTempC = c.type === 'floor' ? 35 : c.type === 'radiators' ? 55 : 45;
+    const returnTempC = flowTempC - deltaT;
+    const flowLh = circuitLoad > 0 ? Math.round((circuitLoad / (specHeatWhLk * deltaT)) * 1000) : 0;
+    const flowM3h = flowLh / 1000;
+    const flowLmin = flowLh / 60;
+
+    const pexMult = secondaryPipeMaterial === 'pex' ? pexFrictionMult : 1.0;
+    const viscosity = 0.0010;
+    const fittings = input.fittingsCount ?? 6;
+
+    // Pipe sizing – floor uses fixed PEX 16x2 loop, radiator uses velocity-based sizing
+    let pipeSize: string;
+    let innerDiaM: number;
+    let actualAreaM2: number;
+    let velocityMs: number;
+    let pipeLossKpa: number;
+
+    if (c.type === 'floor') {
+      const loopLengthM = (c.longestCircuitM || 100) * 2;
+      const loopInnerDiaMm = 12; // PEX 16x2 → 12 mm inner diameter
+      innerDiaM = loopInnerDiaMm / 1000;
+      actualAreaM2 = (Math.PI * Math.pow(innerDiaM, 2)) / 4;
+      const flowM3s = flowM3h / 3600;
+      velocityMs = actualAreaM2 > 0 ? Number((flowM3s / actualAreaM2).toFixed(2)) : 0;
+      pipeSize = 'PEX 16x2 (padlókör)';
+
+      const re = velocityMs > 0 ? 1000 * velocityMs * innerDiaM / viscosity : 0;
+      const fFactor = re > 2000 ? 0.3164 / Math.pow(re, 0.25) : 64 / Math.max(re, 1);
+      pipeLossKpa = velocityMs > 0
+        ? Number((fFactor * (loopLengthM / innerDiaM) * (1000 * velocityMs * velocityMs / 2000) * pexMult).toFixed(1))
+        : 0;
+    } else {
+      const flowM3s = flowM3h / 3600;
+      const reqAreaM2 = flowM3s / targetVelocityMs;
+      const reqDiaMm = Math.sqrt((4 * reqAreaM2) / Math.PI) * 1000;
+      const circuitPipeLen = (input.pipeLengthEstimate ?? 5) * 2;
+
+      pipeSize = getAutoRecommendedPipeSize(reqDiaMm, secondaryPipeMaterial);
+      const innerDiaMm = getPipeInnerDiameter(pipeSize, secondaryPipeMaterial);
+      innerDiaM = innerDiaMm / 1000;
+      actualAreaM2 = (Math.PI * Math.pow(innerDiaM, 2)) / 4;
+      velocityMs = actualAreaM2 > 0 ? Number((flowM3s / actualAreaM2).toFixed(2)) : 0;
+
+      const re = velocityMs > 0 ? 1000 * velocityMs * innerDiaM / viscosity : 0;
+      const fFactor = re > 2000 ? 0.3164 / Math.pow(re, 0.25) : 64 / Math.max(re, 1);
+      pipeLossKpa = velocityMs > 0
+        ? Number((fFactor * (circuitPipeLen / innerDiaM) * (1000 * velocityMs * velocityMs / 2000) * pexMult).toFixed(1))
+        : 0;
+    }
+
+    const localLossKpa = velocityMs > 0 ? Number((fittings * 0.15 * (velocityMs / 0.8)).toFixed(1)) : 0;
+    const exchLoss = input.includeHeatExchanger ? 9.8 * (flowM3h / 2.0) : 0;
+    const pressureDropKpa = input.includeHeatExchanger
+      ? Number((pipeLossKpa + exchLoss + localLossKpa + 2.2).toFixed(1))
+      : Number((pipeLossKpa + localLossKpa + 1.2).toFixed(1));
+
+    // Pump
+    const pumpResult = selectDabPump(c.type, flowLh);
+    const pumpMaxHead = 70;
+    const pumpMaxFlow = 4200;
+    const flowRatioVal = Math.min(flowLh / pumpMaxFlow, 1);
+    const pumpAvailable = pumpMaxHead * (1 - Math.pow(flowRatioVal, 1.5));
+    const remainingHead = Number((pumpAvailable - pressureDropKpa).toFixed(1));
+
+    return {
+      circuitId: c.id,
+      label: c.label,
+      type: c.type,
+      loadKw: Number(circuitLoad.toFixed(2)),
+      deltaT,
+      flowTempC,
+      returnTempC,
+      flowRateLh: flowLh,
+      flowRateLmin: Number(flowLmin.toFixed(1)),
+      pipeSize,
+      velocityMs,
+      pressureDropKpa,
+      remainingHeadKpa: remainingHead,
+      ...pumpResult,
+    };
+  });
+
+  // --- Aggregate secondary values (for backward compat / vessel sizing) ---
+  const secondaryFlowRateLh = circuitResults.reduce((s, r) => s + r.flowRateLh, 0);
+  const secondaryFlowM3h = secondaryFlowRateLh / 1000;
+  const secondaryDeltaT = circuitResults.length > 0 ? Math.min(...circuitResults.map(r => r.deltaT)) : primaryDeltaT;
+  const secondaryFlowTempC = circuitResults.length > 0
+    ? input.includeHeatExchanger ? flowTemp - 5 : flowTemp
+    : flowTemp;
+  const secondaryReturnTempC = secondaryFlowTempC - secondaryDeltaT;
+
+  // Pick a representative circuit for pipe sizing display (largest flow)
+  const dominantCircuit = [...circuitResults].sort((a, b) => b.flowRateLh - a.flowRateLh)[0];
+  const secondaryPipe = dominantCircuit?.pipeSize ?? '—';
+  const secondaryEstimatedVelocityMs = dominantCircuit?.velocityMs;
+  const secondaryPipeLossKpa = dominantCircuit?.pressureDropKpa ?? 0;
+  const secondaryPressureDropKpa = dominantCircuit?.pressureDropKpa ?? 0;
+  const secondaryRemainingHeadKpa = dominantCircuit?.remainingHeadKpa ?? 0;
+  const dabPumpModel = dominantCircuit?.pumpModel ?? '';
+  const dabPumpSetting = dominantCircuit?.pumpSetting;
+  const dabPumpStage = dominantCircuit?.pumpStage;
+  const secondaryMassFlowKgh = circuitResults.reduce((s, r) => s + Math.round(r.flowRateLh), 0);
 
   // --- Expansion Vessel Sizing ---
   let specificVolumeLperKw = 12;
   const floorFactor = params ? params.systemWaterVolumeFloorFactor : 15;
   const radiatorFactor = params ? params.systemWaterVolumeRadiatorFactor : 12;
 
-  if (input.secondaryLoops === 'floor') specificVolumeLperKw = floorFactor;
-  else if (input.secondaryLoops === 'radiators') specificVolumeLperKw = radiatorFactor;
-  else if (input.secondaryLoops === 'fan_coil') specificVolumeLperKw = 8;
-  else if (input.secondaryLoops === 'mixed') specificVolumeLperKw = Math.round((floorFactor + radiatorFactor) / 2);
+  if (secondaryCircuits.length > 0) {
+    const hasFloor = secondaryCircuits.some(c => c.type === 'floor');
+    const hasRadiator = secondaryCircuits.some(c => c.type === 'radiators');
+    const hasFanCoil = secondaryCircuits.some(c => c.type === 'fan_coil');
+    if (hasFloor && hasRadiator) specificVolumeLperKw = Math.round((floorFactor + radiatorFactor) / 2);
+    else if (hasFloor) specificVolumeLperKw = floorFactor;
+    else if (hasRadiator) specificVolumeLperKw = radiatorFactor;
+    else if (hasFanCoil) specificVolumeLperKw = 8;
+  }
 
   const estimatedSystemVolumeL = (peakLoadKw * specificVolumeLperKw) + Number(input.additionalWaterVolumeL || 0);
 
@@ -671,16 +806,11 @@ export function calculateHydraulicsAndVessel(
     heatExchangerAreaM2 = 1.54;
   }
 
-  // --- Pressure drop calculations with pipe length + local losses ---
+  // --- Primary pressure drop ---
   const frictionMult = params ? params.pexFrictionMultiplier : 1.35;
   const pexMultiplier = input.pipeMaterial === 'pex' ? frictionMult : 1.0;
-  const secondaryPexMultiplier = (input.secondaryPipeMaterial ?? input.pipeMaterial) === 'pex' ? frictionMult : 1.0;
-
   const fittingsCount = input.fittingsCount ?? 6;
 
-  // Darcy-Weisbach: dP = f * (L/D) * (rho * v^2 / 2)
-  // With f ≈ 0.03 for turbulent flow in smooth pipes
-  // Simplified: baseLossPerM = 0.03 * (v^2) / (d_m * 2) * density_factor
   const primaryViscosity = input.includeHeatExchanger ? glycol.viscosityPaS : 0.0010;
   const primaryRe = primaryDensity * primaryEstimatedVelocityMs * primaryInnerDiaM / primaryViscosity;
   const primaryFFactor = primaryRe > 2000 ? 0.3164 / Math.pow(primaryRe, 0.25) : 64 / Math.max(primaryRe, 1);
@@ -688,75 +818,11 @@ export function calculateHydraulicsAndVessel(
     primaryFFactor * (pipeLengthM / primaryInnerDiaM) * (primaryDensity * primaryEstimatedVelocityMs * primaryEstimatedVelocityMs / 2000) * pexMultiplier
   ).toFixed(1));
 
-  const secondaryViscosity = 0.0010;
-  const secondaryRe = 1000 * secondaryEstimatedVelocityMs * secondaryInnerDiaM / secondaryViscosity;
-  const secondaryFFactor = secondaryRe > 2000 ? 0.3164 / Math.pow(secondaryRe, 0.25) : 64 / Math.max(secondaryRe, 1);
-  const secondaryPipeLossKpa = Number((
-    secondaryFFactor * (pipeLengthM / secondaryInnerDiaM) * (1000 * secondaryEstimatedVelocityMs * secondaryEstimatedVelocityMs / 2000) * secondaryPexMultiplier
-  ).toFixed(1));
-
-  // Local losses: zeta * v^2 / (200 * g) -- simplified to kPa per fitting
   const localLossPerFittingKpa = 0.15;
   const primaryLocalLossKpa = Number((fittingsCount * localLossPerFittingKpa * (primaryEstimatedVelocityMs / 0.8)).toFixed(1));
-  const secondaryLocalLossKpa = Number((fittingsCount * localLossPerFittingKpa * (secondaryEstimatedVelocityMs / 0.8)).toFixed(1));
-
   const primaryExchangerLoss = input.includeHeatExchanger ? 11.2 * (flowRateM3h / 2.0) : 0;
-  const secondaryExchangerLoss = input.includeHeatExchanger ? 9.8 * (secondaryFlowM3h / 2.0) : 0;
-
   const primaryPressureDropKpa = Number((primaryPipeLossKpa + primaryExchangerLoss + primaryLocalLossKpa + 1.8).toFixed(1));
-  const secondaryPressureDropKpa = input.includeHeatExchanger
-    ? Number((secondaryPipeLossKpa + secondaryExchangerLoss + secondaryLocalLossKpa + 2.2).toFixed(1))
-    : Number((secondaryPipeLossKpa + secondaryLocalLossKpa + 1.2).toFixed(1));
-
   const remainingPumpHeadKpa = Number((pumpHead - primaryPressureDropKpa).toFixed(1));
-
-  // --- DAB Pump Selection ---
-  let dabPumpModel = '';
-  if (input.secondaryPumpOverride && input.secondaryPumpOverride !== 'Auto') {
-    dabPumpModel = input.secondaryPumpOverride;
-  } else {
-    dabPumpModel = 'DAB Evosta 2 40-70/180 (A-osztályú, nagyhatékonyságú)';
-  }
-
-  let dabPumpSetting = 'Állandó differenciálnyomás (Constant Pressure / CP)';
-  let dabPumpStage = 'CP2 (Közepes fűtési fokozat)';
-
-  if (input.secondaryLoops === 'floor') {
-    dabPumpSetting = 'Állandó differenciálnyomás (Padlófűtési osztógyűjtőhöz)';
-    if (secondaryFlowRateLh <= 1100) {
-      dabPumpStage = 'CP1 (I. alacsony állandó nyomás)';
-    } else if (secondaryFlowRateLh <= 1900) {
-      dabPumpStage = 'CP2 (II. közepes, javasolt fűtési fokozat)';
-    } else {
-      dabPumpStage = 'CP3 (III. nagyüzemi padlófűtési kör)';
-    }
-  } else if (input.secondaryLoops === 'radiators') {
-    dabPumpSetting = 'Arányos differenciálnyomás (Termosztatikus radiátor szelepekhez)';
-    if (secondaryFlowRateLh <= 1100) {
-      dabPumpStage = 'PP1 (I. alacsony arányos nyomás)';
-    } else if (secondaryFlowRateLh <= 1900) {
-      dabPumpStage = 'PP2 (II. közepes, optimális fokozat)';
-    } else {
-      dabPumpStage = 'PP3 (III. magas arányos nyomás)';
-    }
-  } else if (input.secondaryLoops === 'mixed') {
-    dabPumpSetting = 'Állandó differenciálnyomás (Kevert rendszerű osztó-gyűjtőhöz)';
-    if (secondaryFlowRateLh <= 1500) {
-      dabPumpStage = 'CP2 (II. közepes kevert rendszer fokozat)';
-    } else {
-      dabPumpStage = 'CP3 (III. magas kevert átfolyási fokozat)';
-    }
-  } else {
-    dabPumpSetting = 'Állandó fordulatszámú görbe (Constant Speed / III. fokozat)';
-    dabPumpStage = 'III-as fokozat (Maximális vízszállításra állítva)';
-  }
-
-  // --- Secondary pump remaining head ---
-  const secondaryPumpMaxHeadKpa = 70; // DAB Evosta 2 40-70/180 ~7m
-  const secondaryPumpMaxFlowLh = 4200;
-  const flowRatio = Math.min(secondaryFlowRateLh / secondaryPumpMaxFlowLh, 1);
-  const secondaryPumpAvailableKpa = secondaryPumpMaxHeadKpa * (1 - Math.pow(flowRatio, 1.5));
-  const secondaryRemainingHeadKpa = Number((secondaryPumpAvailableKpa - secondaryPressureDropKpa).toFixed(1));
 
   const recommendedBufferL = Math.round(peakLoadKw * 20);
   const isBufferAdequate = Number(input.additionalWaterVolumeL || 0) >= recommendedBufferL;
@@ -765,15 +831,13 @@ export function calculateHydraulicsAndVessel(
 
   // --- Temperature labels ---
   const primaryReturnTempC = flowTemp - primaryDeltaT;
-  const secondaryFlowTempC = input.includeHeatExchanger ? flowTemp - 5 : flowTemp;
-  const secondaryReturnTempC = secondaryFlowTempC - secondaryDeltaT;
 
   return {
     flowRateLh: Math.round(flowRateLh),
     flowRateLmin: Number(flowRateLmin.toFixed(1)),
     estimatedVelocityMs: Number(primaryEstimatedVelocityMs.toFixed(2)),
     primaryEstimatedVelocityMs: Number(primaryEstimatedVelocityMs.toFixed(2)),
-    secondaryEstimatedVelocityMs: Number(secondaryEstimatedVelocityMs.toFixed(2)),
+    secondaryEstimatedVelocityMs,
     recommendedPipeSize: primaryPipe,
     recommendedSecondaryPipeSize: secondaryPipe,
     vesselSizeL: roundedVesselSizeL,
@@ -795,20 +859,20 @@ export function calculateHydraulicsAndVessel(
     secondaryPressureDropKpa,
     remainingPumpHeadKpa,
     secondaryRemainingHeadKpa,
-    // NEW FIELDS
     primaryMassFlowKgh,
     secondaryMassFlowKgh,
-    glycolDensityKgm3: Math.round(glycolDensity),
+    glycolDensityKgm3: Math.round(glycol.density),
     glycolSpecificHeatWhKgK: glycol.specificHeatWhKgK,
     glycolPercentageUsed: glycolPct,
     systemVolumeL: Math.round(estimatedSystemVolumeL),
     prechargeCalculated: prechargeBar,
     finalCalculated: finalBar,
-    primaryPipeLossKpa: primaryPipeLossKpa,
-    secondaryPipeLossKpa: secondaryPipeLossKpa,
+    primaryPipeLossKpa,
+    secondaryPipeLossKpa,
     primaryFlowTempC: Math.round(flowTemp),
     primaryReturnTempC: Math.round(primaryReturnTempC),
     secondaryFlowTempC: Math.round(secondaryFlowTempC),
     secondaryReturnTempC: Math.round(secondaryReturnTempC),
+    circuitResults,
   };
 }

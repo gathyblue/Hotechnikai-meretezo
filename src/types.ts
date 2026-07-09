@@ -116,14 +116,24 @@ export interface CalculationResults {
   };
 }
 
+export interface SecondaryCircuit {
+  id: string;
+  type: 'floor' | 'radiators' | 'fan_coil';
+  label: string;
+  flowTempC: number;
+  isMixed: boolean;
+  floorCircuits: number;
+  longestCircuitM: number;
+  radiatorCount: number;
+}
+
 export interface HydraulicInput {
   pipeMaterial: 'copper' | 'pex' | 'steel';
   primaryDeltaT: number; // °C
-  secondaryDeltaT: number; // °C
   staticHeight: number; // m (static water head)
   safetyValvePressure: number; // bar, typically 3
   additionalWaterVolumeL: number; // L (optional buffer tank, etc.)
-  secondaryLoops: 'radiators' | 'floor' | 'fan_coil' | 'mixed';
+  secondaryCircuits: SecondaryCircuit[];
   includeHeatExchanger: boolean; // heat exchanger selection
   includeDhwTank: boolean; // indirect DHW
   couplingType: '4-port-buffer' | 'buffer-or-hydro' | 'heat-exchanger';
@@ -146,6 +156,27 @@ export interface EngineeringParams {
   systemWaterVolumeFloorFactor: number; // L/kW
   systemWaterVolumeRadiatorFactor: number; // L/kW
   waterSpecificHeat: number;     // Wh/L.K, default 1.163
+  kwPerFloorLoop: number;        // kW per floor heating loop (default 1.2)
+  kwPerRadiator: number;         // kW per radiator (default 1.0)
+}
+
+export interface CircuitHydraulicResult {
+  circuitId: string;
+  label: string;
+  type: 'floor' | 'radiators' | 'fan_coil';
+  loadKw: number;
+  deltaT: number;
+  flowTempC: number;
+  returnTempC: number;
+  flowRateLh: number;
+  flowRateLmin: number;
+  pipeSize: string;
+  velocityMs: number;
+  pressureDropKpa: number;
+  remainingHeadKpa: number;
+  pumpModel: string;
+  pumpSetting: string;
+  pumpStage: string;
 }
 
 export interface HydraulicResults {
@@ -190,4 +221,5 @@ export interface HydraulicResults {
   primaryReturnTempC: number;    // primary return temperature
   secondaryFlowTempC: number;    // secondary flow temperature
   secondaryReturnTempC: number;  // secondary return temperature
+  circuitResults: CircuitHydraulicResult[]; // per-circuit hydraulic results
 }
