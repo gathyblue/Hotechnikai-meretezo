@@ -8,6 +8,7 @@ export interface SystemDiagramProps {
   hydraulicState: HydraulicInput;
   hydraulicResults: HydraulicResults;
   theme?: "light" | "dark";
+  hideSidebar?: boolean;
 }
 
 export const SystemDiagram: React.FC<SystemDiagramProps> = ({
@@ -17,6 +18,7 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
   hydraulicState,
   hydraulicResults,
   theme = "light",
+  hideSidebar,
 }) => {
   const isDark = theme === "dark";
   const fg = isDark ? "#e2e8f0" : "#1e293b";
@@ -103,8 +105,8 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4">
-        <div className="lg:col-span-3 border rounded-xl p-2 bg-white/50 dark:bg-slate-950/40 relative overflow-hidden flex items-center justify-center min-h-[420px]">
+      <div className={`grid grid-cols-1 gap-4 mt-4 ${hideSidebar ? '' : 'lg:grid-cols-4'}`}>
+        <div className={`${hideSidebar ? '' : 'lg:col-span-3'} border rounded-xl p-2 bg-white/50 dark:bg-slate-950/40 relative overflow-hidden flex items-center justify-center min-h-[420px]`}>
           <svg viewBox="0 0 1100 520" className="w-full h-auto max-w-[1100px] select-none" style={{ minHeight: "380px" }}>
             <defs>
               <pattern id="grid-mono" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -417,7 +419,7 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
           </svg>
         </div>
 
-        {/* ───── SIDEBAR SPECS ───── */}
+        {!hideSidebar && (
         <div className={`rounded-xl p-4 border flex flex-col space-y-3 ${
           isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-200"
         }`}>
@@ -525,6 +527,7 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
             </div>
           </div>
         </div>
+        )}
       </div>
     </section>
   );

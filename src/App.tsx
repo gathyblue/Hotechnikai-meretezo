@@ -5,12 +5,11 @@ import { performHeatLossCalculation, evaluateHeatPumpEconomics } from './utils/c
 import { getThemeClasses } from './utils/theme';
 import { BuildingDataInput } from './components/BuildingDataInput';
 import { SizingResults } from './components/SizingResults';
-import { HydraulicExpansionCalc } from './components/HydraulicExpansionCalc';
-import { SystemDiagram } from './components/SystemDiagram';
 import { ReportExport } from './components/ReportExport';
 import { PriceRefreshPanel } from './components/PriceRefreshPanel';
 import { HEAT_PUMP_DATABASE } from './heatPumpData';
 import { Home, Gauge, Activity, FileText, Flame, Zap, Sun, Moon, Settings, X, BookOpen, Layers, CheckCircle, ChevronDown, ChevronUp, Info, RefreshCw } from 'lucide-react';
+import { SystemView } from './components/SystemView';
 
 export default function App() {
   // 1. Core State Hooks
@@ -129,7 +128,7 @@ export default function App() {
     dabPumpModel: 'DAB Evosta 2 40-70/180 (A-osztályú, nagyhatékonyságú)'
   });
 
-  const [activeTab, setActiveTab] = useState<'building' | 'equipment' | 'hydraulics' | 'scheme' | 'export'>('building');
+  const [activeTab, setActiveTab] = useState<'building' | 'equipment' | 'system' | 'export'>('building');
 
   useEffect(() => {
     // Force scroll to top on section change
@@ -282,7 +281,7 @@ export default function App() {
         {/* Middle Section: macOS Segmented Control Tab Chooser */}
         <div className="flex items-center justify-center flex-grow">
           <div className={`relative p-[2px] rounded-md border flex gap-0.5 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
-              {['building', 'equipment', 'hydraulics', 'scheme', 'export'].map((tab) => (
+              {['building', 'equipment', 'system', 'export'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
@@ -300,7 +299,7 @@ export default function App() {
                     />
                   )}
                   <span className="relative z-10 capitalize">
-                    {tab === 'building' ? 'Épület' : tab === 'equipment' ? 'Gép' : tab === 'hydraulics' ? 'Hidraulika' : tab === 'scheme' ? 'Séma' : 'Jkv.'}
+                    {tab === 'building' ? 'Épület' : tab === 'equipment' ? 'Gép' : tab === 'system' ? 'Rendszer' : 'Jkv.'}
                   </span>
                 </button>
               ))}
@@ -380,62 +379,33 @@ export default function App() {
                 
                 <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <button
-                    onClick={() => { setActiveTab('hydraulics'); }}
+                    onClick={() => { setActiveTab('system'); }}
                     className={`font-semibold text-[11px] px-6 py-2 rounded-sm shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
                       isDark ? 'bg-slate-100 text-slate-900 hover:bg-white' : 'bg-slate-900 text-white hover:bg-slate-800'
                     }`}
                   >
-                    Tovább a Hidraulikai Tervezéshez
+                    Tovább a Rendszer Tervezéshez
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </button>
                 </div>
               </div>
             )}
 
-            {activeTab === 'hydraulics' && (
+            {activeTab === 'system' && (
               <div className="space-y-4">
-                <HydraulicExpansionCalc
+                <SystemView
                   peakLoadKw={calcResults.heatLossKw.total}
                   flowTemp={flowTempForEmitters[selectedEmitter]}
                   onCalculated={setHydraulicResults}
                   hydraulicState={hydraulicState}
                   setHydraulicState={setHydraulicState}
                   heatedArea={buildingData.heatedArea}
+                  hydraulicResults={hydraulicResults}
                   engineeringParams={engineeringParams}
                   theme={theme}
                   selectedModel={selectedModel}
-                  onSecondaryLoopsChange={(loops) => {
-                    if (loops === 'floor') handleEmitterChange('floor');
-                    else handleEmitterChange('radiator');
-                  }}
                 />
-                
-                <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-                  <button
-                    onClick={() => { setActiveTab('scheme'); }}
-                    className={`font-semibold text-[11px] px-6 py-2 rounded-sm shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
-                      isDark ? 'bg-slate-100 text-slate-900 hover:bg-white' : 'bg-slate-900 text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    Tovább a Rendszersémához
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'scheme' && (
-              <div className="space-y-4">
-                <SystemDiagram
-                  title="Rendszerséma"
-                  description={`${selectedModel?.name ?? 'Nincs kiválasztott modell'} — ${calcResults.heatLossKw.total.toFixed(1)} kW csúcshőigény`}
-                  selectedModel={selectedModel}
-                  hydraulicState={hydraulicState}
-                  hydraulicResults={hydraulicResults}
-                  theme={theme}
-                />
-                
-                <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <div className={`flex justify-end p-2 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <button
                     onClick={() => { setActiveTab('export'); }}
                     className={`font-semibold text-[11px] px-6 py-2 rounded-sm shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
