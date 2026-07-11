@@ -1,8 +1,8 @@
 import React from "react";
 import { HydraulicInput, HydraulicResults, EngineeringParams, HeatPumpModel } from "../types";
 import { HydraulicExpansionCalc } from "./HydraulicExpansionCalc";
-import { SystemSvg } from "./svg/SystemSvg";
-import { CalculationTables } from "./CalculationTables";
+import { HydraulicDiagram } from "./diagram/HydraulicDiagram";
+import { CircuitTable } from "./diagram/CircuitTable";
 
 interface SystemViewProps {
   peakLoadKw: number;
@@ -22,27 +22,29 @@ export const SystemView: React.FC<SystemViewProps> = (props) => {
 
   return (
     <div className="space-y-4">
-      {/* ── Inputs + compact results ── */}
+      {/* ── Hidraulikai bemenő paraméterek és számítás ── */}
       <HydraulicExpansionCalc {...props} />
 
-      {/* ── SVG diagram ── */}
-      <div className={`rounded-xl border p-3 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-        <SystemSvg
+      {/* ── Kapcsolási rajz ── */}
+      <div className={`rounded-xl border p-3 ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+        <h3 className={`font-extrabold text-[10px] uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+          RENDSZERSÉMA
+        </h3>
+        <HydraulicDiagram
           selectedModel={props.selectedModel ?? null}
           hydraulicState={props.hydraulicState}
           hydraulicResults={props.hydraulicResults}
+          theme={isDark ? "dark" : "light"}
+          flowTemp={props.flowTemp}
         />
       </div>
 
-      {/* ── Calculation tables ── */}
-      <CalculationTables
-        results={props.hydraulicResults}
-        state={props.hydraulicState}
+      {/* ── Körönkénti összehasonlítás + javaslatok ── */}
+      <CircuitTable
+        hydraulicState={props.hydraulicState}
+        hydraulicResults={props.hydraulicResults}
         isDark={isDark}
       />
-
-      {/* ── Next button ── */}
-      <div className={`flex justify-end p-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`} />
     </div>
   );
 };
