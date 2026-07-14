@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BuildingData, CalculationResults, HeatPumpModel, HydraulicResults, HydraulicInput } from '../types';
-import { SystemDiagram } from './SystemDiagram';
+import SystemDiagram from './diagram/SystemDiagram';
 import { FileDown, Printer, Cloud, Check, Loader2, Sparkles, User, ShieldCheck, MapPin, Gauge } from 'lucide-react';
 
 interface ReportExportProps {
@@ -1081,6 +1081,8 @@ export const ReportExport: React.FC<ReportExportProps> = ({
             hydraulicResults={hydraulicResults} 
             hydraulicState={hydraulicState} 
             theme="light" 
+            peakLoadKw={calcResults.heatLossKw.total}
+            flowTemp={selectedEmitter === 'floor' ? 35 : 55}
           />
         </div>
       </div>

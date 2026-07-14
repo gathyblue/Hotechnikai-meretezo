@@ -25,7 +25,7 @@ const SOURCES: Record<string, { urls: string[]; parse: (html: string) => number 
       'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v12wd2n7-b-monoblokkos-m-thermal-r290-12-kw-1-fazis-cmid003026',
       'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v12wd2rn7-b-monoblokkos-m-thermal-r290-12-kw-3-fazis-cmid003031',
       'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v16wd2rn7-b-monoblokkos-m-thermal-r290-16-kw-1-fazis-cmid003028',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v16wd2rn7-b-monoblokkos-m-thermal-r290-16-kw-3-fazis-cmid003032',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/products/mhc-v16wd2rn7-ber90-nature-monoblokkos-m-thermal-r290-16-kw-3-fazis-futobetet-9-kw-fekete-cmid003033',
     ],
     parse(html: string) {
       const m = html.match(/Ajánlott\s+fogyasztói\s+ár.*?<span[^>]*>([\d\s]+)\s*Ft/i);
