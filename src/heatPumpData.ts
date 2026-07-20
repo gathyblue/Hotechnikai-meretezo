@@ -26,15 +26,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     phases: 1,
     weightKg: 97,
     dimensions: '980 × 1000 × 430 mm',
-<<<<<<< HEAD
     estimatedPriceHuf: 2353749,
     eurPriceNetto: 5046,
     lastPriceUpdate: '2026-07-20T08:33:56.610Z',
-=======
-    estimatedPriceHuf: 2312607,
-    eurPriceNetto: 5046,
-    lastPriceUpdate: '2026-07-13T14:03:27.648Z',
->>>>>>> 391cdc8 (séma: teljes újraépítés professzionális DIN/ISO szimbólumokkal + Midea 16kW 3f árfolyam javítás)
     maxFlowTemp: 75,
     ampereRequired: '1 x 16A',
     pumpResidualHeadKpa: 60
@@ -64,15 +58,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     phases: 1,
     weightKg: 97,
     dimensions: '980 × 1000 × 430 mm',
-<<<<<<< HEAD
     estimatedPriceHuf: 2622895,
     eurPriceNetto: 5623,
     lastPriceUpdate: '2026-07-20T08:33:56.610Z',
-=======
-    estimatedPriceHuf: 2577048,
-    eurPriceNetto: 5623,
-    lastPriceUpdate: '2026-07-13T14:03:27.648Z',
->>>>>>> 391cdc8 (séma: teljes újraépítés professzionális DIN/ISO szimbólumokkal + Midea 16kW 3f árfolyam javítás)
     maxFlowTemp: 75,
     ampereRequired: '1 x 16A',
     pumpResidualHeadKpa: 60
@@ -252,15 +240,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     phases: 1,
     weightKg: 97,
     dimensions: '980 × 1000 × 430 mm',
-<<<<<<< HEAD
     estimatedPriceHuf: 2876182,
     eurPriceNetto: 6166,
     lastPriceUpdate: '2026-07-20T08:33:56.610Z',
-=======
-    estimatedPriceHuf: 2825908,
-    eurPriceNetto: 6166,
-    lastPriceUpdate: '2026-07-13T14:03:27.648Z',
->>>>>>> 391cdc8 (séma: teljes újraépítés professzionális DIN/ISO szimbólumokkal + Midea 16kW 3f árfolyam javítás)
     maxFlowTemp: 75,
     ampereRequired: '1 x 20A',
     pumpResidualHeadKpa: 60
@@ -380,15 +362,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     phases: 3,
     weightKg: 126,
     dimensions: '1283 × 932 × 320 mm',
-<<<<<<< HEAD
     estimatedPriceHuf: 3218562,
     eurPriceNetto: 6900,
     lastPriceUpdate: '2026-07-20T08:33:56.610Z',
-=======
-    estimatedPriceHuf: 3162304,
-    eurPriceNetto: 6900,
-    lastPriceUpdate: '2026-07-13T14:03:27.648Z',
->>>>>>> 391cdc8 (séma: teljes újraépítés professzionális DIN/ISO szimbólumokkal + Midea 16kW 3f árfolyam javítás)
     maxFlowTemp: 75,
     ampereRequired: '3 x 16A',
     pumpResidualHeadKpa: 62
@@ -538,15 +514,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     phases: 3,
     weightKg: 138,
     dimensions: '1283 × 932 × 320 mm',
-<<<<<<< HEAD
     estimatedPriceHuf: 3425203,
     eurPriceNetto: 7343,
     lastPriceUpdate: '2026-07-20T08:33:56.610Z',
-=======
-    estimatedPriceHuf: 3365333,
-    eurPriceNetto: 7343,
-    lastPriceUpdate: '2026-07-13T14:03:27.648Z',
->>>>>>> 391cdc8 (séma: teljes újraépítés professzionális DIN/ISO szimbólumokkal + Midea 16kW 3f árfolyam javítás)
     maxFlowTemp: 75,
     ampereRequired: '3 x 16A',
     pumpResidualHeadKpa: 60
@@ -666,15 +636,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     phases: 3,
     weightKg: 148,
     dimensions: '1283 × 932 × 320 mm',
-<<<<<<< HEAD
     estimatedPriceHuf: 3674758,
     eurPriceNetto: 7878,
     lastPriceUpdate: '2026-07-20T08:33:56.610Z',
-=======
-    estimatedPriceHuf: 3610526,
-    eurPriceNetto: 7878,
-    lastPriceUpdate: '2026-07-13T14:03:27.648Z',
->>>>>>> 391cdc8 (séma: teljes újraépítés professzionális DIN/ISO szimbólumokkal + Midea 16kW 3f árfolyam javítás)
     maxFlowTemp: 75,
     ampereRequired: '3 x 16A',
     pumpResidualHeadKpa: 55
