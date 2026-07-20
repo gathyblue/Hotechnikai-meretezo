@@ -27,9 +27,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     weightKg: 97,
     dimensions: '980 × 1000 × 430 mm',
 <<<<<<< HEAD
-    estimatedPriceHuf: 2315683,
+    estimatedPriceHuf: 2353749,
     eurPriceNetto: 5046,
-    lastPriceUpdate: '2026-07-13T08:41:53.871Z',
+    lastPriceUpdate: '2026-07-20T08:33:56.610Z',
 =======
     estimatedPriceHuf: 2312607,
     eurPriceNetto: 5046,
@@ -65,9 +65,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     weightKg: 97,
     dimensions: '980 × 1000 × 430 mm',
 <<<<<<< HEAD
-    estimatedPriceHuf: 2580476,
+    estimatedPriceHuf: 2622895,
     eurPriceNetto: 5623,
-    lastPriceUpdate: '2026-07-13T08:41:53.871Z',
+    lastPriceUpdate: '2026-07-20T08:33:56.610Z',
 =======
     estimatedPriceHuf: 2577048,
     eurPriceNetto: 5623,
@@ -253,9 +253,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     weightKg: 97,
     dimensions: '980 × 1000 × 430 mm',
 <<<<<<< HEAD
-    estimatedPriceHuf: 2829667,
+    estimatedPriceHuf: 2876182,
     eurPriceNetto: 6166,
-    lastPriceUpdate: '2026-07-13T08:41:53.871Z',
+    lastPriceUpdate: '2026-07-20T08:33:56.610Z',
 =======
     estimatedPriceHuf: 2825908,
     eurPriceNetto: 6166,
@@ -381,9 +381,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     weightKg: 126,
     dimensions: '1283 × 932 × 320 mm',
 <<<<<<< HEAD
-    estimatedPriceHuf: 3166510,
+    estimatedPriceHuf: 3218562,
     eurPriceNetto: 6900,
-    lastPriceUpdate: '2026-07-13T08:41:53.871Z',
+    lastPriceUpdate: '2026-07-20T08:33:56.610Z',
 =======
     estimatedPriceHuf: 3162304,
     eurPriceNetto: 6900,
@@ -539,9 +539,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     weightKg: 138,
     dimensions: '1283 × 932 × 320 mm',
 <<<<<<< HEAD
-    estimatedPriceHuf: 3369809,
+    estimatedPriceHuf: 3425203,
     eurPriceNetto: 7343,
-    lastPriceUpdate: '2026-07-13T08:41:53.871Z',
+    lastPriceUpdate: '2026-07-20T08:33:56.610Z',
 =======
     estimatedPriceHuf: 3365333,
     eurPriceNetto: 7343,
@@ -667,9 +667,9 @@ export const HEAT_PUMP_DATABASE: HeatPumpModel[] = [
     weightKg: 148,
     dimensions: '1283 × 932 × 320 mm',
 <<<<<<< HEAD
-    estimatedPriceHuf: 3615328,
+    estimatedPriceHuf: 3674758,
     eurPriceNetto: 7878,
-    lastPriceUpdate: '2026-07-13T08:41:53.871Z',
+    lastPriceUpdate: '2026-07-20T08:33:56.610Z',
 =======
     estimatedPriceHuf: 3610526,
     eurPriceNetto: 7878,
