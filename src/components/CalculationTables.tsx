@@ -64,7 +64,7 @@ export function CalculationTables({ results: r, state, isDark }: Props) {
             </>
           ) : (
             <>
-              <Td label="Kapcsolás" value={state.couplingType === '4-port-buffer' ? '4-csonkos puffer' : 'Hidrováltó + puffer'} isDark={isDark} />
+              <Td label="Kapcsolás" value={state.couplingType === 'heat-exchanger' ? 'Hőcserélő' : 'Puffer + HMV'} isDark={isDark} />
               <Td label="Puffer térfogat" value={`${state.bufferVolumeL ?? 100} L`} isDark={isDark} />
             </>
           )}

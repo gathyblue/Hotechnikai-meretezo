@@ -127,6 +127,31 @@ export interface SecondaryCircuit {
   radiatorCount: number;
 }
 
+export type CouplingType =
+  | 'direct'          // Topológia 1: direkt / auto-bypass (HP belső szivattyú + szekunder szivattyú)
+  | 'low-loss-header' // Topológia 2: hidraulikus váltó (LLH) + szekunder szivattyú
+  | 'buffer-dhw'      // Topológia 3: puffer + HMV 3-járatú váltószelep
+  | 'bivalent'        // Topológia 4: biválens (HP + gázkazán/elektromos betét) LLH-n át
+  | 'heat-exchanger'; // (megtartott) lemezes hőcserélős leválasztás — tiszta víz, glikol nélkül
+
+/** Régi kapcsolási módok átképzése az új topológiákra (4-port-buffer→buffer-dhw, buffer-or-hydro→low-loss-header). */
+export function normalizeCouplingType(t: string | undefined | null): CouplingType {
+  switch (t) {
+    case 'direct':
+    case 'low-loss-header':
+    case 'buffer-dhw':
+    case 'bivalent':
+    case 'heat-exchanger':
+      return t;
+    case '4-port-buffer':
+      return 'buffer-dhw';
+    case 'buffer-or-hydro':
+      return 'low-loss-header';
+    default:
+      return 'buffer-dhw';
+  }
+}
+
 export interface HydraulicInput {
   pipeMaterial: 'copper' | 'pex' | 'steel';
   primaryDeltaT: number; // °C
@@ -136,7 +161,7 @@ export interface HydraulicInput {
   secondaryCircuits: SecondaryCircuit[];
   includeHeatExchanger: boolean; // heat exchanger selection
   includeDhwTank: boolean; // indirect DHW
-  couplingType: '4-port-buffer' | 'buffer-or-hydro' | 'heat-exchanger';
+  couplingType: CouplingType;
   bufferVolumeL: number; // 60 | 100 | 200
   secondaryPipeMaterial?: 'copper' | 'pex' | 'steel';
   manualPipeSizeOverride?: string; // "Auto" or chosen pipe size
@@ -146,6 +171,10 @@ export interface HydraulicInput {
   targetVelocityMs?: number;      // design target flow velocity m/s (default 0.6)
   pipeLengthEstimate?: number;    // estimated total pipe length in meters (5-50)
   fittingsCount?: number;         // number of fittings/elbows in circuit
+  // Topológia 4 (biválens) beállítások
+  bivalentSource?: 'gas-boiler' | 'electric-element'; // gázkazán vagy elektromos betét
+  bivalentBoilerPowerKw?: number;  // kazán/betét névleges teljesítmény (kW)
+  bivalentFlowTempC?: number;      // biválens előremenő hőmérséklet (°C), alap 55
 }
 
 export interface EngineeringParams {
@@ -222,4 +251,19 @@ export interface HydraulicResults {
   secondaryFlowTempC: number;    // secondary flow temperature
   secondaryReturnTempC: number;  // secondary return temperature
   circuitResults: CircuitHydraulicResult[]; // per-circuit hydraulic results
+  // ÚJ — hidraulikai modul 4 topológia (2026-08)
+  validationWarnings: string[];  // validációs figyelmeztetések (LLH, 3WV, direkt, biválens)
+  secondaryPumpModel?: string;   // szekunder keringtető (váltó/puffer UTÁN) — minden topológiában
+  secondaryPumpSetting?: string;
+  secondaryPumpStage?: string;
+  llhFlowRateLh?: number;        // hidraulikus váltó referencia térfogatárama (szekunder igény)
+  llhRecommendedDiam?: string;   // LLH ajánlott csőméret (pl. "DN40")
+  bivalent?: {
+    source: 'gas-boiler' | 'electric-element' | 'none';
+    boilerPowerKw: number;       // kazán/betét teljesítmény (kW) — biválens deficit alapján
+    boilerFlowRateLh: number;    // kazán ági térfogatáram (L/h)
+    mixingRatio: number;         // 0..1 — kazán által fedett arány a közös LLH-n
+    flowTempC: number;           // biválens előremenő hőmérséklet
+    coveragePct: number;         // biválens forrás által fedett csúcsterhelés % a méretezési ponton
+  };
 }
