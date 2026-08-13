@@ -162,13 +162,15 @@ function CheckValveSvg({ x, y, w, h, fg }: any) {
 
 function PumpSvg({ x, y, w, h, fg, nd }: any) {
   const cx = w / 2, cy = h / 2, r = cx - 1;
-  const isSec = nd.id === 'pump-sec' || nd.id.startsWith('pump-sec');
-  const isCirc = nd.id.startsWith('p');
-  const c = isSec ? C.s : (isCirc ? C.f : C.r);
+  const isSec = nd.id === 'pump-sec' || nd.id.startsWith('pump-sec') || nd.type === 'secondary-pump';
+  const isBoiler = nd.type === 'primary-pump' || nd.id === 'pump-boiler';
+  const isCirc = nd.id.startsWith('p') && !isSec && !isBoiler;
+  const c = isSec ? C.s : (isBoiler ? C.d : (isCirc ? C.f : C.r));
   return (
     <g transform={`translate(${x},${y})`}>
       <circle cx={cx} cy={cy} r={r} fill="white" stroke={c} strokeWidth={1.5} />
       <polygon points={`${cx - 5},${cy - 4} ${cx + 5},${cy} ${cx - 5},${cy + 4}`} fill={c} />
+      {nd.data?.label && <text x={cx} y={h + 8} fill={c} fontSize={4.5} fontWeight="bold" textAnchor="middle">{nd.data.label}</text>}
     </g>
   );
 }
@@ -221,6 +223,59 @@ function BufferTankSvg({ x, y, w, h, fg, nd }: any) {
       <text x={w / 2} y={h * 0.35} fill={fg} fontSize={7} fontWeight="bold" textAnchor="middle">PUFFER</text>
       <text x={w / 2} y={h * 0.48} fill={fg} fontSize={7} fontWeight="bold" textAnchor="middle">TARTÁLY</text>
       <text x={w / 2} y={h * 0.78} fill={fg} fontSize={8} fontWeight="bold" textAnchor="middle">{nd.data?.vol ?? ''}</text>
+    </g>
+  );
+}
+
+function LowLossHeaderSvg({ x, y, w, h, fg, sb, nd }: any) {
+  // Hidraulikus váltó: 4-csonkos függőleges henger (a szekunder szivattyú a váltó UTÁN van!)
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect x={0} y={0} width={w} height={h} rx={w / 2} fill="white" stroke={C.s} strokeWidth={2} />
+      <text x={w / 2} y={h * 0.22} fill={C.s} fontSize={6} fontWeight="bold" textAnchor="middle">HIDR.</text>
+      <text x={w / 2} y={h * 0.34} fill={C.s} fontSize={6} fontWeight="bold" textAnchor="middle">VÁLTÓ</text>
+      {nd.data?.diam && <text x={w / 2} y={h * 0.78} fill={fg} fontSize={7} fontWeight="bold" textAnchor="middle">{nd.data.diam}</text>}
+      {nd.data?.q && <text x={w / 2} y={h * 0.9} fill={sb} fontSize={4.5} textAnchor="middle">{nd.data.q}</text>}
+    </g>
+  );
+}
+
+function BoilerSvg({ x, y, w, h, fg, sb, nd }: any) {
+  // Biválens kazán (gázkazán) vagy elektromos betét — Topológia 4
+  const isGas = nd.data?.label === 'Gázkazán' || !nd.data?.label;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <rect x={0} y={0} width={w} height={h} rx={6} fill="white" stroke={C.d} strokeWidth={2} />
+      <text x={w / 2} y={22} fill={C.d} fontSize={8} fontWeight="bold" textAnchor="middle">KAZÁN</text>
+      {isGas ? (
+        <g transform={`translate(${w / 2}, ${h * 0.55})`}>
+          <path d={`M-9,14 Q-9,4 -2,6 Q2,-2 8,2 Q14,8 8,12 Q3,8 -2,14 Z`} fill="none" stroke={C.d} strokeWidth={1.4} />
+          <line x1={-12} y1={16} x2={12} y2={16} stroke={C.d} strokeWidth={1.5} />
+        </g>
+      ) : (
+        <g transform={`translate(${w / 2}, ${h * 0.55})`}>
+          <rect x={-9} y={-6} width={18} height={12} rx={1.5} fill="none" stroke={C.d} strokeWidth={1.4} />
+          <line x1={-4} y1={-1} x2={4} y2={-1} stroke={C.d} strokeWidth={1} />
+          <line x1={-4} y1={2} x2={4} y2={2} stroke={C.d} strokeWidth={1} />
+        </g>
+      )}
+      <text x={w / 2} y={h - 6} fill={fg} fontSize={7} fontWeight="bold" textAnchor="middle">{nd.data?.label}</text>
+      {nd.data?.kw && <text x={w / 2} y={h - 14} fill={sb} fontSize={5.5} textAnchor="middle">{nd.data.kw}</text>}
+    </g>
+  );
+}
+
+function ThreeWayDhwSvg({ x, y, w, h, fg, nd }: any) {
+  const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 1;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <circle cx={cx} cy={cy} r={r} fill="white" stroke={C.d} strokeWidth={1.5} />
+      <line x1={cx - r + 1} y1={cy} x2={cx + r - 1} y2={cy} stroke={C.d} strokeWidth={1.2} />
+      <line x1={cx} y1={cy - r + 1} x2={cx} y2={cy + r - 1} stroke={C.d} strokeWidth={1.2} />
+      <circle cx={cx} cy={cy} r={1.8} fill={C.d} />
+      <line x1={cx} y1={-1} x2={cx} y2={-6} stroke={C.d} strokeWidth={1.2} />
+      <rect x={cx - 3} y={-11} width={6} height={6} rx={1} fill="white" stroke={C.d} strokeWidth={1} />
+      <text x={cx} y={h + 10} fill={C.d} fontSize={4.5} fontWeight="bold" textAnchor="middle">HMV</text>
     </g>
   );
 }
@@ -351,12 +406,15 @@ export default function SystemDiagram(props: Props) {
         const onR = Math.abs(nd.y + nd.h / 2 - RY) < 15;
         switch (nd.type) {
           case 'building-boundary': return null;
+          case 'junction': return null;
           case 'heat-pump':
             return <HeatPumpSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} wl={wl} sb={sb} nd={nd} />;
           case 'ball-valve':
             return <BallValveSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} onR={onR} />;
           case 'three-way-valve':
             return <ThreeWayValveSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} nd={nd} />;
+          case 'three-way-dhw':
+            return <ThreeWayDhwSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} nd={nd} />;
           case 'pressure-gauge':
             return <PressureGaugeSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} />;
           case 'air-vent':
@@ -369,6 +427,14 @@ export default function SystemDiagram(props: Props) {
             return <CheckValveSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} />;
           case 'circulator-pump':
             return <PumpSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} nd={nd} />;
+          case 'secondary-pump':
+            return <PumpSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} nd={nd} />;
+          case 'primary-pump':
+            return <PumpSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} nd={nd} />;
+          case 'low-loss-header':
+            return <LowLossHeaderSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} sb={sb} nd={nd} />;
+          case 'bivalent-boiler':
+            return <BoilerSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} sb={sb} nd={nd} />;
           case 'expansion-vessel':
             return <ExpVesselSvg key={k} x={nd.x} y={nd.y} w={nd.w} h={nd.h} fg={fg} sb={sb} nd={nd} />;
           case 'heat-exchanger':

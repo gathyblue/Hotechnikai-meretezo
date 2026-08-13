@@ -609,7 +609,7 @@ export function HydraulicDiagram({ selectedModel, hydraulicState, hydraulicResul
       <g transform={`translate(20, ${VB_H - 110})`}>
         <rect x={0} y={0} width={280} height={100} rx={6} fill={isDark ? "#1e293b" : "#f8fafc"} stroke={fg} strokeWidth={1} opacity={0.95} />
         <text x={10} y={14} fill={fg} fontSize="6.5" fontWeight="bold">ÖSSZEFOGLALÓ</text>
-        <text x={10} y={28} fill={subFg} fontSize="5">{isHX ? "Hőcserélős" : "Direkt pufferes"} rendszer · {s.couplingType === '4-port-buffer' ? "4-csonkos puffer" : s.couplingType === 'buffer-or-hydro' ? "Hidrováltó+puffer" : "Hőcserélő+puffer"}</text>
+        <text x={10} y={28} fill={subFg} fontSize="5">{isHX ? "Hőcserélős" : "Direkt pufferes"} rendszer · {s.couplingType === 'bivalent' ? "Biválens (HP+kazán)" : s.couplingType === 'low-loss-header' ? "Hidraulikus váltó" : s.couplingType === 'direct' ? "Direkt (auto-bypass)" : "Puffer + HMV"}</text>
         <text x={10} y={40} fill={subFg} fontSize="5">ΔT primer: {s.primaryDeltaT}°C · ΔT szekunder: {s.primaryDeltaT}°C</text>
         <text x={10} y={52} fill={PRIM_COLOR} fontSize="5.5" fontWeight="bold">Primer: {primaryFlow.toFixed(1)} L/perc · {r.primaryPressureDropKpa} kPa esés · {r.remainingPumpHeadKpa} kPa maradék</text>
         <text x={10} y={64} fill={SEC_COLOR} fontSize="5.5" fontWeight="bold">Szekunder: {secFlowTotal.toFixed(1)} L/perc · {r.secondaryPressureDropKpa} kPa esés · {r.secondaryRemainingHeadKpa} kPa maradék</text>

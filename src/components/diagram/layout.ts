@@ -1,5 +1,6 @@
 import type { DiagramNode, Connection, SystemTopology, Port } from './types';
 import type { HydraulicInput, HydraulicResults } from '../../types';
+import { normalizeCouplingType } from '../../types';
 
 function port(id: string, s: Port['side'], o: number, d: Port['dir'], l?: string): Port {
   return { id, side: s, offset: o / 100, dir: d, label: l };
@@ -27,9 +28,14 @@ export function buildTopology(p: LayoutParams): SystemTopology {
   const r = p.hydraulicResults;
   const circs = hs.secondaryCircuits ?? [];
   const N = circs.length;
-  const isHX = hs.includeHeatExchanger;
-  const hasBuf = !isHX && (hs.additionalWaterVolumeL ?? 0) >= 50;
+  const coupling = normalizeCouplingType(hs.couplingType);
+  const isHX = coupling === 'heat-exchanger';
+  const isBufferDhw = coupling === 'buffer-dhw';
+  const isLLH = coupling === 'low-loss-header';
+  const isBivalent = coupling === 'bivalent';
+  const isDirect = coupling === 'direct';
   const hasDhw = hs.includeDhwTank;
+  const useThreeWayDhw = hasDhw && (isBufferDhw || isBivalent);
 
   const nodes: DiagramNode[] = [];
   const conns: Connection[] = [];
@@ -48,18 +54,38 @@ export function buildTopology(p: LayoutParams): SystemTopology {
     data: { label: p.selectedModel?.name?.substring(0, 16) ?? 'R290 HP', cap: p.selectedModel?.capacityA7W35 ?? '' },
   });
 
+  // ── Biválens kazán (Topológia 4) — a HP fölött, kültér; ágai a LLH-ra kötve ──
+  if (isBivalent) {
+    nodes.push({
+      id: 'boiler', type: 'bivalent-boiler', x: 25, y: 20, w: 110, h: 150,
+      ports: [port('boiler-f', 'right', 30, 'out'), port('boiler-r', 'right', 70, 'in')],
+      data: {
+        label: hs.bivalentSource === 'gas-boiler' ? 'Gázkazán' : 'Elektr. betét',
+        kw: hs.bivalentBoilerPowerKw ? `${hs.bivalentBoilerPowerKw} kW` : '',
+      },
+    });
+    nodes.push({
+      id: 'pump-boiler', type: 'primary-pump', x: 148, y: 15, w: 20, h: 20,
+      ports: [port('pb-l', 'left', 50, 'in'), port('pb-r', 'right', 50, 'out')],
+      data: { label: 'Kazán\nsziv.' },
+    });
+    // kazán előremenő → a tetején (y=25, a DHW felett) a LLH top portjára
+    conns.push({ id: 'c-boiler-f', fromNode: 'boiler', fromPort: 'boiler-f', toNode: 'pump-boiler', toPort: 'pb-l', style: 'primary', label: `${hs.bivalentFlowTempC ?? 55}°C` });
+    // kazán visszatérő ← LLH bottom port (a valós kötést a LLH ágnál adjuk hozzá)
+  }
+
   // ── Primary flow components ──
   const FC: [string, string, number][] = [
     ['bv1', 'ball-valve', WX + 8],
-    ['twv', 'three-way-valve', WX + 36],
+    ['twv', useThreeWayDhw ? 'three-way-dhw' : 'three-way-valve', WX + 36],
     ['gauge', 'pressure-gauge', WX + 68],
     ['air', 'air-vent', WX + 96],
     ['safety', 'safety-valve', WX + 128],
   ];
   for (const [id, type, x] of FC) {
-    const extra = type === 'three-way-valve' ? 2 : 0;
+    const extra = (type === 'three-way-valve' || type === 'three-way-dhw') ? 2 : 0;
     const ports: Port[] = [port(`${id}-l`, 'left', 50, 'in'), port(`${id}-r`, 'right', 50, 'out')];
-    if (type === 'three-way-valve') ports.push(port(`${id}-u`, 'top', 50, 'out'));
+    if (type === 'three-way-valve' || type === 'three-way-dhw') ports.push(port(`${id}-u`, 'top', 50, 'out'));
     nodes.push({
       id, type: type as any, x, y: FY - SZ / 2, w: SZ, h: SZ + extra,
       ports,
@@ -78,7 +104,7 @@ export function buildTopology(p: LayoutParams): SystemTopology {
     nodes.push({
       id: 'dhw', type: 'dhw-tank', x: 270, y: 40, w: 75, h: 135,
       ports: [port('dhw-in', 'left', 28, 'in'), port('dhw-out', 'left', 72, 'out')],
-      data: { vol: hs.dhwTankVolumeL ?? 200 },
+      data: { vol: 200 },
     });
     conns.push({ id: 'c-dhw-f', fromNode: 'twv', fromPort: 'twv-u', toNode: 'dhw', toPort: 'dhw-in', style: 'dhw', label: `${r.primaryFlowTempC}°C` });
     nodes.push({
@@ -103,15 +129,25 @@ export function buildTopology(p: LayoutParams): SystemTopology {
     });
   }
 
-  // Expansion vessel
+  // Expansion vessel (primer oldal, a szivattyú szívóoldala — "pump away")
   nodes.push({
     id: 'exp', type: 'expansion-vessel', x: 230, y: RY - 15, w: 20, h: 30,
     ports: [port('exp-t', 'top', 50, 'in')],
     data: { vol: isHX ? `${r.primaryVesselSizeL} L` : `${r.vesselSizeL} L`, p: `p₀=${r.prechargeCalculated} / pₑ=${r.finalCalculated} bar` },
   });
 
-  // ── Coupling zone ──
+  // ── Coupling zone (4 topológia + megtartott HX) ──
+  // Szekunder keringtető node — MINDEN topológiában a váltó/puffer UTÁN (gyártói szabály #3)
+  const addSecPump = (label = 'Szekunder\nszivattyú') => {
+    nodes.push({
+      id: 'pump-sec', type: 'secondary-pump', x: 500, y: FY - 12, w: 26, h: 24,
+      ports: [port('ps-l', 'left', 50, 'in'), port('ps-r', 'right', 50, 'out')],
+      data: { label, model: r.secondaryPumpModel?.substring(0, 22) },
+    });
+  };
+
   if (isHX) {
+    // ── Megtartott: lemezes hőcserélő (tiszta víz, glikol nélkül) ──
     const hxX = 380;
     nodes.push({
       id: 'hx', type: 'heat-exchanger', x: hxX, y: FY + 20, w: 32, h: 90,
@@ -125,30 +161,72 @@ export function buildTopology(p: LayoutParams): SystemTopology {
     conns.push({ id: 'c-hx-po', fromNode: 'hx', fromPort: 'hx-po', toNode: 'yf', toPort: 'yf-r', style: 'primary', isReturn: true, label: `${r.primaryReturnTempC}°C` });
     conns.push({ id: 'c-hx-exp', fromNode: 'hx', fromPort: 'hx-po', toNode: 'exp', toPort: 'exp-t', style: 'primary' });
 
-    nodes.push({
-      id: 'pump-sec', type: 'circulator-pump', x: 500, y: FY - 12, w: 26, h: 24,
-      ports: [port('ps-l', 'left', 50, 'in'), port('ps-r', 'right', 50, 'out')],
-      data: { label: 'Szekunder\nszivattyú' },
-    });
+    addSecPump();
     conns.push({ id: 'c-hx-so', fromNode: 'hx', fromPort: 'hx-so', toNode: 'pump-sec', toPort: 'ps-l', style: 'secondary' });
     conns.push({ id: 'c-ps-m', fromNode: 'pump-sec', fromPort: 'ps-r', toNode: 'manifold', toPort: 'man-fi', style: 'secondary', label: `${r.secondaryFlowTempC}°C | ${r.secondaryFlowRateLh} L/h` });
     conns.push({ id: 'c-m-hx-si', fromNode: 'manifold', fromPort: 'man-ro', toNode: 'hx', toPort: 'hx-si', style: 'secondary', isReturn: true });
-  } else if (hasBuf) {
+  } else if (isBufferDhw) {
+    // ── Topológia 3: PUFFER + HMV 3-járatú váltószelep ──
     nodes.push({
       id: 'buffer', type: 'buffer-tank', x: 370, y: FY - 40, w: 55, h: 190,
       ports: [
         port('b-fi', 'left', 20, 'in'), port('b-fo', 'right', 20, 'out'),
         port('b-ri', 'right', 80, 'in'), port('b-ro', 'left', 80, 'out'),
       ],
-      data: { vol: hs.additionalWaterVolumeL },
+      data: { vol: hs.additionalWaterVolumeL ?? hs.bufferVolumeL },
     });
     conns.push({ id: 'c-b-fi', fromNode: 'safety', fromPort: 'safety-r', toNode: 'buffer', toPort: 'b-fi', style: 'primary', label: `${r.primaryFlowTempC}°C` });
-    conns.push({ id: 'c-b-fo', fromNode: 'buffer', fromPort: 'b-fo', toNode: 'manifold', toPort: 'man-fi', style: 'primary' });
+    addSecPump(); // szekunder szivattyú a puffer UTÁN
+    conns.push({ id: 'c-b-fo', fromNode: 'buffer', fromPort: 'b-fo', toNode: 'pump-sec', toPort: 'ps-l', style: 'secondary' });
+    conns.push({ id: 'c-ps-m', fromNode: 'pump-sec', fromPort: 'ps-r', toNode: 'manifold', toPort: 'man-fi', style: 'secondary', label: `${r.secondaryFlowTempC}°C | ${r.secondaryFlowRateLh} L/h` });
     conns.push({ id: 'c-b-ro', fromNode: 'buffer', fromPort: 'b-ro', toNode: 'yf', toPort: 'yf-r', style: 'primary', isReturn: true, label: `${r.primaryReturnTempC}°C` });
     conns.push({ id: 'c-m-b-ri', fromNode: 'manifold', fromPort: 'man-ro', toNode: 'buffer', toPort: 'b-ri', style: 'primary', isReturn: true });
     conns.push({ id: 'c-b-exp', fromNode: 'buffer', fromPort: 'b-ro', toNode: 'exp', toPort: 'exp-t', style: 'primary' });
+  } else if (isLLH || isBivalent) {
+    // ── Topológia 2 (LLH) és Topológia 4 (biválens LLH-n): hidraulikus váltó ──
+    nodes.push({
+      id: 'llh', type: 'low-loss-header', x: 380, y: FY - 40, w: 55, h: 190,
+      ports: [
+        port('llh-pi', 'left', 20, 'in'), port('llh-po', 'right', 20, 'out'),
+        port('llh-ri', 'right', 80, 'in'), port('llh-ro', 'left', 80, 'out'),
+        port('llh-pi2', 'top', 30, 'in'),  port('llh-ro2', 'bottom', 70, 'out'),
+      ],
+      data: { diam: r.llhRecommendedDiam, q: `${r.llhFlowRateLh ?? 0} L/h` },
+    });
+    // HP primer ág → LLH
+    conns.push({ id: 'c-llh-pi', fromNode: 'safety', fromPort: 'safety-r', toNode: 'llh', toPort: 'llh-pi', style: 'primary', label: `${r.primaryFlowTempC}°C` });
+    // LLH → szekunder szivattyú (UTÁN!) → manifold
+    addSecPump();
+    conns.push({ id: 'c-llh-po', fromNode: 'llh', fromPort: 'llh-po', toNode: 'pump-sec', toPort: 'ps-l', style: 'secondary', label: `${r.secondaryFlowTempC}°C | ${r.secondaryFlowRateLh} L/h` });
+    conns.push({ id: 'c-ps-m', fromNode: 'pump-sec', fromPort: 'ps-r', toNode: 'manifold', toPort: 'man-fi', style: 'secondary' });
+    // Visszatérő: manifold → LLH → yf
+    conns.push({ id: 'c-m-llh-ri', fromNode: 'manifold', fromPort: 'man-ro', toNode: 'llh', toPort: 'llh-ri', style: 'secondary', isReturn: true });
+    conns.push({ id: 'c-llh-ro', fromNode: 'llh', fromPort: 'llh-ro', toNode: 'yf', toPort: 'yf-r', style: 'primary', isReturn: true, label: `${r.primaryReturnTempC}°C` });
+    conns.push({ id: 'c-llh-exp', fromNode: 'llh', fromPort: 'llh-ro', toNode: 'exp', toPort: 'exp-t', style: 'primary' });
+
+    if (isBivalent) {
+      // kazán előremenő → junction (a DHW alatt) → LLH top port (a vonal nem megy át a DHW-n)
+      nodes.push({
+        id: 'kj1', type: 'junction', x: 344, y: 219, w: 6, h: 6,
+        ports: [port('kj1-l', 'left', 50, 'in'), port('kj1-r', 'right', 50, 'out')],
+        data: {},
+      });
+      conns.push({ id: 'c-boiler-llh', fromNode: 'pump-boiler', fromPort: 'pb-r', toNode: 'kj1', toPort: 'kj1-l', style: 'primary' });
+      conns.push({ id: 'c-kj1-llh', fromNode: 'kj1', fromPort: 'kj1-r', toNode: 'llh', toPort: 'llh-pi2', style: 'primary' });
+      // LLH bottom → junction → kazán visszatérő
+      nodes.push({
+        id: 'kj2', type: 'junction', x: 352, y: 224, w: 6, h: 6,
+        ports: [port('kj2-l', 'left', 50, 'in'), port('kj2-r', 'right', 50, 'out')],
+        data: {},
+      });
+      conns.push({ id: 'c-llh-boiler-r', fromNode: 'llh', fromPort: 'llh-ro2', toNode: 'kj2', toPort: 'kj2-l', style: 'primary', isReturn: true });
+      conns.push({ id: 'c-kj2-boiler', fromNode: 'kj2', fromPort: 'kj2-r', toNode: 'boiler', toPort: 'boiler-r', style: 'primary', isReturn: true });
+    }
   } else {
-    conns.push({ id: 'c-dir-f', fromNode: 'safety', fromPort: 'safety-r', toNode: 'manifold', toPort: 'man-fi', style: 'primary', label: `${r.primaryFlowTempC}°C | ${r.primaryFlowRateLh} L/h` });
+    // ── Topológia 1: DIREKT / AUTO-BYPASS — HP belső szivattyú + szekunder szivattyú a bypass után ──
+    addSecPump();
+    conns.push({ id: 'c-dir-f', fromNode: 'safety', fromPort: 'safety-r', toNode: 'pump-sec', toPort: 'ps-l', style: 'primary', label: `${r.primaryFlowTempC}°C | ${r.primaryFlowRateLh} L/h` });
+    conns.push({ id: 'c-ps-m', fromNode: 'pump-sec', fromPort: 'ps-r', toNode: 'manifold', toPort: 'man-fi', style: 'primary' });
     conns.push({ id: 'c-dir-r', fromNode: 'manifold', fromPort: 'man-ro', toNode: 'yf', toPort: 'yf-r', style: 'primary', isReturn: true });
     conns.push({ id: 'c-dir-exp', fromNode: 'yf', fromPort: 'yf-r', toNode: 'exp', toPort: 'exp-t', style: 'primary' });
   }
@@ -158,8 +236,7 @@ export function buildTopology(p: LayoutParams): SystemTopology {
   conns.push({ id: 'c-bv2-hp', fromNode: 'bv2', fromPort: 'bv2-l', toNode: 'hp', toPort: 'hp-r', style: 'primary', isReturn: true, label: `${r.primaryReturnTempC}°C` });
 
   // ── Manifold ──
-  const mh = Math.max(50, N * 60 + 20);
-  const my = Math.round(220 + (260 - mh) / 2);
+  const mh = Math.max(50, N * 60 + 20);  const my = Math.round(220 + (260 - mh) / 2);
   const mports: Port[] = [
     port('man-fi', 'left', 18, 'in'),
     port('man-ro', 'left', 82, 'out'),

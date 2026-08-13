@@ -99,7 +99,7 @@ export default function App() {
     ],
     includeHeatExchanger: false,
     includeDhwTank: true,
-    couplingType: '4-port-buffer',
+    couplingType: 'buffer-dhw',
     bufferVolumeL: 60,
     primaryPipeSize: 'Auto',
     secondaryPipeSize: 'Auto',

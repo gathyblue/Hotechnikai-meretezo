@@ -6,14 +6,21 @@ export type NodeType =
   | 'safety-valve'
   | 'non-return-valve'
   | 'three-way-valve'
+  | 'three-way-dhw'        // HMV 3-járatú váltószelep (dedikált)
   | 'y-filter'
   | 'circulator-pump'
+  | 'secondary-pump'       // szekunder keringtető (váltó/puffer UTÁN)
+  | 'primary-pump'         // primer szivattyú (HP-n kívül, LLH/puffer előtt)
   | 'expansion-vessel'
   | 'heat-exchanger'
+  | 'low-loss-header'      // hidraulikus váltó
+  | 'bivalent-boiler'      // gázkazán / elektromos betét (biválens)
+  | 'cascade-unit'         // további HP egység (master/slave) — jövőbeli kaskád
   | 'dhw-tank'
   | 'buffer-tank'
   | 'manifold'
   | 'emitter-circuit'
+  | 'junction'           // láthatatlan hajlítási pont a vonalaknak (pl. DHW elkerülése)
   | 'building-boundary';
 
 export type PipeStyle = 'primary' | 'secondary' | 'dhw';

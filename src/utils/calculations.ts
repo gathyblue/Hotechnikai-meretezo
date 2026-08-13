@@ -1,4 +1,4 @@
-import { BuildingData, CalculationResults, HeatPumpModel, HydraulicInput, HydraulicResults, EngineeringParams, CircuitHydraulicResult } from '../types';
+import { BuildingData, CalculationResults, HeatPumpModel, HydraulicInput, HydraulicResults, EngineeringParams, CircuitHydraulicResult, normalizeCouplingType } from '../types';
 
 /**
  * Calculates building structures' U-values with insulation
@@ -525,6 +525,50 @@ function getAutoRecommendedPipeSize(requiredDiameterMm: number, material: 'coppe
 }
 
 /**
+ * Biválens hidraulika (Topológia 4): kazán/betét teljesítmény, ág-áramok és keverési arány a közös LLH-n.
+ * A biválens forrás a méretezési ponton a HP kapacitáshiányát (deficit) fedezi; gázkazánnál a felhasználó
+ * nagyobb teljesítményt is megadhat (pl. meglévő kazán megtartása).
+ */
+export function calculateBivalentHydraulics(
+  peakLoadKw: number,
+  hpCapacityAtDesignKw: number,
+  input: HydraulicInput,
+): {
+  source: 'gas-boiler' | 'electric-element' | 'none';
+  boilerPowerKw: number;
+  boilerFlowRateLh: number;
+  mixingRatio: number;
+  flowTempC: number;
+  coveragePct: number;
+} {
+  const coupling = normalizeCouplingType(input.couplingType);
+  if (coupling !== 'bivalent') {
+    return { source: 'none', boilerPowerKw: 0, boilerFlowRateLh: 0, mixingRatio: 0, flowTempC: input.bivalentFlowTempC ?? 55, coveragePct: 0 };
+  }
+  const source = input.bivalentSource ?? 'electric-element';
+  const deficitKw = Math.max(0, peakLoadKw - (hpCapacityAtDesignKw || 0));
+  const userPower = input.bivalentBoilerPowerKw && input.bivalentBoilerPowerKw > 0 ? input.bivalentBoilerPowerKw : undefined;
+  const boilerPowerKw = source === 'gas-boiler'
+    ? (userPower ?? Math.max(deficitKw, peakLoadKw * 0.25)) // kazán: felhasználói érték, különben deficit (min. 25% csúcs)
+    : Math.max(deficitKw, 0); // elektromos betét: pontosan a deficit
+  const flowTempC = input.bivalentFlowTempC ?? 55;
+  const deltaT = input.primaryDeltaT || 5;
+  const boilerFlowRateLh = boilerPowerKw > 0 ? Math.round((boilerPowerKw / (1.163 * deltaT)) * 1000) : 0;
+  const hpFlowRateLh = (peakLoadKw / (1.163 * deltaT)) * 1000;
+  const totalFlow = hpFlowRateLh + boilerFlowRateLh;
+  const mixingRatio = totalFlow > 0 ? Number((boilerFlowRateLh / totalFlow).toFixed(3)) : 0;
+  const coveragePct = peakLoadKw > 0 ? Math.min(100, Number(((boilerPowerKw / peakLoadKw) * 100).toFixed(1))) : 0;
+  return {
+    source,
+    boilerPowerKw: Number(boilerPowerKw.toFixed(1)),
+    boilerFlowRateLh,
+    mixingRatio,
+    flowTempC,
+    coveragePct,
+  };
+}
+
+/**
  * Hydraulic, Plate Heat Exchanger, and Expansion Vessel sizing
  */
 export function calculateHydraulicsAndVessel(
@@ -533,21 +577,24 @@ export function calculateHydraulicsAndVessel(
   input: HydraulicInput,
   heatedArea: number,
   params?: EngineeringParams,
-  pumpResidualHeadKpa?: number
+  pumpResidualHeadKpa?: number,
+  hpCapacityAtDesignKw?: number
 ): HydraulicResults {
   const primaryDeltaT = input.primaryDeltaT || 5;
   const secondaryCircuits = input.secondaryCircuits || [];
   const pumpHead = pumpResidualHeadKpa ?? 60;
+  const coupling = normalizeCouplingType(input.couplingType);
 
   // --- Glycol properties ---
-  const glycolPct = params?.glycolPercentage ?? 0;
+  // GLIKOL TILTVA (FINAL scope 2026-08): tiszta víz MINDENÜTT (ρ=1000 kg/m³, cp=1.163 Wh/kgK),
+  // hőcserélős kapcsolásnál is. A params.glycolPercentage NINCS figyelembe véve.
+  // Fagyvédelem más úton: lefúvató szelep (pl. Caleffi iFrost) / leürítés.
+  const glycolPct = 0;
   const glycol = getGlycolProperties(glycolPct, flowTemp);
   const specHeatWhLk = params ? params.waterSpecificHeat : 1.163;
 
-  // Use glycol-adjusted specific heat for primary (if HX), water-based for secondary
-  const effectiveSpecHeat = input.includeHeatExchanger
-    ? Math.min(specHeatWhLk, glycol.specificHeatWhKgK * glycol.density / 1000)
-    : specHeatWhLk;
+  // Tiszta víz mindkét oldalon (glikol tiltva) → a hőcserélős mód is víz-víz
+  const effectiveSpecHeat = specHeatWhLk;
 
   const flowRateM3h = peakLoadKw / (effectiveSpecHeat * primaryDeltaT);
   const flowRateLh = flowRateM3h * 1000;
@@ -576,7 +623,7 @@ export function calculateHydraulicsAndVessel(
   const primaryEstimatedVelocityMs = (flowRateM3h / 3600) / primaryActualAreaM2;
 
   // --- Primary mass flow ---
-  const primaryDensity = input.includeHeatExchanger ? glycol.density : 1000;
+  const primaryDensity = 1000; // tiszta víz (glikol tiltva)
   const primaryMassFlowKgh = Math.round(flowRateLh * primaryDensity / 1000);
 
   // --- Distribute peak load among secondary circuits ---
@@ -767,6 +814,11 @@ export function calculateHydraulicsAndVessel(
 
   const expSafety = params ? params.expansionSafetyFactor : 1.10;
 
+  // Szekunder tágulási tartály: puffer NÉLKÜLI szekunder körnél kell (direkt / LLH / biválens / HX).
+  // Pufferes kapcsolásnál (buffer-dhw) a puffer térfogata benne van az estimatedSystemVolumeL-ben.
+  const bufferlessSecondary = coupling === 'direct' || coupling === 'low-loss-header' || coupling === 'bivalent';
+  const needsSecondaryVessel = input.includeHeatExchanger || (bufferlessSecondary && secondaryCircuits.length > 0);
+
   if (input.includeHeatExchanger) {
     const primaryVolumeL = 35 + (input.includeDhwTank ? 15 : 0) + (input.additionalWaterVolumeL ? Number(input.additionalWaterVolumeL) : 0);
     const primaryExpVol = primaryVolumeL * expansionCoeff * expSafety;
@@ -786,7 +838,15 @@ export function calculateHydraulicsAndVessel(
     const exactVesselL = expansionVolumeL * pressFactor;
     roundedVesselSizeL = standardSizes.find((size) => size >= exactVesselL) || 18;
     primaryVesselSizeL = roundedVesselSizeL;
-    secondaryVesselSizeL = 0;
+    if (needsSecondaryVessel) {
+      const secondaryVolumeL = peakLoadKw * specificVolumeLperKw;
+      const secondaryExpVol = secondaryVolumeL * expansionCoeff * expSafety;
+      const secondaryExactVessel = secondaryExpVol * pressFactor;
+      secondaryVesselSizeL = standardSizes.find((size) => size >= secondaryExactVessel) || 12;
+      if (secondaryVesselSizeL < 12) secondaryVesselSizeL = 12;
+    } else {
+      secondaryVesselSizeL = 0;
+    }
   }
 
   // --- Plate Heat Exchanger Sizing ---
@@ -811,7 +871,7 @@ export function calculateHydraulicsAndVessel(
   const pexMultiplier = input.pipeMaterial === 'pex' ? frictionMult : 1.0;
   const fittingsCount = input.fittingsCount ?? 6;
 
-  const primaryViscosity = input.includeHeatExchanger ? glycol.viscosityPaS : 0.0010;
+  const primaryViscosity = 0.0010; // tiszta víz (glikol tiltva)
   const primaryRe = primaryDensity * primaryEstimatedVelocityMs * primaryInnerDiaM / primaryViscosity;
   const primaryFFactor = primaryRe > 2000 ? 0.3164 / Math.pow(primaryRe, 0.25) : 64 / Math.max(primaryRe, 1);
   const primaryPipeLossKpa = Number((
@@ -824,8 +884,51 @@ export function calculateHydraulicsAndVessel(
   const primaryPressureDropKpa = Number((primaryPipeLossKpa + primaryExchangerLoss + primaryLocalLossKpa + 1.8).toFixed(1));
   const remainingPumpHeadKpa = Number((pumpHead - primaryPressureDropKpa).toFixed(1));
 
-  const recommendedBufferL = Math.round(peakLoadKw * 20);
+  // --- Buffer méretezés rendszertípus-alapúan: padló kW×15, radiátor kW×12, vegyes átlag (javítás #1) ---
+  const hasFloorCirc = secondaryCircuits.some(c => c.type === 'floor');
+  const hasRadCirc = secondaryCircuits.some(c => c.type === 'radiators');
+  const floorFactorL = params?.systemWaterVolumeFloorFactor ?? 15;
+  const radiatorFactorL = params?.systemWaterVolumeRadiatorFactor ?? 12;
+  const bufferFactorL = hasFloorCirc && hasRadCirc
+    ? Math.round((floorFactorL + radiatorFactorL) / 2)
+    : hasFloorCirc ? floorFactorL : radiatorFactorL;
+  const recommendedBufferL = Math.round(peakLoadKw * bufferFactorL);
   const isBufferAdequate = Number(input.additionalWaterVolumeL || 0) >= recommendedBufferL;
+
+  // --- Szekunder keringtető (a váltó/puffer UTÁN) — minden topológiában, állandó nyomású üzemmód ---
+  const secPump = selectDabPump('floor', secondaryFlowRateLh);
+
+  // --- Hidraulikus váltó (LLH) referencia-méretezés: a szekunder igény viszi a váltót ---
+  const llhFlowRateLh = secondaryFlowRateLh > 0 ? secondaryFlowRateLh : Math.round(flowRateLh);
+  const llhFlowM3s = (llhFlowRateLh / 1000) / 3600;
+  const llhAreaM2 = llhFlowM3s / (input.targetVelocityMs ?? 0.6);
+  const llhDiaMm = llhAreaM2 > 0 ? Math.sqrt((4 * llhAreaM2) / Math.PI) * 1000 : 40;
+  const llhRecommendedDiam = llhDiaMm <= 32 ? 'DN32' : llhDiaMm <= 40 ? 'DN40' : llhDiaMm <= 50 ? 'DN50' : 'DN65';
+
+  // --- Biválens hidraulika (Topológia 4) ---
+  const bivalent = calculateBivalentHydraulics(peakLoadKw, hpCapacityAtDesignKw ?? 0, input);
+
+  // --- Validációs figyelmeztetések (gyártói szabályok — terv 4. fejezet) ---
+  const validationWarnings: string[] = [];
+  if (coupling === 'direct') {
+    validationWarnings.push('Direkt kapcsolás: a HP belső szivattyúja hajtja a primer kört — nagyobb rendszernél (>10 kW / több zóna) hidraulikus váltó javasolt.');
+  }
+  if (input.includeDhwTank && coupling !== 'buffer-dhw' && coupling !== 'bivalent') {
+    validationWarnings.push('HMV tartály esetén a 3-járatú váltószelep kötelező elem — ezt a "Puffer + HMV" topológia modellezi helyesen.');
+  }
+  if (coupling === 'bivalent' && !input.bivalentSource) {
+    validationWarnings.push('Biválens topológia: válaszd ki a kiegészítő hőforrást (gázkazán vagy elektromos betét).');
+  }
+  if (coupling === 'bivalent' && input.bivalentSource === 'gas-boiler' && !(input.bivalentBoilerPowerKw && input.bivalentBoilerPowerKw > 0)) {
+    validationWarnings.push('Biválens gázkazán: add meg a kazán teljesítményét (kW) — különben a biválens deficit alapján számolunk.');
+  }
+  if (coupling !== 'direct' && coupling !== 'heat-exchanger' && secondaryCircuits.length === 0) {
+    validationWarnings.push('Nincs szekunder kör megadva — a szekunder szivattyú és az LLH méretezéséhez adj hozzá legalább egy hőleadó kört.');
+  }
+  if (primaryDeltaT < 5) {
+    validationWarnings.push('A primer ΔT 5°C alatt van — ellenőrizd a hőfoklépcsőt (HP gyártói minimum jellemzően 5°C).');
+  }
+  // LLH szabály: a szekunder szivattyú MINDIG a váltó/puffer UTÁN van — a layout ezt betartja (negatív nyomás elkerülése)
 
   const primaryFlowRateLh = Math.round(flowRateLh);
 
@@ -874,5 +977,13 @@ export function calculateHydraulicsAndVessel(
     secondaryFlowTempC: Math.round(secondaryFlowTempC),
     secondaryReturnTempC: Math.round(secondaryReturnTempC),
     circuitResults,
+    // ÚJ — hidraulikai modul 4 topológia (2026-08)
+    validationWarnings,
+    secondaryPumpModel: secPump.pumpModel,
+    secondaryPumpSetting: secPump.pumpSetting,
+    secondaryPumpStage: secPump.pumpStage,
+    llhFlowRateLh: Math.round(llhFlowRateLh),
+    llhRecommendedDiam,
+    bivalent,
   };
 }
