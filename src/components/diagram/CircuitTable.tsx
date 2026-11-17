@@ -95,7 +95,7 @@ export function CircuitTable({ hydraulicState, hydraulicResults: r, isDark }: Ci
                 return (
                   <th key={c.id} className={`text-center text-[8px] font-black uppercase tracking-wider px-2 py-1.5 border-b border-l ${isDark ? "border-slate-700" : "border-slate-200"}`}>
                     <span className={`inline-block px-2 py-0.5 rounded border text-[8px] ${typeColor}`}>
-                      {i + 1}. {c.label}
+                      {c.label}
                     </span>
                     <div className={`text-[7px] mt-0.5 font-normal ${isDark ? "text-slate-500" : "text-slate-400"}`}>
                       {TYPE_LABELS[c.type]}

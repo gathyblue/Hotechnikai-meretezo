@@ -4,6 +4,7 @@ import { HEAT_PUMP_DATABASE } from '../heatPumpData';
 import { evaluateHeatPumpEconomics, getHpCapacityAtTemp, getBuildingHeatDemandAtTemp, calculateBivalentCoverage, estimateBackupHours, estimateAnnualEnergySplit } from '../utils/calculations';
 import { Activity, Flame, Zap, Shield, CheckCircle2, ChevronRight, HelpCircle, Layers, Settings, BatteryCharging, Info } from 'lucide-react';
 import { SegmentedControl } from './SegmentedControl';
+import { getThemeClasses } from '../utils/theme';
 
 interface SizingResultsProps {
   buildingData: BuildingData;
@@ -35,6 +36,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
   onChangeBuildingData,
 }) => {
   const isDark = theme === 'dark';
+  const t = getThemeClasses(isDark);
   const [selectedInfoModel, setSelectedInfoModel] = useState<HeatPumpModel | null>(null);
   const [filterNearby, setFilterNearby] = useState<boolean>(true);
   // Investment cost components logically calculated
@@ -205,10 +207,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
       {/* (Heat loss cards removed per user request — section starts with bivalence graph) */}
 
       {/* 1. Munkapont meghatározás — unified card with graph + emitter */}
-      <div className={`rounded-lg border p-2.5 transition-all ${
-        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
-        <div className="border-b pb-1">
+      <div className={`rounded-lg border p-3 transition-all ${t.sectionCard}`}>
+        <div className={`border-b pb-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Munkapont meghatározás
           </h3>
@@ -524,7 +524,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                     {/* Munkapont elemzés — Two side-by-side panels */}
                     <div className={`flex flex-col md:flex-row gap-2 pt-2`}>
                       {/* Left panel: Heat demand side */}
-                      <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+                      <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${t.innerCard}`}>
                         <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőigény oldal ({bivalentTempManual} °C, {selectedEmitter === 'radiator' ? 'W55' : 'W35'})</span>
                         <div className="space-y-0.5 text-[10px] font-mono">
                           <div className="flex justify-between items-center">
@@ -554,7 +554,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                       </div>
 
                       {/* Right panel: Electric / Energy side */}
-                      <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+                      <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${t.innerCard}`}>
                         <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Elektromos oldal</span>
                         {annualEnergy ? (() => {
                           const scop = selectedEmitter === 'radiator' ? (selectedModel?.scopW55 ?? 3) : (selectedModel?.scopW35 ?? 3.5);
@@ -604,7 +604,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
         {/* Bivalencia + Kiegészítő fűtés + Emitter — 50/50 same-height row */}
         <div className={`flex flex-col md:flex-row gap-2 pt-2 ${isDark ? '' : ''}`}>
           {/* Left 50% — Bivalence temperature selector */}
-          <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+          <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${t.innerCard}`}>
             <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bivalencia hőmérséklet</span>
             <SegmentedControl
               options={[
@@ -623,7 +623,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
           </div>
 
           {/* Right 50% — Emitter selection only */}
-          <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+          <div className={`w-full md:w-1/2 p-2 rounded-lg border flex flex-col gap-1 ${t.innerCard}`}>
             <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hőleadó (előremenő hőmérséklet választás)</span>
             {activeHPResults ? (() => {
               return (
@@ -661,10 +661,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
 
       {/* 2. Ajánlott hőszivattyús berendezések */}
-      <div className={`rounded-lg border p-2.5 transition-all ${
-        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
-        <div className="border-b pb-1">
+      <div className={`rounded-lg border p-3 transition-all ${t.sectionCard}`}>
+        <div className={`border-b pb-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Ajánlott hőszivattyús berendezések
           </h3>
@@ -694,8 +692,8 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
           />
         </div>
 
-        <div className={`overflow-hidden rounded-lg border transition-all ${
-          isDark ? 'border-slate-800' : 'border-slate-200'
+        <div className={`overflow-hidden rounded-lg border transition-all shadow-sm ${
+          isDark ? 'border-slate-700/60 shadow-black/30' : 'border-slate-200 shadow-black/5'
         }`} id="hp-selection-table">
           <table className={`w-full text-left border-collapse text-[9px] ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
             <thead>
@@ -828,13 +826,13 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
       {/* 3. Árajánlat — 3-card row layout */}
       {activeHPResults && (
-        <div className={`rounded-lg border p-2.5 transition-all ${
-          isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+        <div className={`rounded-lg border p-3 transition-all shadow-lg ${
+          isDark ? 'bg-slate-900 border-slate-800 shadow-black/50' : 'bg-white border-slate-200 shadow-black/10'
         }`} id="hp-quotation-panel">
           
           <div className="space-y-2">
             
-            <div className="border-b pb-1">
+            <div className={`border-b pb-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
               <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
                 Árajánlat
               </h3>
@@ -844,7 +842,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
                
               {/* Card 1: Base Price + Discount + Tech Params */}
               <div className={`p-2 rounded-lg border flex flex-col ${
-                isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
+                isDark ? 'border-slate-700/60 bg-slate-800/10 shadow-sm shadow-black/30' : 'border-slate-200 bg-slate-50 shadow-sm shadow-black/5'
               }`}>
                 <div className="flex items-start justify-between gap-2 mb-1.5 min-h-[1.5rem]">
                   <span className="text-slate-500 text-[9px] font-medium">Hőszivattyú alapgép {discountPct === 0 && '(Listaár)'}</span>
@@ -883,7 +881,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
               {/* Card 2: Install with segmented control + buffer tank */}
               <div className={`p-2 rounded-lg border flex flex-col ${
-                isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
+                isDark ? 'border-slate-700/60 bg-slate-800/10 shadow-sm shadow-black/30' : 'border-slate-200 bg-slate-50 shadow-sm shadow-black/5'
               }`}>
                 <div className="flex items-start justify-between gap-2 mb-1.5 min-h-[1.5rem]">
                   <span className="text-slate-500 text-[9px] font-medium">Gépészeti szerelés és telepítés</span>
@@ -917,7 +915,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
               {/* Card 3: DHW with 3-way segmented control */}
               <div className={`p-2 rounded-lg border flex flex-col ${
-                isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'
+                isDark ? 'border-slate-700/60 bg-slate-800/10 shadow-sm shadow-black/30' : 'border-slate-200 bg-slate-50 shadow-sm shadow-black/5'
               }`}>
                 <div className="flex items-start justify-between gap-2 mb-1.5 min-h-[1.5rem]">
                   <span className="text-slate-500 text-[9px] font-medium">HMV tároló</span>
@@ -960,18 +958,18 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
 
       {/* 4. Megtérülés — outer card wrapping two inner cards */}
       {activeHPResults && (
-        <div className={`rounded-lg border p-2.5 transition-all ${
-          isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+        <div className={`rounded-lg border p-3 transition-all shadow-lg ${
+          isDark ? 'bg-slate-900 border-slate-800 shadow-black/50' : 'bg-white border-slate-200 shadow-black/10'
         }`}>
 
-          <div className="border-b pb-1">
+          <div className={`border-b pb-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
             <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>Megtérülés</h3>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mt-2">
 
             {/* Left card: Bemenő adatok */}
-            <div className={`p-3 rounded-lg border ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`p-3 rounded-lg border ${t.innerCard}`}>
               <span className="text-[9px] font-medium text-slate-500 block mb-2">Bemenő adatok</span>
 
               <div className="space-y-2">
@@ -1040,7 +1038,7 @@ export const SizingResults: React.FC<SizingResultsProps> = ({
             </div>
 
             {/* Right card: 2-col — heating cost + HP payback */}
-            <div className={`p-3 rounded-lg border lg:col-span-2 ${isDark ? 'border-slate-800 bg-slate-800/10' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`p-3 rounded-lg border lg:col-span-2 ${t.innerCard}`}>
               <div className="grid grid-cols-2 gap-2">
 
                 {/* LEFT COL: Fűtési költség */}

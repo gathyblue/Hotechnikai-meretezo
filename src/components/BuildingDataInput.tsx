@@ -215,12 +215,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
   const { consumptionKw = 0, fabricKw = 0, certKw = 0 } = calcResults.comparison || {};
 
   return (
-    <div className="space-y-3" id="building-data-form">
+    <div className="space-y-4" id="building-data-form">
       {/* 1. Ingatlan alapadatai */}
-      <div className={`rounded-lg border p-2.5 transition-all ${
-        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
-        <div className="border-b pb-1">
+      <div className={`rounded-lg border p-3 transition-all ${t.sectionCard}`}>
+        <div className={`border-b pb-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Ingatlan alapadatai
           </h3>
@@ -399,10 +397,10 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             <label className={`text-[9px] font-bold uppercase tracking-wider block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Épület szintjei</label>
             <SegmentedControl
               options={[
-                { value: 1, label: '1 szint' },
-                { value: 2, label: '2 szint' },
-                { value: 3, label: '3 szint' },
-                { value: 4, label: '4 szint' },
+                { value: 1, label: '1' },
+                { value: 2, label: '2' },
+                { value: 3, label: '3' },
+                { value: 4, label: '4' },
               ]}
               value={data.levels || 1}
               onChange={(val) => handleDimensionsChange('levels', val)}
@@ -482,9 +480,9 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
             </label>
             <SegmentedControl
               options={[
-                { value: -15, label: '-15 °C' },
-                { value: -13, label: '-13 °C' },
+                { value: -12, label: '-12 °C' },
                 { value: -11, label: '-11 °C' },
+                { value: -10, label: '-10 °C' },
               ]}
               value={data.designTemp}
               onChange={(val) => updateField('designTemp', val)}
@@ -492,9 +490,9 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               theme={theme as 'light' | 'dark'}
             />
             <div className="flex justify-between text-[9px] text-slate-400 font-medium px-0.5">
-              <span>Kelet-HU: -15°C</span>
-              <span>Dél-HU: -13°C</span>
-              <span>Nyugat-HU: -11°C</span>
+              <span>ÉK-HU: -12°C</span>
+              <span>Közép-HU: -11°C</span>
+              <span>DNY-HU: -10°C</span>
             </div>
           </div>
         </div>
@@ -502,10 +500,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
       </div>
 
       {/* 2. Hőigény meghatározás */}
-      <div className={`rounded-lg border p-2.5 transition-all ${
-        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
-        <div className="border-b pb-1">
+      <div className={`rounded-lg border p-3 transition-all ${t.sectionCard}`}>
+        <div className={`border-b pb-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Hőigény meghatározás
           </h3>
@@ -557,8 +553,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
           {data.method === 'consumption' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               {/* COLUMN 1: GÁZ */}
-              <div className={`rounded-lg border flex flex-col ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="px-2 pt-2 pb-1.5 border-b border-dashed flex items-center gap-2">
+              <div className={`rounded-lg border flex flex-col ${t.innerCard}`}>
+                <div className="px-2 pt-2 pb-1.5 flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={data.gasEnabled !== false}
@@ -675,8 +671,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               </div>
 
               {/* COLUMN 2: FATÜZELÉS */}
-              <div className={`rounded-lg border flex flex-col ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="px-2 pt-2 pb-1.5 border-b border-dashed flex items-center gap-2">
+              <div className={`rounded-lg border flex flex-col ${t.innerCard}`}>
+                <div className="px-2 pt-2 pb-1.5 flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={!!data.woodEnabled}
@@ -747,8 +743,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
               </div>
 
               {/* COLUMN 3: ELEKTROMOS KAZÁN */}
-              <div className={`rounded-lg border flex flex-col ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="px-2 pt-2 pb-1.5 border-b border-dashed flex items-center gap-2">
+              <div className={`rounded-lg border flex flex-col ${t.innerCard}`}>
+                <div className="px-2 pt-2 pb-1.5 flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={!!data.electricBoilerEnabled}
@@ -789,8 +785,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* WALLS */}
-                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${t.innerCard}`}>
+                  <div className="flex justify-between items-center pb-1">
                     <span className="font-bold text-slate-400">Külső falazat (bruttó, ablakokkal együtt)</span>
                     <div className="flex items-center gap-1">
                       <span className="text-[9px] text-slate-500">Felület:</span>
@@ -839,8 +835,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* ROOF */}
-                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${t.innerCard}`}>
+                  <div className="flex justify-between items-center pb-1">
                     <span className="font-bold text-slate-400">Födém / Tető</span>
                     <div className="flex items-center gap-1">
                       <span className="text-[9px] text-slate-500">Felület:</span>
@@ -886,8 +882,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* FLOOR */}
-                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${t.innerCard}`}>
+                  <div className="flex justify-between items-center pb-1">
                     <span className="font-bold text-slate-400">Padló / Aljzat</span>
                     <div className="flex items-center gap-1">
                       <span className="text-[9px] text-slate-500">Felület:</span>
@@ -933,8 +929,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* WINDOWS */}
-                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex justify-between items-center pb-1 border-b border-dashed border-slate-800/20">
+                <div className={`p-2.5 rounded-lg border space-y-1.5 text-xs ${t.innerCard}`}>
+                  <div className="flex justify-between items-center pb-1">
                     <span className="font-bold text-slate-400">Nyílászárók (Ablakok)</span>
                     <div className="flex items-center gap-1">
                       <span className="text-[9px] text-slate-500">Felület:</span>
@@ -975,20 +971,27 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
                 </div>
 
                 {/* VENTILATION */}
-                <div className={`md:col-span-2 p-2.5 rounded-lg border flex items-center gap-2 text-xs ${isDark ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                  <span className="font-bold text-slate-500 shrink-0 text-nowrap">Légcsere szám</span>
-                  <SegmentedControl
-                    options={[
-                      { value: 0.3, label: '0.3 Hővisszanyerős' },
-                      { value: 0.5, label: '0.5 Normál üzem' },
-                      { value: 0.8, label: '0.8 Rosszul záró' },
-                    ]}
-                    value={data.ventilationRate}
-                    onChange={(val) => updateField('ventilationRate', val)}
-                    layoutId="ventilation-rate"
-                    theme={theme as 'light' | 'dark'}
-                    className="text-[9px] w-full"
-                  />
+                <div className={`md:col-span-2 p-2.5 rounded-lg border text-xs ${t.innerCard}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <span className="font-bold text-slate-500 shrink-0 text-nowrap">Légcsere szám</span>
+                    <SegmentedControl
+                      options={[
+                        { value: 0.3, label: '0.3' },
+                        { value: 0.5, label: '0.5' },
+                        { value: 0.8, label: '0.8' },
+                      ]}
+                      value={data.ventilationRate}
+                      onChange={(val) => updateField('ventilationRate', val)}
+                      layoutId="ventilation-rate"
+                      theme={theme as 'light' | 'dark'}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] text-slate-400 font-medium px-0.5 pt-1">
+                    <span>Hővisszanyerős</span>
+                    <span>Normál üzem</span>
+                    <span>Rosszul záró</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1059,10 +1062,8 @@ export const BuildingDataInput: React.FC<BuildingDataInputProps> = ({ data, onCh
       </div>
 
       {/* 3. Hőigény összesítő */}
-      <div className={`rounded-lg border p-2.5 transition-all ${
-        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
-        <div className="border-b pb-1">
+      <div className={`rounded-lg border p-3 transition-all ${t.sectionCard}`}>
+        <div className={`border-b pb-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
           <h3 className={`font-semibold text-xs ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             Hőigény összesítő
           </h3>

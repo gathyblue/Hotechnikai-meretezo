@@ -32,10 +32,10 @@ export function buildTopology(p: LayoutParams): SystemTopology {
   const isHX = coupling === 'heat-exchanger';
   const isBufferDhw = coupling === 'buffer-dhw';
   const isLLH = coupling === 'low-loss-header';
-  const isBivalent = coupling === 'bivalent';
+  const isBivalent = !!hs.bivalentSource && hs.bivalentSource !== 'none';
   const isDirect = coupling === 'direct';
   const hasDhw = hs.includeDhwTank;
-  const useThreeWayDhw = hasDhw && (isBufferDhw || isBivalent);
+  const useThreeWayDhw = hasDhw; // HMV minden esetben a pufferek előtt, legkorábban lecsatlakozva
 
   const nodes: DiagramNode[] = [];
   const conns: Connection[] = [];
@@ -104,7 +104,7 @@ export function buildTopology(p: LayoutParams): SystemTopology {
     nodes.push({
       id: 'dhw', type: 'dhw-tank', x: 270, y: 40, w: 75, h: 135,
       ports: [port('dhw-in', 'left', 28, 'in'), port('dhw-out', 'left', 72, 'out')],
-      data: { vol: 200 },
+      data: { vol: hs.dhwVolumeL || 200, connection: hs.dhwConnection || 'three-way-valve' },
     });
     conns.push({ id: 'c-dhw-f', fromNode: 'twv', fromPort: 'twv-u', toNode: 'dhw', toPort: 'dhw-in', style: 'dhw', label: `${r.primaryFlowTempC}°C` });
     nodes.push({
@@ -166,24 +166,24 @@ export function buildTopology(p: LayoutParams): SystemTopology {
     conns.push({ id: 'c-ps-m', fromNode: 'pump-sec', fromPort: 'ps-r', toNode: 'manifold', toPort: 'man-fi', style: 'secondary', label: `${r.secondaryFlowTempC}°C | ${r.secondaryFlowRateLh} L/h` });
     conns.push({ id: 'c-m-hx-si', fromNode: 'manifold', fromPort: 'man-ro', toNode: 'hx', toPort: 'hx-si', style: 'secondary', isReturn: true });
   } else if (isBufferDhw) {
-    // ── Topológia 3: PUFFER + HMV 3-járatú váltószelep ──
+    // ── 4-csonkos puffer: hidraulikus szétválasztás + jelentős térfogat ──
     nodes.push({
       id: 'buffer', type: 'buffer-tank', x: 370, y: FY - 40, w: 55, h: 190,
       ports: [
         port('b-fi', 'left', 20, 'in'), port('b-fo', 'right', 20, 'out'),
         port('b-ri', 'right', 80, 'in'), port('b-ro', 'left', 80, 'out'),
       ],
-      data: { vol: hs.additionalWaterVolumeL ?? hs.bufferVolumeL },
+      data: { vol: hs.bufferVolumeL || 100 },
     });
     conns.push({ id: 'c-b-fi', fromNode: 'safety', fromPort: 'safety-r', toNode: 'buffer', toPort: 'b-fi', style: 'primary', label: `${r.primaryFlowTempC}°C` });
-    addSecPump(); // szekunder szivattyú a puffer UTÁN
+    addSecPump();
     conns.push({ id: 'c-b-fo', fromNode: 'buffer', fromPort: 'b-fo', toNode: 'pump-sec', toPort: 'ps-l', style: 'secondary' });
     conns.push({ id: 'c-ps-m', fromNode: 'pump-sec', fromPort: 'ps-r', toNode: 'manifold', toPort: 'man-fi', style: 'secondary', label: `${r.secondaryFlowTempC}°C | ${r.secondaryFlowRateLh} L/h` });
     conns.push({ id: 'c-b-ro', fromNode: 'buffer', fromPort: 'b-ro', toNode: 'yf', toPort: 'yf-r', style: 'primary', isReturn: true, label: `${r.primaryReturnTempC}°C` });
     conns.push({ id: 'c-m-b-ri', fromNode: 'manifold', fromPort: 'man-ro', toNode: 'buffer', toPort: 'b-ri', style: 'primary', isReturn: true });
     conns.push({ id: 'c-b-exp', fromNode: 'buffer', fromPort: 'b-ro', toNode: 'exp', toPort: 'exp-t', style: 'primary' });
   } else if (isLLH || isBivalent) {
-    // ── Topológia 2 (LLH) és Topológia 4 (biválens LLH-n): hidraulikus váltó ──
+    // ── Hidrováltó: hidraulikus szétválasztás, elhanyagolható nyomásesés ──
     nodes.push({
       id: 'llh', type: 'low-loss-header', x: 380, y: FY - 40, w: 55, h: 190,
       ports: [
@@ -191,7 +191,7 @@ export function buildTopology(p: LayoutParams): SystemTopology {
         port('llh-ri', 'right', 80, 'in'), port('llh-ro', 'left', 80, 'out'),
         port('llh-pi2', 'top', 30, 'in'),  port('llh-ro2', 'bottom', 70, 'out'),
       ],
-      data: { diam: r.llhRecommendedDiam, q: `${r.llhFlowRateLh ?? 0} L/h` },
+      data: { diam: r.llhRecommendedDiam, q: `${r.llhFlowRateLh ?? 0} L/h`, vol: hs.bufferVolumeL || 0 },
     });
     // HP primer ág → LLH
     conns.push({ id: 'c-llh-pi', fromNode: 'safety', fromPort: 'safety-r', toNode: 'llh', toPort: 'llh-pi', style: 'primary', label: `${r.primaryFlowTempC}°C` });

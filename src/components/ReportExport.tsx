@@ -23,7 +23,7 @@ export const ReportExport: React.FC<ReportExportProps> = ({
   hydraulicResults,
   hydraulicState,
   tariffHuf,
-  bivalentTempManual = -5,
+  bivalentTempManual = -11,
   theme = 'light'
 }) => {
   const isDark = theme === 'dark';

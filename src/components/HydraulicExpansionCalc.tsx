@@ -53,13 +53,20 @@ function syncHydraulicFields(state: HydraulicInput): HydraulicInput {
   switch (coupling) {
     case 'heat-exchanger':
       includeHeatExchanger = true;
-      additionalWaterVolumeL = 0;
+      // Hőcserélőnél az opcionális soros puffer térfogata beleszámít
+      additionalWaterVolumeL = state.bufferVolumeL || 0;
       break;
     case 'buffer-dhw':
+      // 4-csonkos puffer: a puffer maga adja a térfogatot
       includeHeatExchanger = false;
       additionalWaterVolumeL = state.bufferVolumeL || 100;
       break;
-    // direct / low-loss-header / bivalent: nincs puffer, a rendszer a váltón/HP-n áll
+    case 'low-loss-header':
+      // Hidrováltó: alapból nincs térfogat, de a visszatérőben soros puffer csatlakoztatható
+      includeHeatExchanger = false;
+      additionalWaterVolumeL = state.bufferVolumeL || 0;
+      break;
+    // direct: nincs puffer, nincs leválasztás
     default:
       includeHeatExchanger = false;
       additionalWaterVolumeL = 0;
@@ -72,12 +79,23 @@ function syncHydraulicFields(state: HydraulicInput): HydraulicInput {
   return { ...state, couplingType: coupling, includeHeatExchanger, additionalWaterVolumeL, primaryDeltaT };
 }
 
-const couplingConfigs: Record<string, { label: string; desc: string }> = {
-  'direct': { label: 'Direkt (auto-bypass)', desc: 'Topológia 1: HP belső szivattyú + szekunder szivattyú a bypass után. Kis rendszer, új építés, nincs puffer.' },
-  'low-loss-header': { label: 'Hidraulikus váltó (LLH)', desc: 'Topológia 2: hidraulikus váltó + szekunder szivattyú a váltó UTÁN. Több zóna, eltérő ΔT, retrofit.' },
-  'buffer-dhw': { label: 'Puffer + HMV', desc: 'Topológia 3: puffer + 3-járatú HMV váltószelep. HMV prioritás, alacsony víztartalmú HP védelme.' },
-  'bivalent': { label: 'Biválens (HP+kazán)', desc: 'Topológia 4: HP + gázkazán/elektromos betét a hidraulikus váltón. Meglévő kazán megtartása, peak shaving.' },
-  'heat-exchanger': { label: 'Hőcserélő (tiszta víz)', desc: 'Lemezes hőcserélős leválasztás — glikol NÉLKÜL (tiszta víz mindkét körben).' },
+const couplingConfigs: Record<string, { label: string; short: string; desc: string }> = {
+  'direct': {
+    label: 'Direkt', short: 'Direkt',
+    desc: 'Egy közeg, egy szivattyú: a HP saját szivattyúja hajtja a rendszert. Opcionális nyomásszelep-átkötés (bypass) a minimális áramlás biztosítására. Nincs leválasztás, nincs nyomásesés a csatlakozáson.',
+  },
+  'buffer-dhw': {
+    label: '4-csonkos puffer', short: '4-csonkos puffer',
+    desc: 'Egy közeg (víz), hidraulikusan szétválasztva és jelentős térfogattal: az előremenő a 4-csonkos pufferen megy át. A hőleadói köröket külön szekunder szivattyú hajtja. A puffer kis nyomásveszteséget okoz mindkét oldalon.',
+  },
+  'low-loss-header': {
+    label: 'Hidrováltó', short: 'Hidrováltó',
+    desc: 'Egy közeg (víz), hidraulikusan szétválasztva, elhanyagolható nyomáseséssel: az előremenő a hidrováltón megy át. A hőleadói köröket külön szekunder szivattyú hajtja. Térfogatnöveléshez a visszatérőben soros puffer csatlakoztatható.',
+  },
+  'heat-exchanger': {
+    label: 'Hőcserélő', short: 'Hőcserélő',
+    desc: 'Két külön közeg: az előremenő lemezes hőcserélőn megy át, tiszta víz mindkét oldalon (glikol nélkül). A hőleadói köröket külön szekunder szivattyú hajtja. A hőcserélő mindkét oldalon nyomásesést okoz — ezt a méretezés figyelembe veszi.',
+  },
 };
 
 let circuitIdCounter = 1;
@@ -182,7 +200,7 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
 
   const couplingOptions = Object.entries(couplingConfigs).map(([value, cfg]) => ({
     value,
-    label: cfg.label,
+    label: cfg.short,
   }));
 
   const activeCfg = couplingConfigs[coupling];
@@ -219,12 +237,12 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
           </p>
         </div>
 
-        {/* Puffer méret — csak pufferes topológiánál; biválensnél kazánbeállítások */}
+        {/* Puffer — 4-csonkos puffer mérete, ill. opcionális soros puffer hidrováltó/HX-nél */}
         <div className={innerCard}>
           {coupling === 'buffer-dhw' ? (
             <>
               <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Pufferméret
+                4-csonkos puffer térfogata
               </label>
               <SegmentedControl
                 options={[
@@ -232,33 +250,72 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                   { value: 100, label: '100 L' },
                   { value: 200, label: '200 L' },
                 ]}
-                value={hydraulicState.bufferVolumeL}
+                value={hydraulicState.bufferVolumeL || 100}
                 onChange={setBufferVolume}
                 layoutId="hydraulic-buffer-size"
                 theme={isDark ? 'dark' : 'light'}
                 className="text-xs w-full"
               />
               <p className={`mt-1 text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Alapesetben 60 L elegendő. Nagyobb méret növeli a rendszertérfogatot és a tágulási tartály méretét.
+                A 4-csonkos puffer egyszerre biztosít hidraulikus szétválasztást és térfogatot. Nagyobb méret növeli a rendszertérfogatot és a tágulási tartály méretét.
               </p>
             </>
-          ) : coupling === 'bivalent' ? (
+          ) : coupling !== 'direct' ? (
             <>
               <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Biválens hőforrás
+                Soros puffer a visszatérőben (opcionális térfogat)
               </label>
               <SegmentedControl
                 options={[
-                  { value: 'gas-boiler', label: 'Gázkazán' },
-                  { value: 'electric-element', label: 'Elektromos betét' },
+                  { value: 0, label: 'Nincs' },
+                  { value: 60, label: '60 L' },
+                  { value: 100, label: '100 L' },
+                  { value: 200, label: '200 L' },
                 ]}
-                value={hydraulicState.bivalentSource ?? 'gas-boiler'}
-                onChange={(v) => updateInput('bivalentSource' as any, v)}
-                layoutId="hydraulic-bivalent-source"
+                value={hydraulicState.bufferVolumeL || 0}
+                onChange={setBufferVolume}
+                layoutId="hydraulic-buffer-size"
                 theme={isDark ? 'dark' : 'light'}
                 className="text-xs w-full"
               />
-              <div className="mt-2 space-y-1.5">
+              <p className={`mt-1 text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Opcionális: a visszatérőben sorosan elhelyezett puffer csak térfogatot növel (HP védelme, kevesebb ciklus), nem választ le — a leválasztást a hidrováltó / hőcserélő végzi.
+              </p>
+            </>
+          ) : (
+            <>
+              <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Puffer / leválasztás
+              </label>
+              <p className={`text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Direkt kapcsolás: nincs puffer, nincs leválasztás — a HP saját szivattyúja hajtja a teljes kört és győzi le annak teljes nyomásveszteségét. Opcionális nyomásszelep-átkötés (bypass) az áramlás biztosítására.
+              </p>
+            </>
+          )}
+        </div>
+
+        </div>
+
+        {/* Kiegészítő hőforrás (biválens) — a kapcsolási módtól függetlenül, minden esetben elérhető */}
+        <div className={innerCard}>
+          <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Kiegészítő hőforrás (biválens üzem)
+          </label>
+          <SegmentedControl
+            options={[
+              { value: 'none', label: 'Nincs' },
+              { value: 'gas-boiler', label: 'Gázkazán' },
+              { value: 'electric-element', label: 'Elektromos betét' },
+            ]}
+            value={hydraulicState.bivalentSource ?? 'none'}
+            onChange={(v) => updateInput('bivalentSource' as any, v)}
+            layoutId="hydraulic-bivalent-source"
+            theme={isDark ? 'dark' : 'light'}
+            className="text-xs w-full"
+          />
+          {hydraulicState.bivalentSource && hydraulicState.bivalentSource !== 'none' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              <div className="space-y-1">
                 <label className={`text-[8px] font-bold uppercase block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   {hydraulicState.bivalentSource === 'gas-boiler' ? 'Kazán teljesítmény (kW)' : 'Betét teljesítmény (kW)'}
                 </label>
@@ -267,12 +324,12 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                   min={0}
                   step={1}
                   value={hydraulicState.bivalentBoilerPowerKw ?? ''}
-                  placeholder={hydraulicState.bivalentSource === 'gas-boiler' ? 'auto (deficit)' : 'auto (deficit)'}
+                  placeholder="auto (deficit)"
                   onChange={(e) => updateInput('bivalentBoilerPowerKw', e.target.value === '' ? undefined : Number(e.target.value))}
                   className={`w-full px-1.5 py-1 border rounded text-[9px] font-mono ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
                 />
               </div>
-              <div className="mt-2 space-y-1.5">
+              <div className="space-y-1">
                 <label className={`text-[8px] font-bold uppercase block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   Biválens előremenő (°C)
                 </label>
@@ -285,22 +342,58 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                   className={`w-full px-1.5 py-1 border rounded text-[9px] font-mono ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
                 />
               </div>
-              <p className={`mt-1 text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Üres teljesítmény = automatikus (a HP kapacitáshiányát fedezi).
-              </p>
-            </>
-          ) : (
-            <>
-              <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Pufferméret
-              </label>
-              <p className={`text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Ehhez a kapcsolási módhoz nem szükséges puffer — a hidraulikus váltó / HP belső térfogata ellátja a leválasztást.
-              </p>
-            </>
+            </div>
           )}
+          <p className={`mt-1 text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            A kiegészítő hőforrás bármelyik kapcsolási módhoz hozzáadható. Üres teljesítmény = automatikus (a HP kapacitáshiányát fedezi).
+          </p>
         </div>
 
+        {/* Használati melegvíz (HMV) — minden esetben a pufferek előtt, legkorábban lecsatlakozva */}
+        <div className={innerCard}>
+          <label className={`text-[9px] font-bold uppercase tracking-wider block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Használati melegvíz (HMV)
+          </label>
+          <SegmentedControl
+            options={[
+              { value: 'off', label: 'Nincs' },
+              { value: 'three-way-valve', label: '3-járatú szelep' },
+            ]}
+            value={!hydraulicState.includeDhwTank ? 'off' : (hydraulicState.dhwConnection || 'three-way-valve')}
+            onChange={(v) => {
+              if (v === 'off') {
+                setHydraulicState(syncHydraulicFields({ ...hydraulicState, includeDhwTank: false }));
+              } else {
+                setHydraulicState(syncHydraulicFields({ ...hydraulicState, includeDhwTank: true, dhwConnection: v as any }));
+              }
+            }}
+            layoutId="hydraulic-dhw-connection"
+            theme={isDark ? 'dark' : 'light'}
+            className="text-xs w-full"
+          />
+          {hydraulicState.includeDhwTank && (
+            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className={`text-[8px] font-bold uppercase block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Tartály mérete</label>
+                <SegmentedControl
+                  options={[{ value: 200, label: '200 L' }, { value: 300, label: '300 L' }]}
+                  value={hydraulicState.dhwVolumeL || 200}
+                  onChange={(v) => updateInput('dhwVolumeL' as any, v)}
+                  layoutId="hydraulic-dhw-volume"
+                  theme={isDark ? 'dark' : 'light'}
+                  className="text-xs w-full"
+                />
+              </div>
+              <div className="flex items-end">
+                <p className={`text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  3-járatú váltószelep, HMV prioritással — a teljes áramlás a tartály csőkígyójára irányul töltés közben.
+                </p>
+              </div>
+            </div>
+          )}
+          <p className={`mt-1 text-[9px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            A HMV minden esetben a rendszer legkorábbi pontján, a pufferek előtt csatlakozik le a HP által hajtott köről.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -504,8 +597,13 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
                     <ResultRow label="Cső / Sebesség" value={`${cr.pipeSize} / ${cr.velocityMs} m/s`} sub={cr.velocityMs > 1.0 ? '⚠ Magas' : cr.velocityMs < 0.3 ? '⚠ Alacsony' : '✓ OK'} isDark={isDark} />
                     <ResultRow label="Nyomásesés" value={`${cr.pressureDropKpa} kPa`} isDark={isDark} />
                     <ResultRow label="Maradék nyomás" value={`${cr.remainingHeadKpa} kPa`} sub={cr.remainingHeadKpa < 10 ? '⚠ Kevés' : '✓ OK'} isDark={isDark} />
-                    <ResultRow label="Szivattyú" value={samePump && i > 0 ? `└ ${cr.pumpModel}` : cr.pumpModel} isDark={isDark} />
-                    {(!samePump || i === 0) && <ResultRow label="Beállítás" value={`${cr.pumpSetting} • ${cr.pumpStage}`} isDark={isDark} />}
+                    {coupling !== 'direct' && cr.pumpModel && (
+                      <>
+                        <ResultRow label="Szivattyú" value={samePump && i > 0 ? `└ ${cr.pumpModel}` : cr.pumpModel} isDark={isDark} />
+                        {(!samePump || i === 0) && <ResultRow label="Beállítás" value={`${cr.pumpSetting} • ${cr.pumpStage}`} isDark={isDark} />}
+                      </>
+                    )}
+                    {coupling === 'direct' && <ResultRow label="Keringtetés" value="HP saját szivattyúja (direkt)" isDark={isDark} />}
                   </div>
                   );
                 })}
@@ -543,14 +641,14 @@ export const HydraulicExpansionCalc: React.FC<HydraulicExpansionCalcProps> = ({
             {results.secondaryPumpModel && (
               <ResultRow label="Szekunder szivattyú" value={results.secondaryPumpModel} sub={results.secondaryPumpSetting ? `${results.secondaryPumpSetting} • ${results.secondaryPumpStage}` : undefined} isDark={isDark} />
             )}
-            {results.llhRecommendedDiam && coupling !== 'direct' && (
+            {results.llhRecommendedDiam && coupling === 'low-loss-header' && (
               <ResultRow label="Hidraulikus váltó (LLH)" value={results.llhRecommendedDiam} sub={`${results.llhFlowRateLh} L/h referencia áramlás`} isDark={isDark} />
             )}
-            {coupling === 'bivalent' && results.bivalent && results.bivalent.source !== 'none' && (
+            {results.bivalent && results.bivalent.source !== 'none' && (
               <>
                 <div className={`border-t my-1.5 ${isDark ? 'border-slate-700' : 'border-slate-200'}`} />
                 <p className={`text-[8px] font-black uppercase tracking-wider mb-1 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
-                  Biválens üzem (Topológia 4)
+                  Biválens üzem
                 </p>
                 <ResultRow label="Hőforrás" value={results.bivalent.source === 'gas-boiler' ? 'Gázkazán' : 'Elektromos betét'} isDark={isDark} />
                 <ResultRow label="Teljesítmény" value={`${results.bivalent.boilerPowerKw} kW`} sub={`${results.bivalent.coveragePct}% csúcsterhelés-átfedés`} isDark={isDark} />

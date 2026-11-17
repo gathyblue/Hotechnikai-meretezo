@@ -19,10 +19,10 @@ export default function App() {
     ownerName: '',
     address: '',
     location: '',
-    designTemp: -13, // standard Central HU
+    designTemp: -11, // MSZ 24140:2026 — közép-HU (Kecskemét, Budapest)
     heatedArea: 120, // average HU square meters
     ceilingHeight: 2.7,
-    indoorTemp: 22,
+    indoorTemp: 20, // MSZ 24140:2026 E melléklet — lakótér 20 °C
     levels: 1, // default levels
     method: 'fabric',
     gasAnnualM3: 1600,
@@ -53,7 +53,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState<HeatPumpModel | null>(null);
   const [selectedEmitter, setSelectedEmitter] = useState<'floor' | 'radiator'>('radiator');
   const [tariffHuf, setTariffHuf] = useState<number>(23); // H-tarifa default: 23 Ft
-  const [bivalentTempManual, setBivalentTempManual] = useState<number>(-13); // manual bivalent point slider, defaults to match designTemp (-13) pour Kecskemét
+  const [bivalentTempManual, setBivalentTempManual] = useState<number>(-11); // manual bivalent point slider, defaults to match designTemp (-11) pour Kecskemét (MSZ 24140:2026)
 
   // Initialize bivalentTempManual to designTemp only on first mount
   const [bivalentInitialized, setBivalentInitialized] = useState(false);
@@ -99,6 +99,8 @@ export default function App() {
     ],
     includeHeatExchanger: false,
     includeDhwTank: true,
+    dhwVolumeL: 200,
+    dhwConnection: 'three-way-valve',
     couplingType: 'buffer-dhw',
     bufferVolumeL: 60,
     primaryPipeSize: 'Auto',

@@ -128,21 +128,24 @@ export interface SecondaryCircuit {
 }
 
 export type CouplingType =
-  | 'direct'          // Topológia 1: direkt / auto-bypass (HP belső szivattyú + szekunder szivattyú)
-  | 'low-loss-header' // Topológia 2: hidraulikus váltó (LLH) + szekunder szivattyú
-  | 'buffer-dhw'      // Topológia 3: puffer + HMV 3-járatú váltószelep
-  | 'bivalent'        // Topológia 4: biválens (HP + gázkazán/elektromos betét) LLH-n át
-  | 'heat-exchanger'; // (megtartott) lemezes hőcserélős leválasztás — tiszta víz, glikol nélkül
+  | 'direct'          // Egy közeg, egy szivattyú: HP saját szivattyúja, nincs leválasztás
+  | 'buffer-dhw'      // 4-csonkos puffer: hidraulikus szétválasztás + nagy térfogat (általános)
+  | 'low-loss-header' // Hidrováltó: hidraulikus szétválasztás, kis térfogat (+ opcionális soros puffer)
+  | 'heat-exchanger'; // Hőcserélő: két külön közeg (+ opcionális soros puffer)
 
-/** Régi kapcsolási módok átképzése az új topológiákra (4-port-buffer→buffer-dhw, buffer-or-hydro→low-loss-header). */
+/**
+ * Régi / megszűnt kapcsolási módok átképzése.
+ * A 'bivalent' többé nem kapcsolási mód, hanem külön hőforrás (bivalentSource).
+ */
 export function normalizeCouplingType(t: string | undefined | null): CouplingType {
   switch (t) {
     case 'direct':
-    case 'low-loss-header':
     case 'buffer-dhw':
-    case 'bivalent':
+    case 'low-loss-header':
     case 'heat-exchanger':
       return t;
+    case 'bivalent':        // régi biválens topológia → hidrováltó + bivalentSource
+      return 'low-loss-header';
     case '4-port-buffer':
       return 'buffer-dhw';
     case 'buffer-or-hydro':
@@ -161,6 +164,8 @@ export interface HydraulicInput {
   secondaryCircuits: SecondaryCircuit[];
   includeHeatExchanger: boolean; // heat exchanger selection
   includeDhwTank: boolean; // indirect DHW
+  dhwVolumeL?: 200 | 300; // HMV tartály térfogata
+  dhwConnection?: 'three-way-valve' | 'separate-loop'; // 3-járatú váltószelep (HMV prioritás) / külön HMV kör szivattyúval
   couplingType: CouplingType;
   bufferVolumeL: number; // 60 | 100 | 200
   secondaryPipeMaterial?: 'copper' | 'pex' | 'steel';
@@ -171,8 +176,8 @@ export interface HydraulicInput {
   targetVelocityMs?: number;      // design target flow velocity m/s (default 0.6)
   pipeLengthEstimate?: number;    // estimated total pipe length in meters (5-50)
   fittingsCount?: number;         // number of fittings/elbows in circuit
-  // Topológia 4 (biválens) beállítások
-  bivalentSource?: 'gas-boiler' | 'electric-element'; // gázkazán vagy elektromos betét
+  // Kiegészítő hőforrás (biválens üzem) — a kapcsolási módtól függetlenül bármelyik módhoz hozzáadható
+  bivalentSource?: 'none' | 'gas-boiler' | 'electric-element'; // nincs / gázkazán / elektromos betét
   bivalentBoilerPowerKw?: number;  // kazán/betét névleges teljesítmény (kW)
   bivalentFlowTempC?: number;      // biválens előremenő hőmérséklet (°C), alap 55
 }

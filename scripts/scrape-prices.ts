@@ -18,14 +18,14 @@ const SOURCES: Record<string, { urls: string[]; parse: (html: string) => number 
     urls: [
       'https://midea.hu/category/levego-viz-hoszivattyuk/brand/midea-m-thermal-r290/products/mhc-v4wd2n7-e30-monoblokkos-m-thermal-r290-4-kw-1-fazis-cmid002748',
       'https://midea.hu/category/levego-viz-hoszivattyuk/brand/midea-m-thermal-r290/products/mhc-v6wd2n7-e30-monoblokkos-m-thermal-r290-6-kw-1-fazis-cmid002749',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v8wd2n7-b-monoblokkos-m-thermal-r290-8-kw-1-fazis-cmid003024',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v8wd2rn7-b-monoblokkos-m-thermal-r290-8-kw-3-fazis-cmid003029',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v10wd2rn7-b-monoblokkos-m-thermal-r290-10-kw-1-fazis-cmid003025',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v10wd2rn7-b-monoblokkos-m-thermal-r290-10-kw-3-fazis-cmid003030',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v12wd2n7-b-monoblokkos-m-thermal-r290-12-kw-1-fazis-cmid003026',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v12wd2rn7-b-monoblokkos-m-thermal-r290-12-kw-3-fazis-cmid003031',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v16wd2rn7-b-monoblokkos-m-thermal-r290-16-kw-1-fazis-cmid003028',
-      'https://midea.hu/category/levego-viz-hoszivattyuk/products/mhc-v16wd2rn7-ber90-nature-monoblokkos-m-thermal-r290-16-kw-3-fazis-futobetet-9-kw-fekete-cmid003033',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v8wd2n7-be30-nature-monoblokkos-m-thermal-r290-8-kw-1-fazis-futobetet-3-kw-fekete-cmid003024',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v8wd2rn7-ber90-nature-monoblokkos-m-thermal-r290-8-kw-3-fazis-futobetet-9-kw-fekete-cmid003029',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v10wd2n7-be30-nature-monoblokkos-m-thermal-r290-10-kw-1-fazis-futobetet-3-kw-fekete-cmid003025',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v10wd2rn7-ber90-nature-monoblokkos-m-thermal-r290-10-kw-3-fazis-futobetet-9-kw-fekete-cmid003030',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v12wd2n7-be30-nature-monoblokkos-m-thermal-r290-12-kw-1-fazis-futobetet-3-kw-fekete-cmid003026',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v12wd2rn7-ber90-nature-monoblokkos-m-thermal-r290-12-kw-3-fazis-futobetet-9-kw-fekete-cmid003031',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v16wd2n7-be30-nature-monoblokkos-m-thermal-r290-16-kw-1-fazis-futobetet-3-kw-fekete-cmid003028',
+      'https://midea.hu/category/levego-viz-hoszivattyuk/brand/nature/products/mhc-v16wd2rn7-ber90-nature-monoblokkos-m-thermal-r290-16-kw-3-fazis-futobetet-9-kw-fekete-cmid003033',
     ],
     parse(html: string) {
       const m = html.match(/Ajánlott\s+fogyasztói\s+ár.*?<span[^>]*>([\d\s]+)\s*Ft/i);
@@ -35,11 +35,11 @@ const SOURCES: Record<string, { urls: string[]; parse: (html: string) => number 
   },
   'fisher': {
     urls: [
-      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-8-k-1-adatlap',
-      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-10-kw-1-adatlap',
-      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-12-kw-adatlap',
-      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-12-kw-1-adatlap',
-      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-14-kw-adatlap',
+      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-evo-2-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-8-kw-adatlap',
+      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-evo-2-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-10-kw-adatlap',
+      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-evo-2-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-12-kw-1f-adatlap',
+      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-evo-2-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-12-kw-adatlap',
+      'https://www.fisherklima.hu/termekek/hoszivattyu-berendezesek/monoblokk-hoszivattyu/fisher-aquanova-evo-2-leveg%C5%91-v%C3%ADz-monoblokk-h%C5%91szivatty%C3%BA-14-kw-adatlap',
     ],
     parse(html: string) {
       const m = html.match(/Ajánlott\s+bruttó\s+fogyasztói\s+ár.*?PricesalesPrice[^>]*>([\d.]+)\s*Ft/i);

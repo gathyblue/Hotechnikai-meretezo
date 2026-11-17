@@ -1,4 +1,5 @@
 import { BuildingData, CalculationResults, HeatPumpModel, HydraulicInput, HydraulicResults, EngineeringParams, CircuitHydraulicResult, normalizeCouplingType } from '../types';
+import { DAB_PUMPS, selectAutoPump } from '../data/dabPumps';
 
 /**
  * Calculates building structures' U-values with insulation
@@ -100,7 +101,7 @@ export function getHeatingGasM3(data: BuildingData): number {
  * Main heat loss assessment engine with concurrent execution of all 3 methods for side-by-side comparison
  */
 export function performHeatLossCalculation(data: BuildingData, params?: EngineeringParams): CalculationResults {
-  const tempDifference = data.indoorTemp - data.designTemp; // e.g. 22 - (-15) = 37 °C
+  const tempDifference = data.indoorTemp - data.designTemp; // e.g. 20 - (-11) = 31 °C (MSZ 24140:2026)
   const volume = data.heatedArea * data.ceilingHeight;
   const airCap = params ? params.airHeatCapacityFactor : 0.34;
 
@@ -279,7 +280,7 @@ export function getBuildingHeatDemandAtTemp(
  * Calculates continuous heating energy coverage percentage based on bivalence temperature.
  * Custom piecewise interpolation corresponding to typical Hungarian climate hour frequencies, scaled in respect to designTemp.
  */
-export function calculateBivalentCoverage(bivalentTemp: number, designTemp: number = -15): number {
+export function calculateBivalentCoverage(bivalentTemp: number, designTemp: number = -11): number {
   if (bivalentTemp <= designTemp) return 100.0;
   if (bivalentTemp >= 15) return 0.0;
 
@@ -406,8 +407,8 @@ export function evaluateHeatPumpEconomics(
   hp: HeatPumpModel,
   emitterType: 'floor' | 'radiator',
   electricityTariffHuf: number = 23,
-  bivalentTempManual: number = -5,
-  designTemp: number = -15
+  bivalentTempManual: number = -11,
+  designTemp: number = -11
 ): {
   hpCostHuf: number;
   yearlySavingsHuf: number;
@@ -541,11 +542,10 @@ export function calculateBivalentHydraulics(
   flowTempC: number;
   coveragePct: number;
 } {
-  const coupling = normalizeCouplingType(input.couplingType);
-  if (coupling !== 'bivalent') {
+  const source = input.bivalentSource ?? 'none';
+  if (source === 'none') {
     return { source: 'none', boilerPowerKw: 0, boilerFlowRateLh: 0, mixingRatio: 0, flowTempC: input.bivalentFlowTempC ?? 55, coveragePct: 0 };
   }
-  const source = input.bivalentSource ?? 'electric-element';
   const deficitKw = Math.max(0, peakLoadKw - (hpCapacityAtDesignKw || 0));
   const userPower = input.bivalentBoilerPowerKw && input.bivalentBoilerPowerKw > 0 ? input.bivalentBoilerPowerKw : undefined;
   const boilerPowerKw = source === 'gas-boiler'
@@ -642,10 +642,16 @@ export function calculateHydraulicsAndVessel(
   const pexFrictionMult = params?.pexFrictionMultiplier ?? 1.35;
 
   // --- Calculate each circuit's hydraulics ---
-  function selectDabPump(type: string, flowLh: number): { pumpModel: string; pumpSetting: string; pumpStage: string } {
-    const model = input.secondaryPumpOverride && input.secondaryPumpOverride !== 'Auto'
-      ? input.secondaryPumpOverride
-      : 'DAB Evosta 2 40-70/180 (A-osztályú, nagyhatékonyságú)';
+  function selectDabPump(type: string, flowLh: number, requiredHeadM: number): { pumpModel: string; pumpSetting: string; pumpStage: string } {
+    // Kiválasztott szivattyú modell: override id alapján, vagy Auto esetén a legkisebb megfelelő.
+    const override = input.secondaryPumpOverride;
+    let model: string;
+    if (override && override !== 'Auto' && override !== 'auto') {
+      const chosen = DAB_PUMPS.find(p => p.id === override);
+      model = chosen ? chosen.name : override;
+    } else {
+      model = selectAutoPump(flowLh / 1000, requiredHeadM).name;
+    }
     if (type === 'floor') {
       const setting = 'Állandó differenciálnyomás (Padlófűtési osztógyűjtőhöz)';
       let stage: string;
@@ -724,13 +730,23 @@ export function calculateHydraulicsAndVessel(
     }
 
     const localLossKpa = velocityMs > 0 ? Number((fittings * 0.15 * (velocityMs / 0.8)).toFixed(1)) : 0;
-    const exchLoss = input.includeHeatExchanger ? 9.8 * (flowM3h / 2.0) : 0;
-    const pressureDropKpa = input.includeHeatExchanger
-      ? Number((pipeLossKpa + exchLoss + localLossKpa + 2.2).toFixed(1))
-      : Number((pipeLossKpa + localLossKpa + 1.2).toFixed(1));
+    // Kapcsolási eszköz nyomásesése a SZEKUNDER oldalon:
+    // - hőcserélő: van nyomásesés (mindkét oldalon)
+    // - 4-csonkos puffer: kis nyomásesés
+    // - hidrováltó: elhanyagolható (nincs nyomásesés)
+    // - direkt: nincs külön eszköz
+    const couplingLossKpa = coupling === 'heat-exchanger'
+      ? 9.8 * (flowM3h / 2.0)
+      : coupling === 'buffer-dhw'
+        ? 1.5 * (flowM3h / 2.0)
+        : 0;
+    const pressureDropKpa = Number((pipeLossKpa + couplingLossKpa + localLossKpa + 1.2).toFixed(1));
 
-    // Pump
-    const pumpResult = selectDabPump(c.type, flowLh);
+    // Pump — CSAK leválasztott kapcsolásoknál. Direktnél a HP saját szivattyúja hajtja a kört.
+    const requiredHeadM = pressureDropKpa / 9.81;
+    const pumpResult = coupling === 'direct'
+      ? { pumpModel: '', pumpSetting: '', pumpStage: '' }
+      : selectDabPump(c.type, flowLh, requiredHeadM);
     const pumpMaxHead = 70;
     const pumpMaxFlow = 4200;
     const flowRatioVal = Math.min(flowLh / pumpMaxFlow, 1);
@@ -814,10 +830,10 @@ export function calculateHydraulicsAndVessel(
 
   const expSafety = params ? params.expansionSafetyFactor : 1.10;
 
-  // Szekunder tágulási tartály: puffer NÉLKÜLI szekunder körnél kell (direkt / LLH / biválens / HX).
-  // Pufferes kapcsolásnál (buffer-dhw) a puffer térfogata benne van az estimatedSystemVolumeL-ben.
-  const bufferlessSecondary = coupling === 'direct' || coupling === 'low-loss-header' || coupling === 'bivalent';
-  const needsSecondaryVessel = input.includeHeatExchanger || (bufferlessSecondary && secondaryCircuits.length > 0);
+  // Szekunder tágulási tartály: akkor kell, ha nincs elég rendszertérfogat.
+  // A soros puffer (visszatérőben, LLH/HX-nél opcionális) térfogata beleszámít a rendszerbe.
+  const hasSerialBuffer = (coupling === 'low-loss-header' || coupling === 'heat-exchanger') && (input.bufferVolumeL ?? 0) > 0;
+  const needsSecondaryVessel = (input.includeHeatExchanger || secondaryCircuits.length > 0) && !hasSerialBuffer;
 
   if (input.includeHeatExchanger) {
     const primaryVolumeL = 35 + (input.includeDhwTank ? 15 : 0) + (input.additionalWaterVolumeL ? Number(input.additionalWaterVolumeL) : 0);
@@ -880,9 +896,20 @@ export function calculateHydraulicsAndVessel(
 
   const localLossPerFittingKpa = 0.15;
   const primaryLocalLossKpa = Number((fittingsCount * localLossPerFittingKpa * (primaryEstimatedVelocityMs / 0.8)).toFixed(1));
-  const primaryExchangerLoss = input.includeHeatExchanger ? 11.2 * (flowRateM3h / 2.0) : 0;
-  const primaryPressureDropKpa = Number((primaryPipeLossKpa + primaryExchangerLoss + primaryLocalLossKpa + 1.8).toFixed(1));
-  const remainingPumpHeadKpa = Number((pumpHead - primaryPressureDropKpa).toFixed(1));
+  // Kapcsolási eszköz nyomásesése a PRIMER oldalon:
+  // - hőcserélő: van nyomásesés (mindkét oldalon)
+  // - 4-csonkos puffer: kis nyomásesés
+  // - hidrováltó: elhanyagolható (nincs nyomásesés)
+  const primaryCouplingLoss = coupling === 'heat-exchanger'
+    ? 11.2 * (flowRateM3h / 2.0)
+    : coupling === 'buffer-dhw'
+      ? 1.8 * (flowRateM3h / 2.0)
+      : 0;
+  const primaryPressureDropKpa = Number((primaryPipeLossKpa + primaryCouplingLoss + primaryLocalLossKpa + 1.8).toFixed(1));
+  // Direkt kapcsolásnál nincs leválasztás: a HP szivattyújának a TELJES kört (primer + szekunder) kell legyőznie.
+  const remainingPumpHeadKpa = coupling === 'direct'
+    ? Number((pumpHead - primaryPressureDropKpa - secondaryPressureDropKpa).toFixed(1))
+    : Number((pumpHead - primaryPressureDropKpa).toFixed(1));
 
   // --- Buffer méretezés rendszertípus-alapúan: padló kW×15, radiátor kW×12, vegyes átlag (javítás #1) ---
   const hasFloorCirc = secondaryCircuits.some(c => c.type === 'floor');
@@ -895,8 +922,11 @@ export function calculateHydraulicsAndVessel(
   const recommendedBufferL = Math.round(peakLoadKw * bufferFactorL);
   const isBufferAdequate = Number(input.additionalWaterVolumeL || 0) >= recommendedBufferL;
 
-  // --- Szekunder keringtető (a váltó/puffer UTÁN) — minden topológiában, állandó nyomású üzemmód ---
-  const secPump = selectDabPump('floor', secondaryFlowRateLh);
+  // --- Szekunder keringtető — CSAK leválasztott kapcsolásoknál (4-csonkos puffer / hidrováltó / hőcserélő).
+  // Direktnél nincs külön szekunder szivattyú: a HP saját szivattyúja hajtja a teljes kört. ---
+  const secPump = coupling === 'direct'
+    ? { pumpModel: '', pumpSetting: '', pumpStage: '' }
+    : selectDabPump('floor', secondaryFlowRateLh, secondaryPressureDropKpa / 9.81);
 
   // --- Hidraulikus váltó (LLH) referencia-méretezés: a szekunder igény viszi a váltót ---
   const llhFlowRateLh = secondaryFlowRateLh > 0 ? secondaryFlowRateLh : Math.round(flowRateLh);
@@ -911,19 +941,16 @@ export function calculateHydraulicsAndVessel(
   // --- Validációs figyelmeztetések (gyártói szabályok — terv 4. fejezet) ---
   const validationWarnings: string[] = [];
   if (coupling === 'direct') {
-    validationWarnings.push('Direkt kapcsolás: a HP belső szivattyúja hajtja a primer kört — nagyobb rendszernél (>10 kW / több zóna) hidraulikus váltó javasolt.');
+    validationWarnings.push('Direkt kapcsolás: egy közeg, a HP belső szivattyúja hajtja a rendszert (nincs külön szekunder szivattyú). Nagyobb rendszernél (>10 kW / több zóna) külön közegű leválasztás javasolt.');
   }
-  if (input.includeDhwTank && coupling !== 'buffer-dhw' && coupling !== 'bivalent') {
-    validationWarnings.push('HMV tartály esetén a 3-járatú váltószelep kötelező elem — ezt a "Puffer + HMV" topológia modellezi helyesen.');
-  }
-  if (coupling === 'bivalent' && !input.bivalentSource) {
-    validationWarnings.push('Biválens topológia: válaszd ki a kiegészítő hőforrást (gázkazán vagy elektromos betét).');
-  }
-  if (coupling === 'bivalent' && input.bivalentSource === 'gas-boiler' && !(input.bivalentBoilerPowerKw && input.bivalentBoilerPowerKw > 0)) {
+  if (input.bivalentSource && input.bivalentSource !== 'none' && input.bivalentSource === 'gas-boiler' && !(input.bivalentBoilerPowerKw && input.bivalentBoilerPowerKw > 0)) {
     validationWarnings.push('Biválens gázkazán: add meg a kazán teljesítményét (kW) — különben a biválens deficit alapján számolunk.');
   }
-  if (coupling !== 'direct' && coupling !== 'heat-exchanger' && secondaryCircuits.length === 0) {
-    validationWarnings.push('Nincs szekunder kör megadva — a szekunder szivattyú és az LLH méretezéséhez adj hozzá legalább egy hőleadó kört.');
+  if (coupling === 'low-loss-header' && secondaryCircuits.length === 0) {
+    validationWarnings.push('Hidrováltós kapcsolás: adj hozzá legalább egy hőleadó kört a szekunder szivattyú méretezéséhez.');
+  }
+  if (coupling === 'heat-exchanger' && secondaryCircuits.length === 0) {
+    validationWarnings.push('Hőcserélős kapcsolás: adj hozzá legalább egy hőleadó kört a szekunder oldal méretezéséhez.');
   }
   if (primaryDeltaT < 5) {
     validationWarnings.push('A primer ΔT 5°C alatt van — ellenőrizd a hőfoklépcsőt (HP gyártói minimum jellemzően 5°C).');

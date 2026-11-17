@@ -1,7 +1,7 @@
 import React from "react";
 import { HydraulicInput, HydraulicResults, EngineeringParams, HeatPumpModel } from "../types";
 import { HydraulicExpansionCalc } from "./HydraulicExpansionCalc";
-import SystemDiagram from "./diagram/SystemDiagram";
+import FlowDiagram from "./diagram/FlowDiagram";
 import { CircuitTable } from "./diagram/CircuitTable";
 
 interface SystemViewProps {
@@ -30,12 +30,13 @@ export const SystemView: React.FC<SystemViewProps> = (props) => {
         <h3 className={`font-extrabold text-[10px] uppercase tracking-wider mb-2 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
           RENDSZERSÉMA
         </h3>
-        <SystemDiagram
+        <FlowDiagram
           selectedModel={props.selectedModel ?? null}
           hydraulicState={props.hydraulicState}
           hydraulicResults={props.hydraulicResults}
           peakLoadKw={props.peakLoadKw}
           flowTemp={props.flowTemp}
+          theme={props.theme as 'light' | 'dark'}
         />
       </div>
 

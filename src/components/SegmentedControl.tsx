@@ -40,7 +40,7 @@ export function SegmentedControl<T extends string | number>({
             key={String(opt.value)}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`relative flex-1 flex items-center justify-center text-xs font-bold py-1 px-2.5 rounded-md transition-colors cursor-pointer select-none whitespace-nowrap focus:outline-none focus:ring-0 ${
+            className={`relative flex-1 min-w-0 flex items-center justify-center text-[10px] sm:text-xs font-bold py-1 px-1 sm:px-2.5 rounded-md transition-colors cursor-pointer select-none text-center leading-tight break-words focus:outline-none focus:ring-0 ${
               isActive
                 ? isDark
                   ? 'text-slate-100'
